@@ -65,6 +65,9 @@ class ReporteViewModel(
     private val _sobres = MutableStateFlow<List<Sobre>>(emptyList())
     val sobres: StateFlow<List<Sobre>> = _sobres.asStateFlow()
 
+    private val _ivaProvisionado = MutableStateFlow(0.0)
+    val ivaProvisionado: StateFlow<Double> = _ivaProvisionado.asStateFlow()
+
     init {
         recargar()
     }
@@ -89,6 +92,7 @@ class ReporteViewModel(
                 .mapValues { (_, list) -> list.sumOf { it.monto } }
                 .filter { it.value > 0 }
             _sobres.value = repository.getSobres()
+            _ivaProvisionado.value = repository.getIvaProvisionadoDesde(inicio)
         }
     }
 }

@@ -42,6 +42,7 @@ fun ReportesScreen(
     val ultimasVentas by viewModel.ultimasVentas.collectAsState()
     val gastosPorCategoria by viewModel.gastosPorCategoria.collectAsState()
     val sobres by viewModel.sobres.collectAsState()
+    val ivaProvisionado by viewModel.ivaProvisionado.collectAsState()
 
     LazyColumn(
         modifier = modifier
@@ -65,6 +66,11 @@ fun ReportesScreen(
                     totalGastos = totalGastos,
                     balanceNeto = balanceNeto
                 )
+            }
+
+            // ── IVA provisionado ─────────────────────────────────────────────
+            item {
+                IvaProvisionadoCard(iva = ivaProvisionado)
             }
 
             // ── Gastos por categoría ─────────────────────────────────────────
@@ -365,5 +371,34 @@ private fun formatFechaIsoReporte(iso: String?): String {
             .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
     } catch (e: Exception) {
         iso.take(16).replace("T", " ")
+    }
+}
+
+@Composable
+private fun IvaProvisionadoCard(iva: Double) {
+    val fmt = DecimalFormat("$#,##0")
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "IVA provisionado (19%)",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Text(
+                text = fmt.format(iva),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Text(
+                text = "Acumulado de comprobantes del período. Reserva estimada para impuestos.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        }
     }
 }

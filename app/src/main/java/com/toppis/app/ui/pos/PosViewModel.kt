@@ -3,10 +3,12 @@ package com.toppis.app.ui.pos
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.toppis.app.data.models.ItemMenu
+import com.toppis.app.data.models.Comprobante
 import com.toppis.app.data.db.entities.MetodoPago
 import com.toppis.app.data.models.Salsa
 import com.toppis.app.data.db.entities.ZonaEnvio
 import com.toppis.app.data.repository.ComandaRepository
+import com.toppis.app.data.repository.ComprobanteRepository
 import com.toppis.app.data.repository.LineaComanda
 import com.toppis.app.data.repository.LineaVenta
 import com.toppis.app.data.repository.MenuRepository
@@ -42,7 +44,8 @@ class PosViewModel(
     private val ventaRepository: VentaRepository,
     private val sobreRepository: SobreRepository,
     private val menuRepository: MenuRepository,
-    private val comandaRepository: ComandaRepository
+    private val comandaRepository: ComandaRepository,
+    private val comprobanteRepository: ComprobanteRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PosUiState>(PosUiState.Idle)
@@ -53,6 +56,29 @@ class PosViewModel(
 
     private val _salsasDisponibles = MutableStateFlow<List<Salsa>>(emptyList())
     val salsasDisponibles: StateFlow<List<Salsa>> = _salsasDisponibles.asStateFlow()
+
+    // Comprobante emitido tras la venta (Fase 2A)
+    private val _comprobante = MutableStateFlow<Comprobante?>(null)
+    val comprobante: StateFlow<Comprobante?> = _comprobante.asStateFlow()
+
+    private val _comprobanteError = MutableStateFlow<String?>(null)
+    val comprobanteError: StateFlow<String?> = _comprobanteError.asStateFlow()
+
+    fun emitirComprobante(ventaId: Int, usuarioId: String?) {
+        viewModelScope.launch {
+            _comprobanteError.value = null
+            try {
+                _comprobante.value = comprobanteRepository.emitirComprobante(ventaId, usuarioId)
+            } catch (e: Exception) {
+                _comprobanteError.value = e.message ?: "Error al emitir comprobante"
+            }
+        }
+    }
+
+    fun limpiarComprobante() {
+        _comprobante.value = null
+        _comprobanteError.value = null
+    }
 
     init {
         refrescarMenu()

@@ -222,8 +222,11 @@ fun PosScreen(
     if (showPostVentaDialog != null) {
         PostVentaDialog(
             ventaExitosa = showPostVentaDialog!!,
+            posViewModel = posViewModel,
+            usuarioId = usuarioId,
             onDismiss = {
                 showPostVentaDialog = null
+                posViewModel.limpiarComprobante()
                 posViewModel.resetState()
             }
         )
@@ -588,12 +591,27 @@ private fun CheckoutDialog(
 @Composable
 private fun PostVentaDialog(
     ventaExitosa: PosUiState.VentaExitosa,
+    posViewModel: PosViewModel,
+    usuarioId: String?,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val comprobante by posViewModel.comprobante.collectAsState()
+    val comprobanteError by posViewModel.comprobanteError.collectAsState()
+    val moneyFmt = DecimalFormat("$#,##0")
 
     val comandaTexto = ventaExitosa.comandaTexto
-    val whatsAppTexto = ventaExitosa.whatsappTexto
+
+    // Texto a compartir: comanda + comprobante (si fue emitido)
+    val textoCompartir = buildString {
+        append(ventaExitosa.whatsappTexto)
+        comprobante?.let { c ->
+            append("\n\n--- Comprobante interno #${c.folio} ---")
+            append("\nNeto: ${moneyFmt.format(c.neto)}")
+            append("\nIVA (19%): ${moneyFmt.format(c.iva)}")
+            append("\nTotal: ${moneyFmt.format(c.total)}")
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -607,6 +625,45 @@ private fun PostVentaDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+
+                val c = comprobante
+                if (c == null) {
+                    OutlinedButton(
+                        onClick = { posViewModel.emitirComprobante(ventaExitosa.ventaId, usuarioId) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Emitir comprobante")
+                    }
+                    comprobanteError?.let { err ->
+                        Text(
+                            text = err,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "Comprobante interno #${c.folio}",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text("Neto: ${moneyFmt.format(c.neto)}", style = MaterialTheme.typography.bodySmall)
+                            Text("IVA (19%): ${moneyFmt.format(c.iva)}", style = MaterialTheme.typography.bodySmall)
+                            Text("Total: ${moneyFmt.format(c.total)}", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Documento de control interno · no tributario",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -614,7 +671,7 @@ private fun PostVentaDialog(
                 OutlinedButton(onClick = {
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, whatsAppTexto)
+                        putExtra(Intent.EXTRA_TEXT, textoCompartir)
                     }
                     context.startActivity(
                         Intent.createChooser(shareIntent, "Compartir pedido")

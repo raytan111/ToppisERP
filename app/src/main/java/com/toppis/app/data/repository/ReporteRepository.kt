@@ -45,4 +45,16 @@ class ReporteRepository {
     } catch (e: Exception) {
         emptyList()
     }
+
+    /** Total de IVA provisionado (suma del IVA de los comprobantes) desde [inicioMillis]. */
+    suspend fun getIvaProvisionadoDesde(inicioMillis: Long): Double = try {
+        val iso = FechaUtil.millisToIso(inicioMillis)
+        client.postgrest.from("comprobantes").select {
+            filter { gte("fecha_emision", iso) }
+        }.decodeList<com.toppis.app.data.models.Comprobante>()
+            .sumOf { it.iva }
+    } catch (e: Exception) {
+        Log.e("ReporteRepository", "Error getIvaProvisionado: ${e.message}", e)
+        0.0
+    }
 }

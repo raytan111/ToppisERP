@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.toppis.erp.ui.theme.ToppisERPTheme
 import com.toppis.app.data.repository.AuthRepository
 import com.toppis.app.data.repository.ComandaRepository
+import com.toppis.app.data.repository.ComprobanteRepository
 import com.toppis.app.data.repository.DashboardRepository
 import com.toppis.app.data.repository.ExportacionRepository
 import com.toppis.app.data.repository.FlujoCajaRepository
@@ -49,9 +50,10 @@ class MainActivity : ComponentActivity() {
         val menuConfigFactory = MenuConfigViewModelFactory(menuRepo)
 
         val comandaRepo = ComandaRepository()
+        val comprobanteRepo = ComprobanteRepository()
 
         val sobreFactory = SobreViewModelFactory(sobreRepo)
-        val posFactory = PosViewModelFactory(ventaRepo, sobreRepo, menuRepo, comandaRepo)
+        val posFactory = PosViewModelFactory(ventaRepo, sobreRepo, menuRepo, comandaRepo, comprobanteRepo)
         val inventarioFactory = InventarioViewModelFactory(inventarioRepo)
         val gastoRepo = GastoRepository()
         val gastoFactory = GastoViewModelFactory(gastoRepo, sobreRepo)
