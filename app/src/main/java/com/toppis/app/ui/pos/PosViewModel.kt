@@ -34,6 +34,7 @@ sealed class PosUiState {
         val ventaId: Int,
         val comandaTexto: String,
         val whatsappTexto: String,
+        val lineas: List<LineaComanda>,
         val zonaEnvio: ZonaEnvio,
         val total: Double
     ) : PosUiState()
@@ -199,6 +200,7 @@ class PosViewModel(
                     ventaId = ventaId,
                     comandaTexto = comandaTexto,
                     whatsappTexto = whatsappTexto,
+                    lineas = lineasComanda,
                     zonaEnvio = zonaEnvio,
                     total = total
                 )

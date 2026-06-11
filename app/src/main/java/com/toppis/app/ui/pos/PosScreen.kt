@@ -681,6 +681,16 @@ private fun PostVentaDialog(
                     Spacer(Modifier.width(4.dp))
                     Text("WhatsApp")
                 }
+                comprobante?.let { c ->
+                    OutlinedButton(onClick = {
+                        val uri = com.toppis.app.util.ComprobantePdfUtil.generarPdf(
+                            context, c, ventaExitosa.lineas
+                        )
+                        com.toppis.app.util.ComprobantePdfUtil.compartirPdf(context, uri)
+                    }) {
+                        Text("PDF")
+                    }
+                }
                 Button(onClick = onDismiss) {
                     Text("Cerrar")
                 }

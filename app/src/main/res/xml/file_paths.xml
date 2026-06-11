@@ -4,5 +4,7 @@
     <external-files-path name="exports" path="exports/" />
     <!-- Carpeta pública Downloads (API 26-28, para abrir con app externa) -->
     <external-path name="public_downloads" path="." />
+    <!-- Caché interno (comprobantes PDF para compartir) -->
+    <cache-path name="comprobantes" path="comprobantes/" />
 </paths>
 

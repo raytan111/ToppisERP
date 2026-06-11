@@ -153,6 +153,17 @@ fun MainScaffold(
                         }
                     )
 
+                    MoreMenuItem(
+                        icon = Icons.Filled.Receipt,
+                        label = "Comprobantes",
+                        onClick = {
+                            showMoreSheet = false
+                            navController.navigate("comprobantes") {
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+
                     // Opciones solo para Admin
                     if (isAdmin) {
                         Divider(modifier = Modifier.padding(vertical = 8.dp))

@@ -5,6 +5,13 @@ import com.toppis.app.data.models.Comprobante
 import com.toppis.app.data.supabase.SupabaseClient
 import com.toppis.app.data.util.FechaUtil
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -43,6 +50,29 @@ class ComprobanteRepository {
         }.decodeSingleOrNull<Comprobante>()
     } catch (e: Exception) {
         null
+    }
+
+    /** Lista todos los comprobantes, más recientes primero. */
+    suspend fun getComprobantes(): List<Comprobante> = try {
+        client.postgrest.from("comprobantes").select()
+            .decodeList<Comprobante>()
+            .sortedByDescending { it.folio }
+    } catch (e: Exception) {
+        Log.e("ComprobanteRepository", "Error getComprobantes: ${e.message}", e)
+        emptyList()
+    }
+
+    fun observeCambios(): Flow<Unit> = channelFlow {
+        val channel = client.channel("comprobantes-changes-${java.util.UUID.randomUUID()}")
+        val changes = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "comprobantes"
+        }
+        val job = launch { changes.collect { send(Unit) } }
+        channel.subscribe()
+        awaitClose {
+            job.cancel()
+            launch { channel.unsubscribe() }
+        }
     }
 
     /** Total de IVA provisionado desde [desdeMillis] (suma del IVA de comprobantes). */

@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
         val comandaRepo = ComandaRepository()
         val comprobanteRepo = ComprobanteRepository()
+        val comprobantesFactory = com.toppis.app.ui.comprobantes.ComprobantesViewModelFactory(comprobanteRepo)
 
         val sobreFactory = SobreViewModelFactory(sobreRepo)
         val posFactory = PosViewModelFactory(ventaRepo, sobreRepo, menuRepo, comandaRepo, comprobanteRepo)
@@ -94,6 +95,7 @@ class MainActivity : ComponentActivity() {
                         flujoCajaViewModelFactory = flujoCajaFactory,
                         dashboardViewModelFactory = dashboardFactory,
                         menuConfigViewModelFactory = menuConfigFactory,
+                        comprobantesViewModelFactory = comprobantesFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )

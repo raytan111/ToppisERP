@@ -16,6 +16,9 @@ import com.toppis.app.data.db.entities.Rol
 import com.toppis.app.ui.auth.AuthViewModel
 import com.toppis.app.ui.auth.LoginScreen
 import com.toppis.app.ui.auth.UsuariosScreen
+import com.toppis.app.ui.comprobantes.ComprobantesScreen
+import com.toppis.app.ui.comprobantes.ComprobantesViewModel
+import com.toppis.app.ui.comprobantes.ComprobantesViewModelFactory
 import com.toppis.app.ui.components.MainScaffold
 import com.toppis.app.ui.exportacion.ExportacionScreen
 import com.toppis.app.ui.exportacion.ExportacionViewModel
@@ -56,6 +59,7 @@ fun NavGraph(
     flujoCajaViewModelFactory: FlujoCajaViewModelFactory,
     dashboardViewModelFactory: DashboardViewModelFactory,
     menuConfigViewModelFactory: MenuConfigViewModelFactory,
+    comprobantesViewModelFactory: ComprobantesViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -187,6 +191,14 @@ fun NavGraph(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
+                composable("comprobantes") {
+                    val vm: ComprobantesViewModel = viewModel(factory = comprobantesViewModelFactory)
+                    ComprobantesScreen(
+                        viewModel = vm,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     } else {
@@ -283,6 +295,14 @@ fun NavGraph(
                 }
                 val vm: MenuConfigViewModel = viewModel(factory = menuConfigViewModelFactory)
                 MenuConfigScreen(
+                    viewModel = vm,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("comprobantes") {
+                val vm: ComprobantesViewModel = viewModel(factory = comprobantesViewModelFactory)
+                ComprobantesScreen(
                     viewModel = vm,
                     onNavigateBack = { navController.popBackStack() }
                 )
