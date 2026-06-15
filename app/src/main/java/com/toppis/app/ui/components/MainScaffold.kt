@@ -202,6 +202,17 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Calculate,
+                            label = "Contabilidad",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("contabilidad") {
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.FileDownload,
                             label = "Exportación",
                             onClick = {

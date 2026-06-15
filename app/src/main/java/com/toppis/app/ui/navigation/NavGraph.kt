@@ -20,6 +20,9 @@ import com.toppis.app.ui.comprobantes.ComprobantesScreen
 import com.toppis.app.ui.comprobantes.ComprobantesViewModel
 import com.toppis.app.ui.comprobantes.ComprobantesViewModelFactory
 import com.toppis.app.ui.components.MainScaffold
+import com.toppis.app.ui.contabilidad.ContabilidadScreen
+import com.toppis.app.ui.contabilidad.ContabilidadViewModel
+import com.toppis.app.ui.contabilidad.ContabilidadViewModelFactory
 import com.toppis.app.ui.exportacion.ExportacionScreen
 import com.toppis.app.ui.exportacion.ExportacionViewModel
 import com.toppis.app.ui.exportacion.ExportacionViewModelFactory
@@ -60,6 +63,7 @@ fun NavGraph(
     dashboardViewModelFactory: DashboardViewModelFactory,
     menuConfigViewModelFactory: MenuConfigViewModelFactory,
     comprobantesViewModelFactory: ComprobantesViewModelFactory,
+    contabilidadViewModelFactory: ContabilidadViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -199,6 +203,19 @@ fun NavGraph(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
+                composable("contabilidad") {
+                    if (!isAdmin) {
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                        return@composable
+                    }
+                    val vm: ContabilidadViewModel = viewModel(factory = contabilidadViewModelFactory)
+                    ContabilidadScreen(
+                        viewModel = vm,
+                        usuarioId = usuarioActual?.id,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     } else {
@@ -304,6 +321,19 @@ fun NavGraph(
                 val vm: ComprobantesViewModel = viewModel(factory = comprobantesViewModelFactory)
                 ComprobantesScreen(
                     viewModel = vm,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("contabilidad") {
+                if (!isAdmin) {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                    return@composable
+                }
+                val vm: ContabilidadViewModel = viewModel(factory = contabilidadViewModelFactory)
+                ContabilidadScreen(
+                    viewModel = vm,
+                    usuarioId = usuarioActual?.id,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

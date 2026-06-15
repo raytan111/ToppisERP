@@ -57,7 +57,8 @@ class GastoRepository {
         categoria: CategoriaGasto,
         sobreId: Int,
         usuarioId: String? = null,
-        comprobante: String? = null
+        comprobante: String? = null,
+        tieneIva: Boolean = false
     ) {
         val params = buildJsonObject {
             put("p_descripcion", descripcion)
@@ -66,6 +67,7 @@ class GastoRepository {
             put("p_sobre_id", sobreId)
             if (usuarioId == null) put("p_usuario", JsonNull) else put("p_usuario", usuarioId)
             if (comprobante == null) put("p_comprobante", JsonNull) else put("p_comprobante", comprobante)
+            put("p_tiene_iva", tieneIva)
         }
         try {
             client.postgrest.rpc("registrar_gasto", params)

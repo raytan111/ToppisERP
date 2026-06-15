@@ -121,14 +121,15 @@ fun GastosScreen(
         AddGastoDialog(
             sobresConSaldo = sobresConSaldo,
             onDismiss = { showAddDialog = false },
-            onConfirm = { descripcion, monto, categoria, sobreId, comprobante ->
+            onConfirm = { descripcion, monto, categoria, sobreId, comprobante, tieneIva ->
                 viewModel.registrarGasto(
                     descripcion = descripcion,
                     monto = monto,
                     categoria = categoria,
                     sobreId = sobreId,
                     usuarioId = usuarioId,
-                    comprobante = comprobante.ifBlank { null }
+                    comprobante = comprobante.ifBlank { null },
+                    tieneIva = tieneIva
                 )
                 showAddDialog = false
             }
@@ -246,7 +247,7 @@ fun GastoCard(gasto: Gasto, sobres: List<Sobre>) {
 fun AddGastoDialog(
     sobresConSaldo: List<Sobre>,
     onDismiss: () -> Unit,
-    onConfirm: (String, Double, CategoriaGasto, Int, String) -> Unit
+    onConfirm: (String, Double, CategoriaGasto, Int, String, Boolean) -> Unit
 ) {
     if (sobresConSaldo.isEmpty()) {
         AlertDialog(
@@ -263,6 +264,7 @@ fun AddGastoDialog(
     var descripcion by remember { mutableStateOf("") }
     var monto by remember { mutableStateOf("") }
     var comprobante by remember { mutableStateOf("") }
+    var tieneIva by remember { mutableStateOf(false) }
     var selectedCategoria by remember { mutableStateOf(CategoriaGasto.OTROS) }
     var selectedSobre by remember { mutableStateOf(sobresConSaldo.first()) }
     var categoriaExpanded by remember { mutableStateOf(false) }
@@ -366,6 +368,30 @@ fun AddGastoDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+
+                // Check IVA (factura): habilita IVA crédito en contabilidad
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = tieneIva,
+                        onCheckedChange = { tieneIva = it }
+                    )
+                    Column {
+                        Text("Con factura (tiene IVA)", style = MaterialTheme.typography.bodyMedium)
+                        val m = monto.toDoubleOrNull()
+                        if (tieneIva && m != null && m > 0) {
+                            val neto = Math.round(m / 1.19)
+                            val iva = m - neto
+                            Text(
+                                "Neto ${DecimalFormat("$#,##0").format(neto)} · IVA ${DecimalFormat("$#,##0").format(iva)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -374,7 +400,7 @@ fun AddGastoDialog(
             TextButton(
                 onClick = {
                     if (montoDouble != null) {
-                        onConfirm(descripcion, montoDouble, selectedCategoria, selectedSobre.id, comprobante)
+                        onConfirm(descripcion, montoDouble, selectedCategoria, selectedSobre.id, comprobante, tieneIva)
                     }
                 },
                 enabled = descripcion.isNotBlank() && montoValido

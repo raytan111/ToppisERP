@@ -19,6 +19,12 @@ data class Gasto(
     val usuarioId: String? = null,
     val fecha: String? = null,
     val comprobante: String? = null,
+    @SerialName("tiene_iva")
+    val tieneIva: Boolean = false,
+    @SerialName("monto_neto")
+    val montoNeto: Double? = null,
+    @SerialName("monto_iva")
+    val montoIva: Double? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

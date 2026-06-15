@@ -61,12 +61,13 @@ class GastoViewModel(
         categoria: CategoriaGasto,
         sobreId: Int,
         usuarioId: String? = null,
-        comprobante: String? = null
+        comprobante: String? = null,
+        tieneIva: Boolean = false
     ) {
         viewModelScope.launch {
             _uiState.value = GastoUiState.Loading
             try {
-                gastoRepository.registrarGasto(descripcion, monto, categoria, sobreId, usuarioId, comprobante)
+                gastoRepository.registrarGasto(descripcion, monto, categoria, sobreId, usuarioId, comprobante, tieneIva)
                 refrescarGastos()
                 refrescarSobres()
                 _uiState.value = GastoUiState.Success
