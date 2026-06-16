@@ -75,8 +75,8 @@ fun InventarioScreen(
     if (showCrear) {
         ArticuloDialog(
             onDismiss = { showCrear = false },
-            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel ->
-                viewModel.crearArticulo(nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel)
+            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos ->
+                viewModel.crearArticulo(nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos)
                 showCrear = false
             }
         )
@@ -86,14 +86,14 @@ fun InventarioScreen(
         ArticuloDialog(
             inicial = art,
             onDismiss = { enEdicion = null },
-            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel ->
+            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos ->
                 viewModel.editarArticulo(
                     art.copy(
                         nombre = nombre, dimension = dim, unidadBase = dim.unidadBase,
                         unidadCompra = uCompra, factorCompra = factor, costoCompra = costo,
                         rendimiento = rend, stockBase = stock, parLevel = par,
                         perecible = perecible, vidaUtilDias = vida, esVendible = vendible,
-                        seleccionableEnPos = posSel
+                        seleccionableEnPos = posSel, cantidadPos = cantPos
                     )
                 )
                 enEdicion = null

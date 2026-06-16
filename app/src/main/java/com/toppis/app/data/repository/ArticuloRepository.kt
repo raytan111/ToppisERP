@@ -57,7 +57,8 @@ class ArticuloRepository {
         perecible: Boolean = false,
         vidaUtilDias: Int = 0,
         esVendible: Boolean = false,
-        seleccionableEnPos: Boolean = false
+        seleccionableEnPos: Boolean = false,
+        cantidadPos: Double = 0.0
     ) {
         val costoBase = Articulo.calcularCostoBase(costoCompra, factorCompra, rendimiento)
         client.postgrest.from("articulos").insert(
@@ -76,6 +77,7 @@ class ArticuloRepository {
                 put("vida_util_dias", vidaUtilDias)
                 put("es_vendible", esVendible)
                 put("seleccionable_en_pos", seleccionableEnPos)
+                put("cantidad_pos", cantidadPos)
                 put("activo", true)
             }
         )
@@ -101,6 +103,7 @@ class ArticuloRepository {
                 put("vida_util_dias", articulo.vidaUtilDias)
                 put("es_vendible", articulo.esVendible)
                 put("seleccionable_en_pos", articulo.seleccionableEnPos)
+                put("cantidad_pos", articulo.cantidadPos)
                 put("activo", articulo.activo)
             }
         ) {

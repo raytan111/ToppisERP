@@ -43,7 +43,8 @@ fun ArticuloDialog(
         perecible: Boolean,
         vidaUtilDias: Int,
         esVendible: Boolean,
-        seleccionableEnPos: Boolean
+        seleccionableEnPos: Boolean,
+        cantidadPos: Double
     ) -> Unit
 ) {
     val esEdicion = inicial != null
@@ -73,6 +74,7 @@ fun ArticuloDialog(
     var vidaText by remember { mutableStateOf(inicial?.vidaUtilDias?.toString() ?: "0") }
     var esVendible by remember { mutableStateOf(inicial?.esVendible ?: false) }
     var seleccionablePos by remember { mutableStateOf(inicial?.seleccionableEnPos ?: false) }
+    var cantidadPosText by remember { mutableStateOf(inicial?.cantidadPos?.let { if (it == 0.0) "" else formatNum(it) } ?: "") }
     var expandedDim by remember { mutableStateOf(false) }
     var expandedUnidad by remember { mutableStateOf(false) }
 
@@ -234,6 +236,17 @@ fun ArticuloDialog(
                         Text("Seleccionable en POS (salsa/agregado)")
                     }
                 }
+                if (seleccionablePos) {
+                    item {
+                        OutlinedTextField(
+                            value = cantidadPosText, onValueChange = { cantidadPosText = it },
+                            label = { Text("Cantidad que se gasta (${dimension.unidadBase})") },
+                            supportingText = { Text("Cuánto se consume cada vez que se elige como salsa/agregado. Ej: 15 g de ketchup.") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
@@ -244,7 +257,8 @@ fun ArticuloDialog(
                         nombre, dimension, unidadCompra.abreviatura, factorCompra, costoCompra, rendimiento,
                         (stockText.replace(",", ".").toDoubleOrNull() ?: 0.0) * factorBase,
                         (parText.replace(",", ".").toDoubleOrNull() ?: 0.0) * factorBase,
-                        perecible, vidaText.toIntOrNull() ?: 0, esVendible, seleccionablePos
+                        perecible, vidaText.toIntOrNull() ?: 0, esVendible, seleccionablePos,
+                        cantidadPosText.replace(",", ".").toDoubleOrNull() ?: 0.0
                     )
                 },
                 enabled = valido

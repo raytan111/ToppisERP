@@ -27,6 +27,8 @@ data class Preparacion(
     val stockBase: Double = 0.0,
     @SerialName("seleccionable_en_pos")
     val seleccionableEnPos: Boolean = false,
+    @SerialName("cantidad_pos")
+    val cantidadPos: Double = 0.0,
     val activo: Boolean = true,
     @SerialName("created_at")
     val createdAt: String? = null,

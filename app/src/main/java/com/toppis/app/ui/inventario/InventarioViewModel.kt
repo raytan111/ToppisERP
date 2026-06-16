@@ -50,7 +50,8 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
         perecible: Boolean,
         vidaUtilDias: Int,
         esVendible: Boolean,
-        seleccionableEnPos: Boolean
+        seleccionableEnPos: Boolean,
+        cantidadPos: Double
     ) {
         viewModelScope.launch {
             _uiState.value = InventarioUiState.Loading
@@ -58,7 +59,7 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
                 repository.crearArticulo(
                     nombre, dimension, unidadCompra, factorCompra, costoCompra,
                     rendimiento, stockBase, parLevel, perecible, vidaUtilDias,
-                    esVendible, seleccionableEnPos
+                    esVendible, seleccionableEnPos, cantidadPos
                 )
                 refrescar()
                 _uiState.value = InventarioUiState.Success

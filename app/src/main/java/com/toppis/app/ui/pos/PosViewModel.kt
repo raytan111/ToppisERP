@@ -13,6 +13,7 @@ import com.toppis.app.data.repository.LineaVenta
 import com.toppis.app.data.repository.MenuRepository
 import com.toppis.app.data.repository.ModificadorConCosto
 import com.toppis.app.data.repository.ModificadorRepository
+import com.toppis.app.data.repository.OpcionPos
 import com.toppis.app.data.repository.PromocionRepository
 import com.toppis.app.data.models.Promocion
 import com.toppis.app.data.repository.SobreRepository
@@ -25,7 +26,7 @@ import kotlinx.coroutines.launch
 data class ItemCarritoMenu(
     val itemMenu: ItemMenu,
     val cantidad: Int,
-    val salsas: List<String> = emptyList(),
+    val salsas: List<OpcionPos> = emptyList(),
     val modificadores: List<ModificadorConCosto> = emptyList(),
     val precioOverride: Double? = null,
     val promocionId: Int? = null,
@@ -33,11 +34,13 @@ data class ItemCarritoMenu(
 ) {
     /** Precio unitario: override de promo si existe, si no precio + deltas de modificadores. */
     val precioUnitario: Double get() = precioOverride ?: (itemMenu.precio + modificadores.sumOf { it.deltaPrecio })
-    /** Costo teórico unitario incluyendo deltas de costo de modificadores. */
-    val costoUnitario: Double get() = itemMenu.costoTeorico + modificadores.sumOf { it.deltaCosto }
+    /** Costo teórico unitario incluyendo modificadores y salsas. */
+    val costoUnitario: Double get() = itemMenu.costoTeorico + modificadores.sumOf { it.deltaCosto } + salsas.sumOf { it.costo }
     val subtotal: Double get() = precioUnitario * cantidad
     /** Texto legible de modificadores (para comanda y guardado). */
     val modificadoresTexto: String get() = modificadores.joinToString(", ") { it.modificador.nombre }
+    /** Texto legible de salsas. */
+    val salsasTexto: String get() = salsas.joinToString(", ") { it.nombre }
 }
 
 sealed class PosUiState {
@@ -70,8 +73,8 @@ class PosViewModel(
     private val _itemsMenu = MutableStateFlow<List<ItemMenu>>(emptyList())
     val itemsMenu: StateFlow<List<ItemMenu>> = _itemsMenu.asStateFlow()
 
-    private val _salsasDisponibles = MutableStateFlow<List<String>>(emptyList())
-    val salsasDisponibles: StateFlow<List<String>> = _salsasDisponibles.asStateFlow()
+    private val _salsasDisponibles = MutableStateFlow<List<OpcionPos>>(emptyList())
+    val salsasDisponibles: StateFlow<List<OpcionPos>> = _salsasDisponibles.asStateFlow()
 
     // Comprobante emitido tras la venta (Fase 2A)
     private val _comprobante = MutableStateFlow<Comprobante?>(null)
@@ -100,8 +103,9 @@ class PosViewModel(
         refrescarMenu()
         refrescarSalsas()
         refrescarPromociones()
-        // Realtime: el menú se actualiza al instante
+        // Realtime: menú, salsas (artículos) y promos se actualizan al instante
         viewModelScope.launch { menuRepository.observeItemsMenu().collect { refrescarMenu(); refrescarSalsas(); refrescarPromociones() } }
+        viewModelScope.launch { menuRepository.observeArticulos().collect { refrescarSalsas() } }
     }
 
     private fun refrescarMenu() {
@@ -110,7 +114,7 @@ class PosViewModel(
 
     private fun refrescarSalsas() {
         viewModelScope.launch {
-            _salsasDisponibles.value = menuRepository.getOpcionesPos().map { it.nombre }
+            _salsasDisponibles.value = menuRepository.getOpcionesPos()
         }
     }
 
@@ -174,16 +178,17 @@ class PosViewModel(
 
     fun agregarAlCarrito(
         itemMenu: ItemMenu,
-        salsas: List<String>,
+        salsas: List<OpcionPos>,
         modificadores: List<ModificadorConCosto> = emptyList()
     ) {
         val current = _carrito.value.toMutableList()
-        // Mismo item + mismas salsas + mismos modificadores => incrementar cantidad
         val modIds = modificadores.map { it.modificador.id }.sorted()
+        val salsaIds = salsas.map { "${it.tipo}-${it.id}" }.sorted()
         val index = current.indexOfFirst {
             it.itemMenu.id == itemMenu.id &&
-                it.salsas == salsas &&
-                it.modificadores.map { m -> m.modificador.id }.sorted() == modIds
+                it.salsas.map { s -> "${s.tipo}-${s.id}" }.sorted() == salsaIds &&
+                it.modificadores.map { m -> m.modificador.id }.sorted() == modIds &&
+                it.promocionId == null
         }
         if (index != -1) {
             current[index] = current[index].copy(cantidad = current[index].cantidad + 1)
@@ -241,16 +246,25 @@ class PosViewModel(
                             )
                         }
                     }
+                    // Las salsas también descuentan stock (AGREGAR su cantidad_pos)
+                    val salsasComp = item.salsas.filter { it.cantidad > 0 }.map { s ->
+                        com.toppis.app.data.repository.ModComponenteVenta(
+                            tipo = s.tipo.name,
+                            componenteId = s.id,
+                            cantidadBase = s.cantidad,
+                            accion = "AGREGAR"
+                        )
+                    }
                     LineaVenta(
                         itemMenuId = item.itemMenu.id,
                         cantidad = item.cantidad,
                         precioUnitario = item.precioUnitario,
                         subtotal = item.subtotal,
-                        salsas = item.salsas.joinToString(", "),
+                        salsas = item.salsasTexto,
                         costoUnitario = item.costoUnitario,
                         modificadores = item.modificadoresTexto,
                         promocionId = item.promocionId,
-                        modsComponentes = modsComp
+                        modsComponentes = modsComp + salsasComp
                     )
                 }
 
@@ -258,7 +272,7 @@ class PosViewModel(
                 val lineasComanda = carritoActual.map { item ->
                     val detalleExtra = listOfNotNull(
                         item.modificadoresTexto.takeIf { it.isNotBlank() },
-                        item.salsas.joinToString(", ").takeIf { it.isNotBlank() }
+                        item.salsasTexto.takeIf { it.isNotBlank() }
                     ).joinToString(" · ")
                     LineaComanda(
                         nombre = item.itemMenu.nombre,

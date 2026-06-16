@@ -39,6 +39,18 @@ data class FoodCostItem(
     val foodCostPct: Double get() = if (precio > 0) costoTeorico / precio * 100.0 else 0.0
 }
 
+/** Opción seleccionable en el POS (salsa/agregado). */
+data class OpcionPos(
+    val tipo: com.toppis.app.data.db.entities.TipoComponente,
+    val id: Int,
+    val nombre: String,
+    val unidad: String,
+    val costoBase: Double,
+    val cantidad: Double
+) {
+    val costo: Double get() = costoBase * cantidad
+}
+
 /**
  * Repositorio del módulo Menú (items, recetas) basado en Supabase.
  * Las recetas se componen de artículos y/o preparaciones, todo en unidad base.
@@ -184,18 +196,14 @@ class MenuRepository {
         emptyList()
     }
 
-    /** Artículos y preparaciones marcados como seleccionables en POS (salsas, agregados). */
-    suspend fun getOpcionesPos(): List<ComponenteReceta> {
+    /** Opción seleccionable en POS (salsa/agregado) con su cantidad y costo. */
+    suspend fun getOpcionesPos(): List<OpcionPos> {
         val arts = getArticulos().filter { it.seleccionableEnPos }
         val preps = getPreparaciones().filter { it.seleccionableEnPos }
         return arts.map {
-            ComponenteReceta(
-                RecetaMenu(0, 0, TipoComponente.ARTICULO, it.id, 0.0), it.nombre, it.unidadBase, it.costoBase
-            )
+            OpcionPos(TipoComponente.ARTICULO, it.id, it.nombre, it.unidadBase, it.costoBase, it.cantidadPos)
         } + preps.map {
-            ComponenteReceta(
-                RecetaMenu(0, 0, TipoComponente.PREPARACION, it.id, 0.0), it.nombre, it.unidadBase, it.costoBase
-            )
+            OpcionPos(TipoComponente.PREPARACION, it.id, it.nombre, it.unidadBase, it.costoBase, it.cantidadPos)
         }
     }
 
@@ -216,6 +224,7 @@ class MenuRepository {
     // ── Realtime ─────────────────────────────────────────────────────────────────
 
     fun observeItemsMenu(): Flow<Unit> = observarTabla("items_menu", "items-menu-changes")
+    fun observeArticulos(): Flow<Unit> = observarTabla("articulos", "menu-articulos-changes")
 
     private fun observarTabla(tabla: String, canal: String): Flow<Unit> = channelFlow {
         val channel = client.channel("$canal-${java.util.UUID.randomUUID()}")

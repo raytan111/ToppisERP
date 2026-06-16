@@ -359,7 +359,7 @@ private fun ItemCarritoMenuCard(
                     }
                     if (item.salsas.isNotEmpty()) {
                         Text(
-                            item.salsas.joinToString(", "),
+                            item.salsasTexto,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline,
                             maxLines = 1
@@ -428,7 +428,7 @@ private fun ItemCarritoMenuRow(
             )
             if (item.salsas.isNotEmpty()) {
                 Text(
-                    "Salsas: ${item.salsas.joinToString(", ")}",
+                    "Salsas: ${item.salsasTexto}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -454,13 +454,13 @@ private fun ItemCarritoMenuRow(
 @Composable
 private fun ItemOpcionesDialog(
     itemMenu: ItemMenu,
-    salsas: List<String>,
+    salsas: List<com.toppis.app.data.repository.OpcionPos>,
     modificadores: List<com.toppis.app.data.repository.ModificadorConCosto>,
     onDismiss: () -> Unit,
-    onConfirm: (salsas: List<String>, modificadores: List<com.toppis.app.data.repository.ModificadorConCosto>) -> Unit
+    onConfirm: (salsas: List<com.toppis.app.data.repository.OpcionPos>, modificadores: List<com.toppis.app.data.repository.ModificadorConCosto>) -> Unit
 ) {
     val maxSalsas = 5
-    val salsasSeleccionadas = remember { mutableStateListOf<String>() }
+    val salsasSeleccionadas = remember { mutableStateListOf<com.toppis.app.data.repository.OpcionPos>() }
     val modsSeleccionados = remember { mutableStateListOf<com.toppis.app.data.repository.ModificadorConCosto>() }
     val money = java.text.DecimalFormat("$#,##0")
 
@@ -504,7 +504,7 @@ private fun ItemOpcionesDialog(
 
                 if (salsas.isNotEmpty()) {
                     item {
-                        Text("Salsas (${salsasSeleccionadas.size}/$maxSalsas)", style = MaterialTheme.typography.labelLarge)
+                        Text("Salsas / agregados (${salsasSeleccionadas.size}/$maxSalsas)", style = MaterialTheme.typography.labelLarge)
                         Spacer(Modifier.height(4.dp))
                     }
                     items(salsas) { salsa ->
@@ -520,7 +520,16 @@ private fun ItemOpcionesDialog(
                                     else if (salsasSeleccionadas.size < maxSalsas) salsasSeleccionadas.add(salsa)
                                 }
                             )
-                            Text(salsa, modifier = Modifier.weight(1f))
+                            Column(Modifier.weight(1f)) {
+                                Text(salsa.nombre)
+                                if (salsa.cantidad > 0) {
+                                    Text(
+                                        "${java.text.DecimalFormat("#,##0.##").format(salsa.cantidad)} ${salsa.unidad}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
                         }
                     }
                 }

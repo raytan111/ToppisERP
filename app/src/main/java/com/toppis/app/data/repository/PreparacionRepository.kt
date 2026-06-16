@@ -78,6 +78,7 @@ class PreparacionRepository {
                 put("unidad_base", prep.dimension.unidadBase)
                 put("rendimiento_lote", prep.rendimientoLote)
                 put("seleccionable_en_pos", prep.seleccionableEnPos)
+                put("cantidad_pos", prep.cantidadPos)
                 put("activo", prep.activo)
             }
         ) {
