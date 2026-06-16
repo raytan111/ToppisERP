@@ -12,6 +12,14 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
+/** Componente de modificador para descontar/devolver stock en la venta. */
+data class ModComponenteVenta(
+    val tipo: String,        // ARTICULO | PREPARACION
+    val componenteId: Int,
+    val cantidadBase: Double,
+    val accion: String       // AGREGAR | QUITAR
+)
+
 /** Línea de venta para enviar a la función RPC. */
 data class LineaVenta(
     val itemMenuId: Int,
@@ -21,7 +29,8 @@ data class LineaVenta(
     val salsas: String,
     val costoUnitario: Double = 0.0,
     val modificadores: String = "",
-    val promocionId: Int? = null
+    val promocionId: Int? = null,
+    val modsComponentes: List<ModComponenteVenta> = emptyList()
 )
 
 /**
@@ -59,6 +68,18 @@ class VentaRepository {
                         put("costo_unitario", item.costoUnitario)
                         put("modificadores", item.modificadores)
                         put("promocion_id", item.promocionId?.toString() ?: "")
+                        putJsonArray("mods_comp") {
+                            item.modsComponentes.forEach { mc ->
+                                add(
+                                    buildJsonObject {
+                                        put("tipo", mc.tipo)
+                                        put("componente_id", mc.componenteId)
+                                        put("cantidad", mc.cantidadBase)
+                                        put("accion", mc.accion)
+                                    }
+                                )
+                            }
+                        }
                     }
                 )
             }

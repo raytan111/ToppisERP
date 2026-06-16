@@ -52,13 +52,14 @@ class MainActivity : ComponentActivity() {
         val comandaRepo = ComandaRepository()
         val comprobanteRepo = ComprobanteRepository()
         val modificadorRepo = com.toppis.app.data.repository.ModificadorRepository()
+        val promocionRepo = com.toppis.app.data.repository.PromocionRepository()
         val comprobantesFactory = com.toppis.app.ui.comprobantes.ComprobantesViewModelFactory(comprobanteRepo)
         val contabilidadFactory = com.toppis.app.ui.contabilidad.ContabilidadViewModelFactory(
             com.toppis.app.data.repository.ContabilidadRepository()
         )
 
         val sobreFactory = SobreViewModelFactory(sobreRepo)
-        val posFactory = PosViewModelFactory(ventaRepo, sobreRepo, menuRepo, comandaRepo, comprobanteRepo, modificadorRepo)
+        val posFactory = PosViewModelFactory(ventaRepo, sobreRepo, menuRepo, comandaRepo, comprobanteRepo, modificadorRepo, promocionRepo)
         val inventarioFactory = InventarioViewModelFactory(inventarioRepo)
         val gastoRepo = GastoRepository()
         val gastoFactory = GastoViewModelFactory(gastoRepo, sobreRepo)
@@ -72,8 +73,8 @@ class MainActivity : ComponentActivity() {
 
         val modificadorFactory = com.toppis.app.ui.modificadores.ModificadorViewModelFactory(modificadorRepo)
 
-        val promocionRepo = com.toppis.app.data.repository.PromocionRepository()
         val promocionFactory = com.toppis.app.ui.promociones.PromocionViewModelFactory(promocionRepo)
+        // promocionRepo y modificadorRepo se definen arriba (los usa también el POS)
 
         val papaRepo = com.toppis.app.data.repository.PapaRendimientoRepository()
         val papaFactory = com.toppis.app.ui.papa.PapaRendimientoViewModelFactory(papaRepo, inventarioRepo)

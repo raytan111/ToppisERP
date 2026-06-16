@@ -1,6 +1,7 @@
 package com.toppis.app.ui.pos
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -43,6 +44,7 @@ fun PosScreen(
 ) {
     val itemsMenu by posViewModel.itemsMenu.collectAsState()
     val salsasDisponibles by posViewModel.salsasDisponibles.collectAsState()
+    val promociones by posViewModel.promociones.collectAsState()
     val carrito by posViewModel.carrito.collectAsState()
     val total by posViewModel.totalCarrito.collectAsState()
     val uiState by posViewModel.uiState.collectAsState()
@@ -52,6 +54,7 @@ fun PosScreen(
     var showCheckoutDialog by remember { mutableStateOf(false) }
     var itemSeleccionado by remember { mutableStateOf<ItemMenu?>(null) }
     var modificadoresItem by remember { mutableStateOf<List<com.toppis.app.data.repository.ModificadorConCosto>>(emptyList()) }
+    var showPromosDialog by remember { mutableStateOf(false) }
     var showPostVentaDialog by remember { mutableStateOf<PosUiState.VentaExitosa?>(null) }
 
     LaunchedEffect(uiState) {
@@ -79,6 +82,12 @@ fun PosScreen(
                     .padding(8.dp)
             ) {
                 Text("Menú", style = MaterialTheme.typography.titleMedium)
+                if (promociones.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(onClick = { showPromosDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("🏷️ Promociones (${promociones.size})")
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (itemsMenu.isEmpty()) {
@@ -199,6 +208,38 @@ fun PosScreen(
         )
     }
 
+    // ── Diálogo selector de promociones ──────────────────────────────────────────
+    if (showPromosDialog) {
+        AlertDialog(
+            onDismissRequest = { showPromosDialog = false },
+            title = { Text("Promociones") },
+            text = {
+                androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(promociones) { promo ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                posViewModel.agregarPromoAlCarrito(promo)
+                                showPromosDialog = false
+                            }
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(promo.nombre, style = MaterialTheme.typography.titleSmall)
+                                val detalle = when (promo.tipo) {
+                                    com.toppis.app.data.db.entities.TipoPromocion.COMBO ->
+                                        "Combo ${DecimalFormat("$#,##0").format(promo.precio)}"
+                                    com.toppis.app.data.db.entities.TipoPromocion.DESCUENTO_PORCENTAJE ->
+                                        "Descuento ${DecimalFormat("0.#").format(promo.descuentoPct)}%"
+                                }
+                                Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showPromosDialog = false }) { Text("Cerrar") } }
+        )
+    }
+
     // ── Diálogo de checkout ──────────────────────────────────────────────────────
     if (showCheckoutDialog) {
         CheckoutDialog(
@@ -300,6 +341,14 @@ private fun ItemCarritoMenuCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    if (item.promoNombre != null) {
+                        Text(
+                            "🏷️ ${item.promoNombre}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1
+                        )
+                    }
                     if (item.modificadores.isNotEmpty()) {
                         Text(
                             item.modificadoresTexto,

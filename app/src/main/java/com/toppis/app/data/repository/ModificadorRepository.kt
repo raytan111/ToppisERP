@@ -104,12 +104,11 @@ class ModificadorRepository {
     // ── Resolución de costo para el POS ─────────────────────────────────────────
 
     /**
-     * Modificadores aplicables a un item, con su delta de costo resuelto.
+     * Modificadores aplicables a un item, con su delta de costo resuelto y sus componentes.
      * deltaCosto = Σ(signo × costoBase × cantidad), donde AGREGAR suma y QUITAR resta.
      */
     suspend fun getModificadoresConCosto(itemMenuId: Int): List<ModificadorConCosto> {
         val mods = getModificadoresParaItem(itemMenuId)
-        // Cache de costos por (tipo,id) para no repetir consultas
         val costoArticulos = mutableMapOf<Int, Double>()
         val costoPreps = mutableMapOf<Int, Double>()
 
@@ -124,9 +123,19 @@ class ModificadorRepository {
                 val signo = if (c.accion == AccionModificador.QUITAR) -1.0 else 1.0
                 deltaCosto += signo * costoBase * c.cantidadBase
             }
-            ModificadorConCosto(mod, deltaCosto)
+            ModificadorConCosto(mod, deltaCosto, comps)
         }
     }
+
+    suspend fun getArticulos(): List<com.toppis.app.data.models.Articulo> = try {
+        client.postgrest.from("articulos").select().decodeList<com.toppis.app.data.models.Articulo>()
+            .filter { it.activo }.sortedBy { it.nombre }
+    } catch (e: Exception) { emptyList() }
+
+    suspend fun getPreparaciones(): List<com.toppis.app.data.models.Preparacion> = try {
+        client.postgrest.from("preparaciones").select().decodeList<com.toppis.app.data.models.Preparacion>()
+            .filter { it.activo }.sortedBy { it.nombre }
+    } catch (e: Exception) { emptyList() }
 
     private suspend fun costoArticulo(id: Int): Double = try {
         client.postgrest.from("articulos").select { filter { eq("id", id) } }
@@ -139,10 +148,11 @@ class ModificadorRepository {
     } catch (e: Exception) { 0.0 }
 }
 
-/** Modificador con su delta de costo ya resuelto (para el POS). */
+/** Modificador con su delta de costo ya resuelto y sus componentes (para el POS). */
 data class ModificadorConCosto(
     val modificador: com.toppis.app.data.models.Modificador,
-    val deltaCosto: Double
+    val deltaCosto: Double,
+    val componentes: List<ModificadorComponente> = emptyList()
 ) {
     val deltaPrecio: Double get() = modificador.deltaPrecio
 }

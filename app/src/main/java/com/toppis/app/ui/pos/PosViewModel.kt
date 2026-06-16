@@ -13,6 +13,8 @@ import com.toppis.app.data.repository.LineaVenta
 import com.toppis.app.data.repository.MenuRepository
 import com.toppis.app.data.repository.ModificadorConCosto
 import com.toppis.app.data.repository.ModificadorRepository
+import com.toppis.app.data.repository.PromocionRepository
+import com.toppis.app.data.models.Promocion
 import com.toppis.app.data.repository.SobreRepository
 import com.toppis.app.data.repository.VentaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,10 +26,13 @@ data class ItemCarritoMenu(
     val itemMenu: ItemMenu,
     val cantidad: Int,
     val salsas: List<String> = emptyList(),
-    val modificadores: List<ModificadorConCosto> = emptyList()
+    val modificadores: List<ModificadorConCosto> = emptyList(),
+    val precioOverride: Double? = null,
+    val promocionId: Int? = null,
+    val promoNombre: String? = null
 ) {
-    /** Precio unitario incluyendo deltas de modificadores. */
-    val precioUnitario: Double get() = itemMenu.precio + modificadores.sumOf { it.deltaPrecio }
+    /** Precio unitario: override de promo si existe, si no precio + deltas de modificadores. */
+    val precioUnitario: Double get() = precioOverride ?: (itemMenu.precio + modificadores.sumOf { it.deltaPrecio })
     /** Costo teórico unitario incluyendo deltas de costo de modificadores. */
     val costoUnitario: Double get() = itemMenu.costoTeorico + modificadores.sumOf { it.deltaCosto }
     val subtotal: Double get() = precioUnitario * cantidad
@@ -55,7 +60,8 @@ class PosViewModel(
     private val menuRepository: MenuRepository,
     private val comandaRepository: ComandaRepository,
     private val comprobanteRepository: ComprobanteRepository,
-    private val modificadorRepository: ModificadorRepository
+    private val modificadorRepository: ModificadorRepository,
+    private val promocionRepository: PromocionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PosUiState>(PosUiState.Idle)
@@ -93,8 +99,9 @@ class PosViewModel(
     init {
         refrescarMenu()
         refrescarSalsas()
+        refrescarPromociones()
         // Realtime: el menú se actualiza al instante
-        viewModelScope.launch { menuRepository.observeItemsMenu().collect { refrescarMenu(); refrescarSalsas() } }
+        viewModelScope.launch { menuRepository.observeItemsMenu().collect { refrescarMenu(); refrescarSalsas(); refrescarPromociones() } }
     }
 
     private fun refrescarMenu() {
@@ -104,6 +111,47 @@ class PosViewModel(
     private fun refrescarSalsas() {
         viewModelScope.launch {
             _salsasDisponibles.value = menuRepository.getOpcionesPos().map { it.nombre }
+        }
+    }
+
+    private val _promociones = MutableStateFlow<List<Promocion>>(emptyList())
+    val promociones: StateFlow<List<Promocion>> = _promociones.asStateFlow()
+
+    fun refrescarPromociones() {
+        viewModelScope.launch {
+            _promociones.value = promocionRepository.getPromociones().filter { it.activo }
+        }
+    }
+
+    /** Agrega una promoción al carrito expandiéndola en sus items (precio distribuido). */
+    fun agregarPromoAlCarrito(promo: Promocion) {
+        viewModelScope.launch {
+            val promoItems = promocionRepository.getItems(promo.id)
+            val menu = menuRepository.getAllItemsMenu()
+            val detalle = promoItems.mapNotNull { pi -> menu.firstOrNull { it.id == pi.itemMenuId }?.let { it to pi.cantidad } }
+            if (detalle.isEmpty()) return@launch
+
+            val precioNormal = detalle.sumOf { (item, cant) -> item.precio * cant }
+            val precioPromo = when (promo.tipo) {
+                com.toppis.app.data.db.entities.TipoPromocion.COMBO -> promo.precio
+                com.toppis.app.data.db.entities.TipoPromocion.DESCUENTO_PORCENTAJE -> precioNormal * (1.0 - promo.descuentoPct / 100.0)
+            }
+            val factor = if (precioNormal > 0) precioPromo / precioNormal else 1.0
+
+            val current = _carrito.value.toMutableList()
+            detalle.forEach { (item, cant) ->
+                current.add(
+                    ItemCarritoMenu(
+                        itemMenu = item,
+                        cantidad = cant,
+                        precioOverride = item.precio * factor,
+                        promocionId = promo.id,
+                        promoNombre = promo.nombre
+                    )
+                )
+            }
+            _carrito.value = current
+            calcularTotal(current)
         }
     }
 
@@ -183,6 +231,16 @@ class PosViewModel(
 
                 // Líneas para la RPC
                 val lineasVenta = carritoActual.map { item ->
+                    val modsComp = item.modificadores.flatMap { m ->
+                        m.componentes.map { c ->
+                            com.toppis.app.data.repository.ModComponenteVenta(
+                                tipo = c.tipoComponente.name,
+                                componenteId = c.componenteId,
+                                cantidadBase = c.cantidadBase,
+                                accion = c.accion.name
+                            )
+                        }
+                    }
                     LineaVenta(
                         itemMenuId = item.itemMenu.id,
                         cantidad = item.cantidad,
@@ -191,7 +249,8 @@ class PosViewModel(
                         salsas = item.salsas.joinToString(", "),
                         costoUnitario = item.costoUnitario,
                         modificadores = item.modificadoresTexto,
-                        promocionId = null
+                        promocionId = item.promocionId,
+                        modsComponentes = modsComp
                     )
                 }
 

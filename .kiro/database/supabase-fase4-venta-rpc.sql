@@ -26,6 +26,7 @@ DECLARE
     v_venta_id INTEGER;
     v_item JSONB;
     v_receta RECORD;
+    v_mod JSONB;
     v_descontar NUMERIC;
     v_promo_id INTEGER;
 BEGIN
@@ -72,6 +73,21 @@ BEGIN
             ELSIF v_receta.tipo_componente = 'PREPARACION' THEN
                 UPDATE preparaciones SET stock_base = stock_base - v_descontar
                     WHERE id = v_receta.componente_id;
+            END IF;
+        END LOOP;
+
+        -- Ajuste de stock por modificadores (AGREGAR descuenta, QUITAR devuelve)
+        FOR v_mod IN SELECT * FROM jsonb_array_elements(COALESCE(v_item->'mods_comp', '[]'::jsonb)) LOOP
+            v_descontar := (v_mod->>'cantidad')::numeric * (v_item->>'cantidad')::int;
+            IF (v_mod->>'accion') = 'QUITAR' THEN
+                v_descontar := -v_descontar;  -- devolver stock
+            END IF;
+            IF (v_mod->>'tipo') = 'ARTICULO' THEN
+                UPDATE articulos SET stock_base = stock_base - v_descontar
+                    WHERE id = (v_mod->>'componente_id')::int;
+            ELSIF (v_mod->>'tipo') = 'PREPARACION' THEN
+                UPDATE preparaciones SET stock_base = stock_base - v_descontar
+                    WHERE id = (v_mod->>'componente_id')::int;
             END IF;
         END LOOP;
     END LOOP;

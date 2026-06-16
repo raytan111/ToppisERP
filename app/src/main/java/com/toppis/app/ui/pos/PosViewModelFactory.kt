@@ -6,6 +6,7 @@ import com.toppis.app.data.repository.ComandaRepository
 import com.toppis.app.data.repository.ComprobanteRepository
 import com.toppis.app.data.repository.MenuRepository
 import com.toppis.app.data.repository.ModificadorRepository
+import com.toppis.app.data.repository.PromocionRepository
 import com.toppis.app.data.repository.SobreRepository
 import com.toppis.app.data.repository.VentaRepository
 
@@ -15,14 +16,15 @@ class PosViewModelFactory(
     private val menuRepository: MenuRepository,
     private val comandaRepository: ComandaRepository,
     private val comprobanteRepository: ComprobanteRepository,
-    private val modificadorRepository: ModificadorRepository
+    private val modificadorRepository: ModificadorRepository,
+    private val promocionRepository: PromocionRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PosViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return PosViewModel(
                 ventaRepository, sobreRepository, menuRepository,
-                comandaRepository, comprobanteRepository, modificadorRepository
+                comandaRepository, comprobanteRepository, modificadorRepository, promocionRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

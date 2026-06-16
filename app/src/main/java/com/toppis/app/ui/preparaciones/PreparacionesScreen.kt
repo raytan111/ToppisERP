@@ -224,6 +224,7 @@ private fun CrearPreparacionDialog(
                 OutlinedTextField(
                     value = rendimientoText, onValueChange = { rendimientoText = it },
                     label = { Text("Rendimiento del lote (${dimension.unidadBase})") },
+                    supportingText = { Text("Cuánto produce UNA tanda. Si te salen 2 litros de bechamel, poné 2000 (ml).") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
