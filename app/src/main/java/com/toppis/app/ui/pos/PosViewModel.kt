@@ -7,7 +7,9 @@ import com.toppis.app.data.models.Comprobante
 import com.toppis.app.data.db.entities.MetodoPago
 import com.toppis.app.data.db.entities.ZonaEnvio
 import com.toppis.app.data.repository.ComandaRepository
+import com.toppis.app.data.repository.ComponenteReceta
 import com.toppis.app.data.repository.ComprobanteRepository
+import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.repository.LineaComanda
 import com.toppis.app.data.repository.LineaVenta
 import com.toppis.app.data.repository.MenuRepository
@@ -28,19 +30,44 @@ data class ItemCarritoMenu(
     val cantidad: Int,
     val salsas: List<OpcionPos> = emptyList(),
     val modificadores: List<ModificadorConCosto> = emptyList(),
+    val ajustes: List<AjusteReceta> = emptyList(),
     val precioOverride: Double? = null,
     val promocionId: Int? = null,
     val promoNombre: String? = null
 ) {
     /** Precio unitario: override de promo si existe, si no precio + deltas de modificadores. */
     val precioUnitario: Double get() = precioOverride ?: (itemMenu.precio + modificadores.sumOf { it.deltaPrecio })
-    /** Costo teórico unitario incluyendo modificadores y salsas. */
-    val costoUnitario: Double get() = itemMenu.costoTeorico + modificadores.sumOf { it.deltaCosto } + salsas.sumOf { it.costo }
+    /** Costo teórico unitario incluyendo modificadores, salsas y ajustes (quitar/cambiar). */
+    val costoUnitario: Double get() = itemMenu.costoTeorico +
+        modificadores.sumOf { it.deltaCosto } +
+        salsas.sumOf { it.costo } +
+        ajustes.sumOf { it.deltaCosto }
     val subtotal: Double get() = precioUnitario * cantidad
-    /** Texto legible de modificadores (para comanda y guardado). */
-    val modificadoresTexto: String get() = modificadores.joinToString(", ") { it.modificador.nombre }
+    /** Texto legible de modificadores + ajustes (para comanda y guardado). */
+    val modificadoresTexto: String get() =
+        (modificadores.map { it.modificador.nombre } + ajustes.map { it.descripcion }).joinToString(", ")
     /** Texto legible de salsas. */
     val salsasTexto: String get() = salsas.joinToString(", ") { it.nombre }
+}
+
+/** Tipo de ajuste sobre la receta, hecho en el POS. */
+enum class TipoAjuste { QUITAR, CAMBIAR }
+
+/** Ajuste a la receta de un plato hecho al momento de la venta (quitar o cambiar un ingrediente). */
+data class AjusteReceta(
+    val tipo: TipoAjuste,
+    val original: ComponenteReceta,
+    val reemplazo: Articulo? = null,
+    val cantidadReemplazo: Double = 0.0
+) {
+    val deltaCosto: Double get() = when (tipo) {
+        TipoAjuste.QUITAR -> -original.costoLinea
+        TipoAjuste.CAMBIAR -> -original.costoLinea + (reemplazo?.costoBase ?: 0.0) * cantidadReemplazo
+    }
+    val descripcion: String get() = when (tipo) {
+        TipoAjuste.QUITAR -> "Sin ${original.nombre}"
+        TipoAjuste.CAMBIAR -> "${original.nombre} → ${reemplazo?.nombre ?: "?"}"
+    }
 }
 
 sealed class PosUiState {
@@ -176,6 +203,27 @@ class PosViewModel(
         }
     }
 
+    private val _articulosPos = MutableStateFlow<List<Articulo>>(emptyList())
+    val articulosPos: StateFlow<List<Articulo>> = _articulosPos.asStateFlow()
+
+    /** Carga la receta de un item (para editar quitar/cambiar en el POS). */
+    fun cargarReceta(itemMenuId: Int, callback: (List<ComponenteReceta>) -> Unit) {
+        viewModelScope.launch {
+            if (_articulosPos.value.isEmpty()) _articulosPos.value = menuRepository.getArticulos()
+            callback(menuRepository.getComponentesReceta(itemMenuId))
+        }
+    }
+
+    /** Aplica una lista de ajustes (quitar/cambiar) a una línea del carrito. */
+    fun aplicarAjustes(index: Int, ajustes: List<AjusteReceta>) {
+        val current = _carrito.value.toMutableList()
+        if (index in current.indices) {
+            current[index] = current[index].copy(ajustes = ajustes)
+            _carrito.value = current
+            calcularTotal(current)
+        }
+    }
+
     fun agregarAlCarrito(
         itemMenu: ItemMenu,
         salsas: List<OpcionPos>,
@@ -255,6 +303,29 @@ class PosViewModel(
                             accion = "AGREGAR"
                         )
                     }
+                    // Ajustes quitar/cambiar: QUITAR devuelve el original; CAMBIAR agrega el reemplazo
+                    val ajustesComp = item.ajustes.flatMap { aj ->
+                        val devolver = com.toppis.app.data.repository.ModComponenteVenta(
+                            tipo = aj.original.recetaMenu.tipoComponente.name,
+                            componenteId = aj.original.recetaMenu.componenteId,
+                            cantidadBase = aj.original.recetaMenu.cantidadBase,
+                            accion = "QUITAR"
+                        )
+                        when (aj.tipo) {
+                            com.toppis.app.ui.pos.TipoAjuste.QUITAR -> listOf(devolver)
+                            com.toppis.app.ui.pos.TipoAjuste.CAMBIAR -> listOfNotNull(
+                                devolver,
+                                aj.reemplazo?.let {
+                                    com.toppis.app.data.repository.ModComponenteVenta(
+                                        tipo = "ARTICULO",
+                                        componenteId = it.id,
+                                        cantidadBase = aj.cantidadReemplazo,
+                                        accion = "AGREGAR"
+                                    )
+                                }
+                            )
+                        }
+                    }
                     LineaVenta(
                         itemMenuId = item.itemMenu.id,
                         cantidad = item.cantidad,
@@ -264,7 +335,7 @@ class PosViewModel(
                         costoUnitario = item.costoUnitario,
                         modificadores = item.modificadoresTexto,
                         promocionId = item.promocionId,
-                        modsComponentes = modsComp + salsasComp
+                        modsComponentes = modsComp + salsasComp + ajustesComp
                     )
                 }
 

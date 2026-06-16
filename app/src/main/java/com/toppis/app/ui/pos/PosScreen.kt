@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Share
@@ -45,6 +46,7 @@ fun PosScreen(
     val itemsMenu by posViewModel.itemsMenu.collectAsState()
     val salsasDisponibles by posViewModel.salsasDisponibles.collectAsState()
     val promociones by posViewModel.promociones.collectAsState()
+    val articulosPos by posViewModel.articulosPos.collectAsState()
     val carrito by posViewModel.carrito.collectAsState()
     val total by posViewModel.totalCarrito.collectAsState()
     val uiState by posViewModel.uiState.collectAsState()
@@ -55,6 +57,8 @@ fun PosScreen(
     var itemSeleccionado by remember { mutableStateOf<ItemMenu?>(null) }
     var modificadoresItem by remember { mutableStateOf<List<com.toppis.app.data.repository.ModificadorConCosto>>(emptyList()) }
     var showPromosDialog by remember { mutableStateOf(false) }
+    var lineaEditandoIndex by remember { mutableStateOf<Int?>(null) }
+    var recetaLinea by remember { mutableStateOf<List<com.toppis.app.data.repository.ComponenteReceta>>(emptyList()) }
     var showPostVentaDialog by remember { mutableStateOf<PosUiState.VentaExitosa?>(null) }
 
     LaunchedEffect(uiState) {
@@ -149,7 +153,12 @@ fun PosScreen(
                             ItemCarritoMenuCard(
                                 item = item,
                                 onCantidadChange = { qty -> posViewModel.cambiarCantidad(index, qty) },
-                                onDelete = { posViewModel.quitarDelCarrito(index) }
+                                onDelete = { posViewModel.quitarDelCarrito(index) },
+                                onEdit = {
+                                    recetaLinea = emptyList()
+                                    posViewModel.cargarReceta(item.itemMenu.id) { recetaLinea = it }
+                                    lineaEditandoIndex = index
+                                }
                             )
                         }
                     }
@@ -204,6 +213,21 @@ fun PosScreen(
             onConfirm = { salsasSeleccionadas, modsSeleccionados ->
                 posViewModel.agregarAlCarrito(itemSeleccionado!!, salsasSeleccionadas, modsSeleccionados)
                 itemSeleccionado = null
+            }
+        )
+    }
+
+    // ── Diálogo editar receta de la línea (quitar / cambiar) ─────────────────────
+    val idxEdit = lineaEditandoIndex
+    if (idxEdit != null && idxEdit in carrito.indices) {
+        EditarRecetaLineaDialog(
+            item = carrito[idxEdit],
+            receta = recetaLinea,
+            articulos = articulosPos,
+            onDismiss = { lineaEditandoIndex = null },
+            onConfirm = { ajustes ->
+                posViewModel.aplicarAjustes(idxEdit, ajustes)
+                lineaEditandoIndex = null
             }
         )
     }
@@ -321,7 +345,8 @@ private fun ItemMenuCard(item: ItemMenu, onAdd: () -> Unit) {
 private fun ItemCarritoMenuCard(
     item: ItemCarritoMenu,
     onCantidadChange: (Int) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     val formatter = DecimalFormat("$#,##0")
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -349,12 +374,12 @@ private fun ItemCarritoMenuCard(
                             maxLines = 1
                         )
                     }
-                    if (item.modificadores.isNotEmpty()) {
+                    if (item.modificadoresTexto.isNotBlank()) {
                         Text(
                             item.modificadoresTexto,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.tertiary,
-                            maxLines = 1
+                            maxLines = 2
                         )
                     }
                     if (item.salsas.isNotEmpty()) {
@@ -366,7 +391,17 @@ private fun ItemCarritoMenuCard(
                         )
                     }
                 }
-                
+
+                if (item.promocionId == null) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            "Editar receta",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Filled.Delete,
@@ -803,4 +838,127 @@ private fun PostVentaDialog(
             }
         }
     )
+}
+
+// ── Editar receta de la línea (quitar / cambiar ingredientes) ─────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditarRecetaLineaDialog(
+    item: ItemCarritoMenu,
+    receta: List<com.toppis.app.data.repository.ComponenteReceta>,
+    articulos: List<com.toppis.app.data.models.Articulo>,
+    onDismiss: () -> Unit,
+    onConfirm: (List<com.toppis.app.ui.pos.AjusteReceta>) -> Unit
+) {
+    // Estado por componente: null = sin cambio, QUITAR, o CAMBIAR(reemplazo)
+    val ajustes = remember { mutableStateMapOf<Int, com.toppis.app.ui.pos.AjusteReceta>() }
+
+    // Prefill con los ajustes actuales de la línea
+    LaunchedEffect(receta) {
+        ajustes.clear()
+        item.ajustes.forEach { aj ->
+            ajustes[aj.original.recetaMenu.id] = aj
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar: ${item.itemMenu.nombre}") },
+        text = {
+            if (receta.isEmpty()) {
+                Text("Este plato no tiene receta cargada.", color = MaterialTheme.colorScheme.outline)
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item { Text("Tocá un ingrediente para quitarlo o cambiarlo:", style = MaterialTheme.typography.labelMedium) }
+                    items(receta) { comp ->
+                        ComponenteEditableRow(
+                            comp = comp,
+                            articulos = articulos,
+                            ajusteActual = ajustes[comp.recetaMenu.id],
+                            onQuitarToggle = {
+                                val key = comp.recetaMenu.id
+                                if (ajustes[key]?.tipo == com.toppis.app.ui.pos.TipoAjuste.QUITAR) {
+                                    ajustes.remove(key)
+                                } else {
+                                    ajustes[key] = com.toppis.app.ui.pos.AjusteReceta(
+                                        tipo = com.toppis.app.ui.pos.TipoAjuste.QUITAR,
+                                        original = comp
+                                    )
+                                }
+                            },
+                            onCambiar = { articuloNuevo ->
+                                val key = comp.recetaMenu.id
+                                ajustes[key] = com.toppis.app.ui.pos.AjusteReceta(
+                                    tipo = com.toppis.app.ui.pos.TipoAjuste.CAMBIAR,
+                                    original = comp,
+                                    reemplazo = articuloNuevo,
+                                    cantidadReemplazo = comp.recetaMenu.cantidadBase
+                                )
+                            },
+                            onLimpiar = { ajustes.remove(comp.recetaMenu.id) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(ajustes.values.toList()) }) { Text("Aplicar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ComponenteEditableRow(
+    comp: com.toppis.app.data.repository.ComponenteReceta,
+    articulos: List<com.toppis.app.data.models.Articulo>,
+    ajusteActual: com.toppis.app.ui.pos.AjusteReceta?,
+    onQuitarToggle: () -> Unit,
+    onCambiar: (com.toppis.app.data.models.Articulo) -> Unit,
+    onLimpiar: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val num = DecimalFormat("#,##0.##")
+
+    val estado = when (ajusteActual?.tipo) {
+        com.toppis.app.ui.pos.TipoAjuste.QUITAR -> "Sin ${comp.nombre}"
+        com.toppis.app.ui.pos.TipoAjuste.CAMBIAR -> "→ ${ajusteActual.reemplazo?.nombre}"
+        null -> null
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("${comp.nombre} · ${num.format(comp.recetaMenu.cantidadBase)} ${comp.unidad}",
+                        style = MaterialTheme.typography.bodyMedium)
+                    if (estado != null) {
+                        Text(estado, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                }
+                if (ajusteActual != null) {
+                    TextButton(onClick = onLimpiar) { Text("Deshacer") }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val quitado = ajusteActual?.tipo == com.toppis.app.ui.pos.TipoAjuste.QUITAR
+                OutlinedButton(onClick = onQuitarToggle) {
+                    Text(if (quitado) "Quitado ✓" else "Quitar")
+                }
+                Box {
+                    OutlinedButton(onClick = { expanded = true }) { Text("Cambiar por…") }
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        articulos.forEach { a ->
+                            DropdownMenuItem(
+                                text = { Text("${a.nombre} (${a.unidadBase})") },
+                                onClick = { onCambiar(a); expanded = false }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
