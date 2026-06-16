@@ -50,7 +50,8 @@ fun PosScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCheckoutDialog by remember { mutableStateOf(false) }
-    var showSalsaDialog by remember { mutableStateOf<ItemMenu?>(null) }
+    var itemSeleccionado by remember { mutableStateOf<ItemMenu?>(null) }
+    var modificadoresItem by remember { mutableStateOf<List<com.toppis.app.data.repository.ModificadorConCosto>>(emptyList()) }
     var showPostVentaDialog by remember { mutableStateOf<PosUiState.VentaExitosa?>(null) }
 
     LaunchedEffect(uiState) {
@@ -97,11 +98,9 @@ fun PosScreen(
                     ) {
                         items(itemsMenu) { item ->
                             ItemMenuCard(item) {
-                                if (salsasDisponibles.isNotEmpty()) {
-                                    showSalsaDialog = item
-                                } else {
-                                    posViewModel.agregarAlCarrito(item, emptyList())
-                                }
+                                modificadoresItem = emptyList()
+                                posViewModel.cargarModificadores(item.id) { modificadoresItem = it }
+                                itemSeleccionado = item
                             }
                         }
                     }
@@ -186,15 +185,16 @@ fun PosScreen(
         )
     }
 
-    // ── Diálogo selector de salsas ───────────────────────────────────────────────
-    if (showSalsaDialog != null) {
-        SalsaSelectorDialog(
-            itemMenu = showSalsaDialog!!,
+    // ── Diálogo selector de salsas + modificadores ───────────────────────────────
+    if (itemSeleccionado != null) {
+        ItemOpcionesDialog(
+            itemMenu = itemSeleccionado!!,
             salsas = salsasDisponibles,
-            onDismiss = { showSalsaDialog = null },
-            onConfirm = { salsasSeleccionadas ->
-                posViewModel.agregarAlCarrito(showSalsaDialog!!, salsasSeleccionadas)
-                showSalsaDialog = null
+            modificadores = modificadoresItem,
+            onDismiss = { itemSeleccionado = null },
+            onConfirm = { salsasSeleccionadas, modsSeleccionados ->
+                posViewModel.agregarAlCarrito(itemSeleccionado!!, salsasSeleccionadas, modsSeleccionados)
+                itemSeleccionado = null
             }
         )
     }
@@ -300,6 +300,14 @@ private fun ItemCarritoMenuCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    if (item.modificadores.isNotEmpty()) {
+                        Text(
+                            item.modificadoresTexto,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            maxLines = 1
+                        )
+                    }
                     if (item.salsas.isNotEmpty()) {
                         Text(
                             item.salsas.joinToString(", "),
@@ -395,55 +403,96 @@ private fun ItemCarritoMenuRow(
 // ── Selector de salsas ───────────────────────────────────────────────────────────
 
 @Composable
-private fun SalsaSelectorDialog(
+private fun ItemOpcionesDialog(
     itemMenu: ItemMenu,
     salsas: List<String>,
+    modificadores: List<com.toppis.app.data.repository.ModificadorConCosto>,
     onDismiss: () -> Unit,
-    onConfirm: (List<String>) -> Unit
+    onConfirm: (salsas: List<String>, modificadores: List<com.toppis.app.data.repository.ModificadorConCosto>) -> Unit
 ) {
     val maxSalsas = 5
-    val seleccionadas = remember { mutableStateListOf<String>() }
+    val salsasSeleccionadas = remember { mutableStateListOf<String>() }
+    val modsSeleccionados = remember { mutableStateListOf<com.toppis.app.data.repository.ModificadorConCosto>() }
+    val money = java.text.DecimalFormat("$#,##0")
+
+    val precioFinal = itemMenu.precio + modsSeleccionados.sumOf { it.deltaPrecio }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Salsas para ${itemMenu.nombre}") },
+        title = { Text(itemMenu.nombre) },
         text = {
-            Column {
-                Text(
-                    "Seleccioná hasta $maxSalsas salsas (${seleccionadas.size}/$maxSalsas)",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                salsas.forEach { salsa ->
-                    val isSelected = salsa in seleccionadas
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = {
-                                if (isSelected) {
-                                    seleccionadas.remove(salsa)
-                                } else if (seleccionadas.size < maxSalsas) {
-                                    seleccionadas.add(salsa)
-                                }
-                            }
-                        )
-                        Text(salsa, modifier = Modifier.weight(1f))
+            androidx.compose.foundation.lazy.LazyColumn {
+                if (modificadores.isNotEmpty()) {
+                    item {
+                        Text("Modificadores", style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.height(4.dp))
                     }
+                    items(modificadores) { mod ->
+                        val isSelected = mod in modsSeleccionados
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    if (isSelected) modsSeleccionados.remove(mod) else modsSeleccionados.add(mod)
+                                }
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(mod.modificador.nombre)
+                                val signo = if (mod.deltaPrecio >= 0) "+" else "-"
+                                Text(
+                                    "${mod.modificador.tipo.label} · $signo${money.format(kotlin.math.abs(mod.deltaPrecio))}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    }
+                    item { HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp)) }
+                }
+
+                if (salsas.isNotEmpty()) {
+                    item {
+                        Text("Salsas (${salsasSeleccionadas.size}/$maxSalsas)", style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    items(salsas) { salsa ->
+                        val isSelected = salsa in salsasSeleccionadas
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    if (isSelected) salsasSeleccionadas.remove(salsa)
+                                    else if (salsasSeleccionadas.size < maxSalsas) salsasSeleccionadas.add(salsa)
+                                }
+                            )
+                            Text(salsa, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+
+                if (salsas.isEmpty() && modificadores.isEmpty()) {
+                    item { Text("Sin opciones. Se agrega directo.", color = MaterialTheme.colorScheme.outline) }
+                }
+
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Precio: ${money.format(precioFinal)}", style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(seleccionadas.toList()) }) {
+            TextButton(onClick = { onConfirm(salsasSeleccionadas.toList(), modsSeleccionados.toList()) }) {
                 Text("Agregar al carrito")
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
 

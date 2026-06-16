@@ -11,6 +11,8 @@ import com.toppis.app.data.repository.ComprobanteRepository
 import com.toppis.app.data.repository.LineaComanda
 import com.toppis.app.data.repository.LineaVenta
 import com.toppis.app.data.repository.MenuRepository
+import com.toppis.app.data.repository.ModificadorConCosto
+import com.toppis.app.data.repository.ModificadorRepository
 import com.toppis.app.data.repository.SobreRepository
 import com.toppis.app.data.repository.VentaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,9 +23,16 @@ import kotlinx.coroutines.launch
 data class ItemCarritoMenu(
     val itemMenu: ItemMenu,
     val cantidad: Int,
-    val salsas: List<String> = emptyList()
+    val salsas: List<String> = emptyList(),
+    val modificadores: List<ModificadorConCosto> = emptyList()
 ) {
-    val subtotal: Double get() = itemMenu.precio * cantidad
+    /** Precio unitario incluyendo deltas de modificadores. */
+    val precioUnitario: Double get() = itemMenu.precio + modificadores.sumOf { it.deltaPrecio }
+    /** Costo teórico unitario incluyendo deltas de costo de modificadores. */
+    val costoUnitario: Double get() = itemMenu.costoTeorico + modificadores.sumOf { it.deltaCosto }
+    val subtotal: Double get() = precioUnitario * cantidad
+    /** Texto legible de modificadores (para comanda y guardado). */
+    val modificadoresTexto: String get() = modificadores.joinToString(", ") { it.modificador.nombre }
 }
 
 sealed class PosUiState {
@@ -45,7 +54,8 @@ class PosViewModel(
     private val sobreRepository: SobreRepository,
     private val menuRepository: MenuRepository,
     private val comandaRepository: ComandaRepository,
-    private val comprobanteRepository: ComprobanteRepository
+    private val comprobanteRepository: ComprobanteRepository,
+    private val modificadorRepository: ModificadorRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PosUiState>(PosUiState.Idle)
@@ -107,16 +117,30 @@ class PosViewModel(
         _totalCarrito.value = items.sumOf { it.subtotal }
     }
 
-    fun agregarAlCarrito(itemMenu: ItemMenu, salsas: List<String>) {
+    /** Carga los modificadores disponibles (con costo) para un item del menú. */
+    fun cargarModificadores(itemMenuId: Int, callback: (List<ModificadorConCosto>) -> Unit) {
+        viewModelScope.launch {
+            callback(modificadorRepository.getModificadoresConCosto(itemMenuId))
+        }
+    }
+
+    fun agregarAlCarrito(
+        itemMenu: ItemMenu,
+        salsas: List<String>,
+        modificadores: List<ModificadorConCosto> = emptyList()
+    ) {
         val current = _carrito.value.toMutableList()
-        // Si el mismo item con las mismas salsas ya existe, incrementar cantidad
+        // Mismo item + mismas salsas + mismos modificadores => incrementar cantidad
+        val modIds = modificadores.map { it.modificador.id }.sorted()
         val index = current.indexOfFirst {
-            it.itemMenu.id == itemMenu.id && it.salsas == salsas
+            it.itemMenu.id == itemMenu.id &&
+                it.salsas == salsas &&
+                it.modificadores.map { m -> m.modificador.id }.sorted() == modIds
         }
         if (index != -1) {
             current[index] = current[index].copy(cantidad = current[index].cantidad + 1)
         } else {
-            current.add(ItemCarritoMenu(itemMenu, 1, salsas))
+            current.add(ItemCarritoMenu(itemMenu, 1, salsas, modificadores))
         }
         _carrito.value = current
         calcularTotal(current)
@@ -162,22 +186,26 @@ class PosViewModel(
                     LineaVenta(
                         itemMenuId = item.itemMenu.id,
                         cantidad = item.cantidad,
-                        precioUnitario = item.itemMenu.precio,
+                        precioUnitario = item.precioUnitario,
                         subtotal = item.subtotal,
                         salsas = item.salsas.joinToString(", "),
-                        costoUnitario = item.itemMenu.costoTeorico,
-                        modificadores = "",
+                        costoUnitario = item.costoUnitario,
+                        modificadores = item.modificadoresTexto,
                         promocionId = null
                     )
                 }
 
-                // Líneas para construir textos (con nombre)
+                // Líneas para construir textos (con nombre). Modificadores se anexan al detalle.
                 val lineasComanda = carritoActual.map { item ->
+                    val detalleExtra = listOfNotNull(
+                        item.modificadoresTexto.takeIf { it.isNotBlank() },
+                        item.salsas.joinToString(", ").takeIf { it.isNotBlank() }
+                    ).joinToString(" · ")
                     LineaComanda(
                         nombre = item.itemMenu.nombre,
                         cantidad = item.cantidad,
                         subtotal = item.subtotal,
-                        salsas = item.salsas.joinToString(", ")
+                        salsas = detalleExtra
                     )
                 }
 
