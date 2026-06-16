@@ -76,6 +76,9 @@ class PosViewModel(
     private val _salsasDisponibles = MutableStateFlow<List<OpcionPos>>(emptyList())
     val salsasDisponibles: StateFlow<List<OpcionPos>> = _salsasDisponibles.asStateFlow()
 
+    private val _promociones = MutableStateFlow<List<Promocion>>(emptyList())
+    val promociones: StateFlow<List<Promocion>> = _promociones.asStateFlow()
+
     // Comprobante emitido tras la venta (Fase 2A)
     private val _comprobante = MutableStateFlow<Comprobante?>(null)
     val comprobante: StateFlow<Comprobante?> = _comprobante.asStateFlow()
@@ -117,9 +120,6 @@ class PosViewModel(
             _salsasDisponibles.value = menuRepository.getOpcionesPos()
         }
     }
-
-    private val _promociones = MutableStateFlow<List<Promocion>>(emptyList())
-    val promociones: StateFlow<List<Promocion>> = _promociones.asStateFlow()
 
     fun refrescarPromociones() {
         viewModelScope.launch {
