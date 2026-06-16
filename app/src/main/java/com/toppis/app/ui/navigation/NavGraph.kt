@@ -65,6 +65,9 @@ import com.toppis.app.ui.foodcost.FoodCostScreen
 import com.toppis.app.ui.mermas.MermaViewModel
 import com.toppis.app.ui.mermas.MermaViewModelFactory
 import com.toppis.app.ui.mermas.MermasScreen
+import com.toppis.app.ui.conteos.ConteoViewModel
+import com.toppis.app.ui.conteos.ConteoViewModelFactory
+import com.toppis.app.ui.conteos.ConteosScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -88,6 +91,7 @@ fun NavGraph(
     papaViewModelFactory: PapaRendimientoViewModelFactory,
     foodCostViewModelFactory: FoodCostViewModelFactory,
     mermaViewModelFactory: MermaViewModelFactory,
+    conteoViewModelFactory: ConteoViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -271,6 +275,11 @@ fun NavGraph(
                     val vm: MermaViewModel = viewModel(factory = mermaViewModelFactory)
                     MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("conteos") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: ConteoViewModel = viewModel(factory = conteoViewModelFactory)
+                    ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -422,6 +431,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: MermaViewModel = viewModel(factory = mermaViewModelFactory)
                 MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("conteos") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: ConteoViewModel = viewModel(factory = conteoViewModelFactory)
+                ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

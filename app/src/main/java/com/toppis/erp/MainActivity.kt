@@ -84,6 +84,9 @@ class MainActivity : ComponentActivity() {
         val mermaRepo = com.toppis.app.data.repository.MermaRepository()
         val mermaFactory = com.toppis.app.ui.mermas.MermaViewModelFactory(mermaRepo)
 
+        val conteoRepo = com.toppis.app.data.repository.ConteoRepository()
+        val conteoFactory = com.toppis.app.ui.conteos.ConteoViewModelFactory(conteoRepo)
+
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
         val authFactory = AuthViewModelFactory(authRepo)
@@ -125,6 +128,7 @@ class MainActivity : ComponentActivity() {
                         papaViewModelFactory = papaFactory,
                         foodCostViewModelFactory = foodCostFactory,
                         mermaViewModelFactory = mermaFactory,
+                        conteoViewModelFactory = conteoFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )

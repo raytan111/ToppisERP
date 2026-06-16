@@ -245,6 +245,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Inventory,
+                            label = "Conteo de Inventario",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("conteos") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {
