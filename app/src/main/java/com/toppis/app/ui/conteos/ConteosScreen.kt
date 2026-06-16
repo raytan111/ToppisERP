@@ -32,7 +32,7 @@ fun ConteosScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    var showNuevo by remember { mutableStateOf(false) }
+    var modoNuevo by remember { mutableStateOf(false) }
     var aEliminar by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(uiState) {
@@ -41,16 +41,34 @@ fun ConteosScreen(
                 snackbarHostState.showSnackbar((uiState as ConteoUiState.Error).message)
                 viewModel.resetState()
             }
-            ConteoUiState.Success -> { snackbarHostState.showSnackbar("Conteo guardado"); viewModel.resetState() }
+            ConteoUiState.Success -> {
+                snackbarHostState.showSnackbar("Conteo guardado")
+                modoNuevo = false
+                viewModel.resetState()
+            }
             else -> {}
         }
     }
 
+    // ── Pantalla completa: NUEVO CONTEO ──────────────────────────────────────
+    if (modoNuevo) {
+        NuevoConteoView(
+            articulos = articulos,
+            snackbarHostState = snackbarHostState,
+            onCancelar = { modoNuevo = false },
+            onGuardar = { lineas, nota, cerrar ->
+                viewModel.guardarConteo(lineas, nota, usuarioId, cerrar)
+            }
+        )
+        return
+    }
+
+    // ── Pantalla: HISTORIAL DE CONTEOS ───────────────────────────────────────
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { ToppisTopBar(titulo = "Conteo de Inventario", onBack = onNavigateBack) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.refrescarArticulos(); showNuevo = true }) {
+            FloatingActionButton(onClick = { viewModel.refrescarArticulos(); modoNuevo = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Nuevo conteo")
             }
         }
@@ -72,17 +90,6 @@ fun ConteosScreen(
                 }
             }
         }
-    }
-
-    if (showNuevo) {
-        NuevoConteoDialog(
-            articulos = articulos,
-            onDismiss = { showNuevo = false },
-            onConfirm = { lineas, nota, cerrar ->
-                viewModel.guardarConteo(lineas, nota, usuarioId, cerrar)
-                showNuevo = false
-            }
-        )
     }
 
     aEliminar?.let { id ->
@@ -116,12 +123,12 @@ private fun ConteoCard(c: Conteo, onEliminar: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NuevoConteoDialog(
+private fun NuevoConteoView(
     articulos: List<Articulo>,
-    onDismiss: () -> Unit,
-    onConfirm: (lineas: List<LineaConteo>, nota: String, cerrar: Boolean) -> Unit
+    snackbarHostState: SnackbarHostState,
+    onCancelar: () -> Unit,
+    onGuardar: (lineas: List<LineaConteo>, nota: String, cerrar: Boolean) -> Unit
 ) {
-    // Estado: texto del stock contado por artículo (en unidad de compra), clave = id
     val contados = remember { mutableStateMapOf<Int, String>() }
     var nota by remember { mutableStateOf("") }
     var cerrar by remember { mutableStateOf(true) }
@@ -129,68 +136,81 @@ private fun NuevoConteoDialog(
 
     fun unidadDe(a: Articulo): UnidadMedida? = UnidadMedida.porAbreviatura(a.unidadCompra)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Nuevo conteo") },
-        text = {
-            if (articulos.isEmpty()) {
+    fun construirLineas(): List<LineaConteo> = articulos.mapNotNull { a ->
+        val txt = contados[a.id]?.replace(",", ".")?.toDoubleOrNull() ?: return@mapNotNull null
+        val factor = unidadDe(a)?.factorBase ?: 1.0
+        LineaConteo(articulo = a, stockSistema = a.stockBase, stockContado = txt * factor)
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = { ToppisTopBar(titulo = "Nuevo conteo", onBack = onCancelar) },
+        bottomBar = {
+            Surface(tonalElevation = 3.dp) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = cerrar, onCheckedChange = { cerrar = it })
+                        Text("Cerrar y ajustar stock al valor contado", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Button(
+                        onClick = { onGuardar(construirLineas(), nota, cerrar) },
+                        enabled = articulos.isNotEmpty() && contados.values.any { it.isNotBlank() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("GUARDAR CONTEO") }
+                }
+            }
+        }
+    ) { padding ->
+        if (articulos.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text("No hay artículos para contar.", color = MaterialTheme.colorScheme.outline)
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        OutlinedTextField(
-                            value = nota, onValueChange = { nota = it },
-                            label = { Text("Nota (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    item {
-                        Text("Ingresá el stock real contado de cada artículo (en su unidad de compra):",
+            }
+            return@Scaffold
+        }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(vertical = 12.dp)
+        ) {
+            item {
+                OutlinedTextField(
+                    value = nota, onValueChange = { nota = it },
+                    label = { Text("Nota (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                Text("Ingresá el stock real contado de cada artículo (en su unidad de compra):",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            }
+            items(articulos) { a ->
+                val unidad = unidadDe(a)
+                val factor = unidad?.factorBase ?: 1.0
+                val sistemaEnCompra = if (factor > 0) a.stockBase / factor else a.stockBase
+                val unidadLabel = unidad?.abreviatura ?: a.unidadBase
+                val contadoTxt = contados[a.id]
+                val contadoVal = contadoTxt?.replace(",", ".")?.toDoubleOrNull()
+                val dif = if (contadoVal != null) contadoVal - sistemaEnCompra else null
+
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(a.nombre, style = MaterialTheme.typography.titleSmall)
+                        Text("Sistema: ${num.format(sistemaEnCompra)} $unidadLabel",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                    }
-                    items(articulos) { a ->
-                        val unidad = unidadDe(a)
-                        val factor = unidad?.factorBase ?: 1.0
-                        val sistemaEnCompra = if (factor > 0) a.stockBase / factor else a.stockBase
-                        val unidadLabel = unidad?.abreviatura ?: a.unidadBase
-                        Column {
-                            Text(a.nombre, style = MaterialTheme.typography.bodyMedium)
-                            Text("Sistema: ${num.format(sistemaEnCompra)} $unidadLabel",
-                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                            OutlinedTextField(
-                                value = contados[a.id] ?: "",
-                                onValueChange = { contados[a.id] = it },
-                                label = { Text("Contado ($unidadLabel)") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                singleLine = true, modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                    item {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = cerrar, onCheckedChange = { cerrar = it })
-                            Text("Cerrar y ajustar stock al valor contado")
+                        OutlinedTextField(
+                            value = contadoTxt ?: "",
+                            onValueChange = { contados[a.id] = it },
+                            label = { Text("Contado ($unidadLabel)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                        if (dif != null && dif != 0.0) {
+                            val difColor = if (dif < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                            Text("Diferencia: ${if (dif > 0) "+" else ""}${num.format(dif)} $unidadLabel",
+                                style = MaterialTheme.typography.labelMedium, color = difColor)
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val lineas = articulos.mapNotNull { a ->
-                        val txt = contados[a.id]?.replace(",", ".")?.toDoubleOrNull() ?: return@mapNotNull null
-                        val factor = unidadDe(a)?.factorBase ?: 1.0
-                        LineaConteo(
-                            articulo = a,
-                            stockSistema = a.stockBase,
-                            stockContado = txt * factor
-                        )
-                    }
-                    onConfirm(lineas, nota, cerrar)
-                },
-                enabled = articulos.isNotEmpty() && contados.values.any { it.isNotBlank() }
-            ) { Text("Guardar") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
-    )
+        }
+    }
 }
