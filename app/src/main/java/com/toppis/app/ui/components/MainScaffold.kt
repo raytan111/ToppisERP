@@ -236,6 +236,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.DeleteSweep,
+                            label = "Mermas",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("mermas") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

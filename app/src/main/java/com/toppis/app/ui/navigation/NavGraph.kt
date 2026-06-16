@@ -62,6 +62,9 @@ import com.toppis.app.ui.papa.PapaRendimientoScreen
 import com.toppis.app.ui.foodcost.FoodCostViewModel
 import com.toppis.app.ui.foodcost.FoodCostViewModelFactory
 import com.toppis.app.ui.foodcost.FoodCostScreen
+import com.toppis.app.ui.mermas.MermaViewModel
+import com.toppis.app.ui.mermas.MermaViewModelFactory
+import com.toppis.app.ui.mermas.MermasScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -84,6 +87,7 @@ fun NavGraph(
     promocionViewModelFactory: PromocionViewModelFactory,
     papaViewModelFactory: PapaRendimientoViewModelFactory,
     foodCostViewModelFactory: FoodCostViewModelFactory,
+    mermaViewModelFactory: MermaViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -262,6 +266,11 @@ fun NavGraph(
                     val vm: FoodCostViewModel = viewModel(factory = foodCostViewModelFactory)
                     FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("mermas") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: MermaViewModel = viewModel(factory = mermaViewModelFactory)
+                    MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -408,6 +417,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: FoodCostViewModel = viewModel(factory = foodCostViewModelFactory)
                 FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("mermas") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: MermaViewModel = viewModel(factory = mermaViewModelFactory)
+                MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

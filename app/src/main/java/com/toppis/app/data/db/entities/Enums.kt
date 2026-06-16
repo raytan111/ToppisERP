@@ -74,6 +74,18 @@ enum class TipoPromocion(val label: String) {
     DESCUENTO_PORCENTAJE("Descuento %")
 }
 
+/** Motivo de merma (pérdida de stock). */
+@Serializable
+enum class MotivoMerma(val label: String) {
+    VENCIDO("Vencido"),
+    ESTROPEADO("Estropeado"),
+    VINO_MALO("Vino malo"),
+    ERROR_COCINA("Error de cocina"),
+    CORTESIA("Cortesía/regalo"),
+    ROBO("Robo"),
+    OTRO("Otro")
+}
+
 @Serializable
 enum class EstadoComanda { PENDIENTE, ENTREGADA }
 
