@@ -2,9 +2,9 @@ package com.toppis.app.ui.inventario
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.toppis.app.data.models.Ingrediente
-import com.toppis.app.data.models.Insumo
-import com.toppis.app.data.repository.InventarioRepository
+import com.toppis.app.data.db.entities.DimensionUnidad
+import com.toppis.app.data.models.Articulo
+import com.toppis.app.data.repository.ArticuloRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,83 +16,77 @@ sealed class InventarioUiState {
     data class Error(val message: String) : InventarioUiState()
 }
 
-class InventarioViewModel(private val repository: InventarioRepository) : ViewModel() {
+/**
+ * ViewModel del módulo de Inventario (Artículos unificados).
+ */
+class InventarioViewModel(private val repository: ArticuloRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<InventarioUiState>(InventarioUiState.Success)
     val uiState: StateFlow<InventarioUiState> = _uiState.asStateFlow()
 
-    private val _insumos = MutableStateFlow<List<Insumo>>(emptyList())
-    val insumos: StateFlow<List<Insumo>> = _insumos.asStateFlow()
-
-    private val _ingredientes = MutableStateFlow<List<Ingrediente>>(emptyList())
-    val ingredientes: StateFlow<List<Ingrediente>> = _ingredientes.asStateFlow()
+    private val _articulos = MutableStateFlow<List<Articulo>>(emptyList())
+    val articulos: StateFlow<List<Articulo>> = _articulos.asStateFlow()
 
     init {
-        refrescarInsumos()
-        refrescarIngredientes()
-        // Observadores Realtime
+        refrescar()
         viewModelScope.launch {
-            repository.observeInsumos().collect { refrescarInsumos() }
-        }
-        viewModelScope.launch {
-            repository.observeIngredientes().collect { refrescarIngredientes() }
+            repository.observeArticulos().collect { refrescar() }
         }
     }
 
-    private fun refrescarInsumos() {
-        viewModelScope.launch { _insumos.value = repository.getInsumos() }
+    private fun refrescar() {
+        viewModelScope.launch { _articulos.value = repository.getArticulos() }
     }
 
-    private fun refrescarIngredientes() {
-        viewModelScope.launch { _ingredientes.value = repository.getIngredientes() }
-    }
-
-    fun crearInsumo(nombre: String, descripcion: String, precio: Double, unidadMedida: String, stockInicial: Int = 0) {
-        viewModelScope.launch {
-            _uiState.value = InventarioUiState.Loading
-            try {
-                repository.crearInsumo(nombre, descripcion, precio, unidadMedida, stockInicial)
-                refrescarInsumos()
-                _uiState.value = InventarioUiState.Success
-            } catch (e: Exception) {
-                _uiState.value = InventarioUiState.Error(e.message ?: "Error al crear insumo")
-            }
-        }
-    }
-
-    fun crearIngrediente(
+    fun crearArticulo(
         nombre: String,
-        unidadMedida: String,
-        stockActual: Double,
-        costoUnitario: Double,
-        costoCompra: Double = 0.0,
-        porcentajeMerma: Double = 0.0,
-        unidadCompra: String = "",
-        cantidadComprada: Double = 0.0,
-        cantidadAprovechable: Double = 0.0,
-        costoGramo: Double = 0.0
+        dimension: DimensionUnidad,
+        unidadCompra: String,
+        factorCompra: Double,
+        costoCompra: Double,
+        rendimiento: Double,
+        stockBase: Double,
+        parLevel: Double,
+        perecible: Boolean,
+        vidaUtilDias: Int,
+        esVendible: Boolean,
+        seleccionableEnPos: Boolean
     ) {
         viewModelScope.launch {
             _uiState.value = InventarioUiState.Loading
             try {
-                repository.crearIngrediente(
-                    nombre, unidadMedida, stockActual, costoUnitario,
-                    costoCompra, porcentajeMerma, unidadCompra, cantidadComprada, cantidadAprovechable, costoGramo
+                repository.crearArticulo(
+                    nombre, dimension, unidadCompra, factorCompra, costoCompra,
+                    rendimiento, stockBase, parLevel, perecible, vidaUtilDias,
+                    esVendible, seleccionableEnPos
                 )
-                refrescarIngredientes()
+                refrescar()
                 _uiState.value = InventarioUiState.Success
             } catch (e: Exception) {
-                _uiState.value = InventarioUiState.Error(e.message ?: "Error al crear ingrediente")
+                _uiState.value = InventarioUiState.Error(e.message ?: "Error al crear artículo")
             }
         }
     }
 
-    fun actualizarStock(ingredienteId: Int, nuevoStock: Double) {
+    fun editarArticulo(articulo: Articulo) {
         viewModelScope.launch {
             _uiState.value = InventarioUiState.Loading
             try {
-                repository.actualizarStockIngrediente(ingredienteId, nuevoStock)
-                refrescarIngredientes()
+                repository.actualizarArticulo(articulo)
+                refrescar()
+                _uiState.value = InventarioUiState.Success
+            } catch (e: Exception) {
+                _uiState.value = InventarioUiState.Error(e.message ?: "Error al editar artículo")
+            }
+        }
+    }
+
+    fun actualizarStock(articuloId: Int, nuevoStock: Double) {
+        viewModelScope.launch {
+            _uiState.value = InventarioUiState.Loading
+            try {
+                repository.actualizarStock(articuloId, nuevoStock)
+                refrescar()
                 _uiState.value = InventarioUiState.Success
             } catch (e: Exception) {
                 _uiState.value = InventarioUiState.Error(e.message ?: "Error al actualizar stock")
@@ -100,55 +94,20 @@ class InventarioViewModel(private val repository: InventarioRepository) : ViewMo
         }
     }
 
-    fun editarInsumo(insumo: Insumo) {
+    fun eliminarArticulo(articuloId: Int) {
         viewModelScope.launch {
             _uiState.value = InventarioUiState.Loading
             try {
-                repository.actualizarInsumo(insumo)
-                refrescarInsumos()
+                repository.eliminarArticulo(articuloId)
+                refrescar()
                 _uiState.value = InventarioUiState.Success
             } catch (e: Exception) {
-                _uiState.value = InventarioUiState.Error(e.message ?: "Error al editar insumo")
+                _uiState.value = InventarioUiState.Error(e.message ?: "Error al eliminar artículo")
             }
         }
     }
 
-    fun eliminarInsumo(insumoId: Int) {
-        viewModelScope.launch {
-            _uiState.value = InventarioUiState.Loading
-            try {
-                repository.eliminarInsumo(insumoId)
-                refrescarInsumos()
-                _uiState.value = InventarioUiState.Success
-            } catch (e: Exception) {
-                _uiState.value = InventarioUiState.Error(e.message ?: "Error al eliminar insumo")
-            }
-        }
-    }
-
-    fun editarIngrediente(ingrediente: Ingrediente) {
-        viewModelScope.launch {
-            _uiState.value = InventarioUiState.Loading
-            try {
-                repository.actualizarIngrediente(ingrediente)
-                refrescarIngredientes()
-                _uiState.value = InventarioUiState.Success
-            } catch (e: Exception) {
-                _uiState.value = InventarioUiState.Error(e.message ?: "Error al editar ingrediente")
-            }
-        }
-    }
-
-    fun eliminarIngrediente(ingredienteId: Int) {
-        viewModelScope.launch {
-            _uiState.value = InventarioUiState.Loading
-            try {
-                repository.eliminarIngrediente(ingredienteId)
-                refrescarIngredientes()
-                _uiState.value = InventarioUiState.Success
-            } catch (e: Exception) {
-                _uiState.value = InventarioUiState.Error(e.message ?: "Error al eliminar ingrediente")
-            }
-        }
+    fun resetState() {
+        _uiState.value = InventarioUiState.Success
     }
 }

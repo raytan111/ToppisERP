@@ -19,7 +19,7 @@ import com.toppis.app.data.repository.DashboardRepository
 import com.toppis.app.data.repository.ExportacionRepository
 import com.toppis.app.data.repository.FlujoCajaRepository
 import com.toppis.app.data.repository.GastoRepository
-import com.toppis.app.data.repository.InventarioRepository
+import com.toppis.app.data.repository.ArticuloRepository
 import com.toppis.app.data.repository.MenuRepository
 import com.toppis.app.data.repository.ReporteRepository
 import com.toppis.app.data.repository.SobreRepository
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // Manual DI (todos los repositorios usan Supabase)
-        val inventarioRepo = InventarioRepository()
+        val inventarioRepo = ArticuloRepository()
         val sobreRepo = SobreRepository()
         val ventaRepo = VentaRepository()
 
@@ -64,6 +64,21 @@ class MainActivity : ComponentActivity() {
 
         val reporteRepo = ReporteRepository()
         val reporteFactory = ReporteViewModelFactory(reporteRepo)
+
+        // ── Fase 4: Preparaciones, Modificadores, Promociones, Papa, Food Cost ──
+        val preparacionRepo = com.toppis.app.data.repository.PreparacionRepository()
+        val preparacionFactory = com.toppis.app.ui.preparaciones.PreparacionViewModelFactory(preparacionRepo)
+
+        val modificadorRepo = com.toppis.app.data.repository.ModificadorRepository()
+        val modificadorFactory = com.toppis.app.ui.modificadores.ModificadorViewModelFactory(modificadorRepo)
+
+        val promocionRepo = com.toppis.app.data.repository.PromocionRepository()
+        val promocionFactory = com.toppis.app.ui.promociones.PromocionViewModelFactory(promocionRepo)
+
+        val papaRepo = com.toppis.app.data.repository.PapaRendimientoRepository()
+        val papaFactory = com.toppis.app.ui.papa.PapaRendimientoViewModelFactory(papaRepo, inventarioRepo)
+
+        val foodCostFactory = com.toppis.app.ui.foodcost.FoodCostViewModelFactory(menuRepo)
 
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
@@ -100,6 +115,11 @@ class MainActivity : ComponentActivity() {
                         menuConfigViewModelFactory = menuConfigFactory,
                         comprobantesViewModelFactory = comprobantesFactory,
                         contabilidadViewModelFactory = contabilidadFactory,
+                        preparacionViewModelFactory = preparacionFactory,
+                        modificadorViewModelFactory = modificadorFactory,
+                        promocionViewModelFactory = promocionFactory,
+                        papaViewModelFactory = papaFactory,
+                        foodCostViewModelFactory = foodCostFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )

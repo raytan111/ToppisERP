@@ -1,7 +1,7 @@
 package com.toppis.app.data.repository
 
 import com.toppis.app.data.models.Gasto
-import com.toppis.app.data.models.Insumo
+import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.models.MovimientoSobre
 import com.toppis.app.data.models.Sobre
 import com.toppis.app.data.models.Venta
@@ -33,6 +33,6 @@ class ExportacionRepository {
     suspend fun getMovimientos(): List<MovimientoSobre> =
         client.postgrest.from("movimientos_sobre").select().decodeList<MovimientoSobre>()
 
-    suspend fun getInsumos(): List<Insumo> =
-        client.postgrest.from("insumos").select().decodeList<Insumo>()
+    suspend fun getArticulos(): List<Articulo> =
+        client.postgrest.from("articulos").select().decodeList<Articulo>()
 }

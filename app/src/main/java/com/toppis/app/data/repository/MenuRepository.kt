@@ -2,11 +2,10 @@ package com.toppis.app.data.repository
 
 import android.util.Log
 import com.toppis.app.data.db.entities.TipoComponente
-import com.toppis.app.data.models.Ingrediente
-import com.toppis.app.data.models.Insumo
+import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.models.ItemMenu
+import com.toppis.app.data.models.Preparacion
 import com.toppis.app.data.models.RecetaMenu
-import com.toppis.app.data.models.Salsa
 import com.toppis.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.PostgresAction
@@ -19,15 +18,30 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-/** Componente resuelto de una receta: incluye el nombre y unidad del ingrediente o insumo. */
+/** Componente resuelto de una receta: incluye nombre, unidad base y costo del componente. */
 data class ComponenteReceta(
     val recetaMenu: RecetaMenu,
     val nombre: String,
-    val unidad: String
-)
+    val unidad: String,
+    val costoBase: Double
+) {
+    /** Costo de este componente dentro de la receta. */
+    val costoLinea: Double get() = costoBase * recetaMenu.cantidadBase
+}
+
+/** Food cost de un item del menú. */
+data class FoodCostItem(
+    val item: ItemMenu,
+    val costoTeorico: Double,
+    val precio: Double
+) {
+    val margen: Double get() = precio - costoTeorico
+    val foodCostPct: Double get() = if (precio > 0) costoTeorico / precio * 100.0 else 0.0
+}
 
 /**
- * Repositorio del módulo Menú (items, recetas, salsas) basado en Supabase.
+ * Repositorio del módulo Menú (items, recetas) basado en Supabase.
+ * Las recetas se componen de artículos y/o preparaciones, todo en unidad base.
  */
 class MenuRepository {
 
@@ -52,12 +66,13 @@ class MenuRepository {
         emptyList()
     }
 
-    suspend fun crearItemMenu(nombre: String, descripcion: String, precio: Double) {
+    suspend fun crearItemMenu(nombre: String, descripcion: String, precio: Double, categoria: String = "") {
         client.postgrest.from("items_menu").insert(
             buildJsonObject {
                 put("nombre", nombre)
                 put("descripcion", descripcion)
                 put("precio", precio)
+                put("categoria", categoria)
                 put("activo", true)
             }
         )
@@ -69,6 +84,7 @@ class MenuRepository {
                 put("nombre", item.nombre)
                 put("descripcion", item.descripcion)
                 put("precio", item.precio)
+                put("categoria", item.categoria)
                 put("activo", item.activo)
             }
         ) {
@@ -96,125 +112,103 @@ class MenuRepository {
 
         return recetas.mapNotNull { receta ->
             when (receta.tipoComponente) {
-                TipoComponente.INGREDIENTE -> {
-                    val ing = getIngredientePorId(receta.componenteId)
-                    ing?.let { ComponenteReceta(receta, it.nombre, "gr") }
+                TipoComponente.ARTICULO -> {
+                    val a = getArticuloPorId(receta.componenteId)
+                    a?.let { ComponenteReceta(receta, it.nombre, it.unidadBase, it.costoBase) }
                 }
-                TipoComponente.INSUMO -> {
-                    val insumo = getInsumoPorId(receta.componenteId)
-                    insumo?.let { ComponenteReceta(receta, it.nombre, "gr") }
-                }
-                TipoComponente.SALSA -> {
-                    val salsa = getSalsaPorId(receta.componenteId)
-                    salsa?.let { ComponenteReceta(receta, it.nombre, "gr") }
+                TipoComponente.PREPARACION -> {
+                    val p = getPreparacionPorId(receta.componenteId)
+                    p?.let { ComponenteReceta(receta, it.nombre, it.unidadBase, it.costoBase) }
                 }
             }
         }
-    }
-
-    private suspend fun getSalsaPorId(id: Int): Salsa? = try {
-        client.postgrest.from("salsas").select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull<Salsa>()
-    } catch (e: Exception) {
-        null
     }
 
     suspend fun agregarComponente(
         itemMenuId: Int,
         tipo: TipoComponente,
         componenteId: Int,
-        cantidad: Double
+        cantidadBase: Double
     ) {
         client.postgrest.from("recetas_menu").insert(
             buildJsonObject {
                 put("item_menu_id", itemMenuId)
                 put("tipo_componente", tipo.name)
                 put("componente_id", componenteId)
-                put("cantidad", cantidad)
+                put("cantidad_base", cantidadBase)
             }
         )
+        recalcularCostoItem(itemMenuId)
     }
 
     suspend fun eliminarComponente(receta: RecetaMenu) {
         client.postgrest.from("recetas_menu").delete {
             filter { eq("id", receta.id) }
         }
+        recalcularCostoItem(receta.itemMenuId)
     }
 
-    // ── Salsas ──────────────────────────────────────────────────────────────────
-
-    suspend fun getSalsasActivas(): List<Salsa> = try {
-        client.postgrest.from("salsas").select()
-            .decodeList<Salsa>()
-            .filter { it.activa }
-            .sortedBy { it.nombre }
-    } catch (e: Exception) {
-        Log.e("MenuRepository", "Error getSalsasActivas: ${e.message}", e)
-        emptyList()
-    }
-
-    suspend fun getAllSalsas(): List<Salsa> = try {
-        client.postgrest.from("salsas").select().decodeList<Salsa>().sortedBy { it.id }
-    } catch (e: Exception) {
-        Log.e("MenuRepository", "Error getAllSalsas: ${e.message}", e)
-        emptyList()
-    }
-
-    suspend fun crearSalsa(nombre: String, descripcion: String = "") {
-        client.postgrest.from("salsas").insert(
-            buildJsonObject {
-                put("nombre", nombre)
-                put("descripcion", descripcion)
-                put("activa", true)
-            }
-        )
-    }
-
-    suspend fun actualizarSalsa(salsa: Salsa) {
-        client.postgrest.from("salsas").update(
-            buildJsonObject {
-                put("nombre", salsa.nombre)
-                put("descripcion", salsa.descripcion)
-                put("activa", salsa.activa)
-            }
+    /** Recalcula y persiste el costo teórico de un item del menú. */
+    suspend fun recalcularCostoItem(itemMenuId: Int): Double {
+        val componentes = getComponentesReceta(itemMenuId)
+        val costo = componentes.sumOf { it.costoLinea }
+        client.postgrest.from("items_menu").update(
+            buildJsonObject { put("costo_teorico", costo) }
         ) {
-            filter { eq("id", salsa.id) }
+            filter { eq("id", itemMenuId) }
         }
+        return costo
     }
 
-    suspend fun eliminarSalsa(salsa: Salsa) {
-        client.postgrest.from("salsas").delete {
-            filter { eq("id", salsa.id) }
-        }
+    /** Food cost de todos los items activos (para reportes/menu engineering). */
+    suspend fun getFoodCostItems(): List<FoodCostItem> {
+        val items = getAllItemsMenu().filter { it.activo }
+        return items.map { FoodCostItem(it, it.costoTeorico, it.precio) }
     }
 
-    // ── Helpers: ingredientes e insumos disponibles ───────────────────────────
+    // ── Catálogos para armar recetas ──────────────────────────────────────────
 
-    suspend fun getIngredientes(): List<Ingrediente> = try {
-        client.postgrest.from("ingredientes").select().decodeList<Ingrediente>().sortedBy { it.nombre }
+    suspend fun getArticulos(): List<Articulo> = try {
+        client.postgrest.from("articulos").select().decodeList<Articulo>()
+            .filter { it.activo }.sortedBy { it.nombre }
     } catch (e: Exception) {
+        Log.e("MenuRepository", "Error getArticulos: ${e.message}", e)
         emptyList()
     }
 
-    suspend fun getInsumos(): List<Insumo> = try {
-        client.postgrest.from("insumos").select().decodeList<Insumo>().sortedBy { it.nombre }
+    suspend fun getPreparaciones(): List<Preparacion> = try {
+        client.postgrest.from("preparaciones").select().decodeList<Preparacion>()
+            .filter { it.activo }.sortedBy { it.nombre }
     } catch (e: Exception) {
+        Log.e("MenuRepository", "Error getPreparaciones: ${e.message}", e)
         emptyList()
     }
 
-    private suspend fun getIngredientePorId(id: Int): Ingrediente? = try {
-        client.postgrest.from("ingredientes").select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull<Ingrediente>()
+    /** Artículos y preparaciones marcados como seleccionables en POS (salsas, agregados). */
+    suspend fun getOpcionesPos(): List<ComponenteReceta> {
+        val arts = getArticulos().filter { it.seleccionableEnPos }
+        val preps = getPreparaciones().filter { it.seleccionableEnPos }
+        return arts.map {
+            ComponenteReceta(
+                RecetaMenu(0, 0, TipoComponente.ARTICULO, it.id, 0.0), it.nombre, it.unidadBase, it.costoBase
+            )
+        } + preps.map {
+            ComponenteReceta(
+                RecetaMenu(0, 0, TipoComponente.PREPARACION, it.id, 0.0), it.nombre, it.unidadBase, it.costoBase
+            )
+        }
+    }
+
+    private suspend fun getArticuloPorId(id: Int): Articulo? = try {
+        client.postgrest.from("articulos").select { filter { eq("id", id) } }
+            .decodeSingleOrNull<Articulo>()
     } catch (e: Exception) {
         null
     }
 
-    private suspend fun getInsumoPorId(id: Int): Insumo? = try {
-        client.postgrest.from("insumos").select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull<Insumo>()
+    private suspend fun getPreparacionPorId(id: Int): Preparacion? = try {
+        client.postgrest.from("preparaciones").select { filter { eq("id", id) } }
+            .decodeSingleOrNull<Preparacion>()
     } catch (e: Exception) {
         null
     }
@@ -222,10 +216,8 @@ class MenuRepository {
     // ── Realtime ─────────────────────────────────────────────────────────────────
 
     fun observeItemsMenu(): Flow<Unit> = observarTabla("items_menu", "items-menu-changes")
-    fun observeSalsas(): Flow<Unit> = observarTabla("salsas", "salsas-changes")
 
     private fun observarTabla(tabla: String, canal: String): Flow<Unit> = channelFlow {
-        // Nombre de canal único por suscripción para evitar reusar uno ya unido
         val channel = client.channel("$canal-${java.util.UUID.randomUUID()}")
         val changes = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
             table = tabla

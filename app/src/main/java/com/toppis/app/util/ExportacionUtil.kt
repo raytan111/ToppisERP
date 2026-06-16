@@ -9,7 +9,7 @@ import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.toppis.app.data.models.Gasto
 import com.toppis.app.data.models.MovimientoSobre
-import com.toppis.app.data.models.Insumo
+import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.models.Sobre
 import com.toppis.app.data.models.Venta
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -204,7 +204,7 @@ object ExportacionUtil {
         gastos: List<Gasto>,
         sobres: List<Sobre>,
         movimientos: List<MovimientoSobre>,
-        insumos: List<Insumo>
+        insumos: List<Articulo>
     ): Uri {
         val fileName = "toppis_export_${sdfTs.format(Date())}.zip"
         return guardar(context, fileName, MIME_ZIP) { stream ->
@@ -239,11 +239,11 @@ object ExportacionUtil {
 
                 // inventario.csv
                 zip.putNextEntry(ZipEntry("inventario.csv"))
-                val headers = listOf("ID", "Nombre", "Descripcion", "Precio", "Stock", "Unidad", "Activo")
+                val headers = listOf("ID", "Nombre", "Dimension", "UnidadBase", "StockBase", "CostoBase", "UnidadCompra", "Activo")
                 val csvContent = buildString {
                     appendLine(headers.joinToString(",") { "\"$it\"" })
                     insumos.forEach { p ->
-                        val row = listOf(p.id, p.nombre, p.descripcion, p.precio, p.stock, p.unidadMedida, p.activo)
+                        val row = listOf(p.id, p.nombre, p.dimension.name, p.unidadBase, p.stockBase, p.costoBase, p.unidadCompra, p.activo)
                         appendLine(row.joinToString(",") { "\"$it\"" })
                     }
                 }

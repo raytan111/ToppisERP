@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.toppis.app.data.models.ItemMenu
 import com.toppis.app.data.db.entities.MetodoPago
-import com.toppis.app.data.models.Salsa
 import com.toppis.app.data.models.Sobre
 import com.toppis.app.data.db.entities.ZonaEnvio
 import com.toppis.app.ui.components.ToppisTopBar
@@ -398,7 +397,7 @@ private fun ItemCarritoMenuRow(
 @Composable
 private fun SalsaSelectorDialog(
     itemMenu: ItemMenu,
-    salsas: List<Salsa>,
+    salsas: List<String>,
     onDismiss: () -> Unit,
     onConfirm: (List<String>) -> Unit
 ) {
@@ -417,7 +416,7 @@ private fun SalsaSelectorDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 salsas.forEach { salsa ->
-                    val isSelected = salsa.nombre in seleccionadas
+                    val isSelected = salsa in seleccionadas
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -426,13 +425,13 @@ private fun SalsaSelectorDialog(
                             checked = isSelected,
                             onCheckedChange = {
                                 if (isSelected) {
-                                    seleccionadas.remove(salsa.nombre)
+                                    seleccionadas.remove(salsa)
                                 } else if (seleccionadas.size < maxSalsas) {
-                                    seleccionadas.add(salsa.nombre)
+                                    seleccionadas.add(salsa)
                                 }
                             }
                         )
-                        Text(salsa.nombre, modifier = Modifier.weight(1f))
+                        Text(salsa, modifier = Modifier.weight(1f))
                     }
                 }
             }

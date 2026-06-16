@@ -191,6 +191,51 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Blender,
+                            label = "Preparaciones",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("preparaciones") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
+                            icon = Icons.Filled.Tune,
+                            label = "Modificadores",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("modificadores") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
+                            icon = Icons.Filled.LocalOffer,
+                            label = "Promociones",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("promociones") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
+                            icon = Icons.Filled.Scale,
+                            label = "Rendimiento Papa",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("papa_rendimientos") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
+                            icon = Icons.Filled.PieChart,
+                            label = "Food Cost & Menú",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("food_cost") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

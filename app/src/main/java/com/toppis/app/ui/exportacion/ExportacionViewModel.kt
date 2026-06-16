@@ -82,15 +82,16 @@ class ExportacionViewModel(
         viewModelScope.launch {
             _exportState.value = ExportState.Exporting
             runCatching {
-                val insumos = repository.getInsumos()
-                val datos = insumos.map { p ->
+                val articulos = repository.getArticulos()
+                val datos = articulos.map { p ->
                     mapOf(
                         "ID" to p.id.toString(),
                         "Nombre" to p.nombre,
-                        "Descripcion" to p.descripcion,
-                        "Precio" to p.precio.toString(),
-                        "Stock" to p.stock.toString(),
-                        "Unidad" to p.unidadMedida,
+                        "Dimension" to p.dimension.name,
+                        "UnidadBase" to p.unidadBase,
+                        "StockBase" to p.stockBase.toString(),
+                        "CostoBase" to p.costoBase.toString(),
+                        "UnidadCompra" to p.unidadCompra,
                         "Activo" to p.activo.toString()
                     )
                 }
@@ -111,9 +112,9 @@ class ExportacionViewModel(
                 val gastos = repository.getGastos(desde)
                 val sobres = repository.getSobres()
                 val movimientos = repository.getMovimientos()
-                val insumos = repository.getInsumos()
+                val articulos = repository.getArticulos()
                 withContext(Dispatchers.IO) {
-                    ExportacionUtil.exportarTodoZip(context, ventas, gastos, sobres, movimientos, insumos)
+                    ExportacionUtil.exportarTodoZip(context, ventas, gastos, sobres, movimientos, articulos)
                 }
             }.onSuccess { uri ->
                 _exportState.value = ExportState.Success(uri, "application/zip")

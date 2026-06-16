@@ -12,6 +12,9 @@ data class ItemMenu(
     val nombre: String,
     val descripcion: String = "",
     val precio: Double = 0.0,
+    @SerialName("costo_teorico")
+    val costoTeorico: Double = 0.0,
+    val categoria: String = "",
     val activo: Boolean = true,
     @SerialName("created_at")
     val createdAt: String? = null,

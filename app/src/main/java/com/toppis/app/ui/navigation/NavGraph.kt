@@ -47,6 +47,21 @@ import com.toppis.app.ui.dashboard.DashboardViewModelFactory
 import com.toppis.app.ui.menu.MenuConfigScreen
 import com.toppis.app.ui.menu.MenuConfigViewModel
 import com.toppis.app.ui.menu.MenuConfigViewModelFactory
+import com.toppis.app.ui.preparaciones.PreparacionViewModel
+import com.toppis.app.ui.preparaciones.PreparacionViewModelFactory
+import com.toppis.app.ui.preparaciones.PreparacionesScreen
+import com.toppis.app.ui.modificadores.ModificadorViewModel
+import com.toppis.app.ui.modificadores.ModificadorViewModelFactory
+import com.toppis.app.ui.modificadores.ModificadoresScreen
+import com.toppis.app.ui.promociones.PromocionViewModel
+import com.toppis.app.ui.promociones.PromocionViewModelFactory
+import com.toppis.app.ui.promociones.PromocionesScreen
+import com.toppis.app.ui.papa.PapaRendimientoViewModel
+import com.toppis.app.ui.papa.PapaRendimientoViewModelFactory
+import com.toppis.app.ui.papa.PapaRendimientoScreen
+import com.toppis.app.ui.foodcost.FoodCostViewModel
+import com.toppis.app.ui.foodcost.FoodCostViewModelFactory
+import com.toppis.app.ui.foodcost.FoodCostScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -64,6 +79,11 @@ fun NavGraph(
     menuConfigViewModelFactory: MenuConfigViewModelFactory,
     comprobantesViewModelFactory: ComprobantesViewModelFactory,
     contabilidadViewModelFactory: ContabilidadViewModelFactory,
+    preparacionViewModelFactory: PreparacionViewModelFactory,
+    modificadorViewModelFactory: ModificadorViewModelFactory,
+    promocionViewModelFactory: PromocionViewModelFactory,
+    papaViewModelFactory: PapaRendimientoViewModelFactory,
+    foodCostViewModelFactory: FoodCostViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -216,6 +236,32 @@ fun NavGraph(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
+                composable("preparaciones") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: PreparacionViewModel = viewModel(factory = preparacionViewModelFactory)
+                    PreparacionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
+                composable("modificadores") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: ModificadorViewModel = viewModel(factory = modificadorViewModelFactory)
+                    ModificadoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
+                composable("promociones") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: PromocionViewModel = viewModel(factory = promocionViewModelFactory)
+                    PromocionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
+                composable("papa_rendimientos") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: PapaRendimientoViewModel = viewModel(factory = papaViewModelFactory)
+                    PapaRendimientoScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
+                composable("food_cost") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: FoodCostViewModel = viewModel(factory = foodCostViewModelFactory)
+                    FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -336,6 +382,32 @@ fun NavGraph(
                     usuarioId = usuarioActual?.id,
                     onNavigateBack = { navController.popBackStack() }
                 )
+            }
+
+            composable("preparaciones") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: PreparacionViewModel = viewModel(factory = preparacionViewModelFactory)
+                PreparacionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("modificadores") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: ModificadorViewModel = viewModel(factory = modificadorViewModelFactory)
+                ModificadoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("promociones") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: PromocionViewModel = viewModel(factory = promocionViewModelFactory)
+                PromocionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("papa_rendimientos") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: PapaRendimientoViewModel = viewModel(factory = papaViewModelFactory)
+                PapaRendimientoScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("food_cost") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: FoodCostViewModel = viewModel(factory = foodCostViewModelFactory)
+                FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

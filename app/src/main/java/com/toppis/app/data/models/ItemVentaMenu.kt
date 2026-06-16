@@ -19,6 +19,11 @@ data class ItemVentaMenu(
     val subtotal: Double,
     @SerialName("salsas_seleccionadas")
     val salsasSeleccionadas: String = "",
+    @SerialName("costo_unitario")
+    val costoUnitario: Double = 0.0,
+    val modificadores: String = "",
+    @SerialName("promocion_id")
+    val promocionId: Int? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

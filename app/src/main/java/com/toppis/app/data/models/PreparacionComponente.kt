@@ -5,14 +5,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Componente de receta de un item de menú (tabla "recetas_menu").
- * Relaciona un item con un artículo o preparación y su cantidad en unidad base.
+ * Componente de la receta de una preparación (tabla "preparacion_componentes").
+ * Puede referir a un artículo o a otra preparación (anidación permitida).
  */
 @Serializable
-data class RecetaMenu(
+data class PreparacionComponente(
     val id: Int = 0,
-    @SerialName("item_menu_id")
-    val itemMenuId: Int,
+    @SerialName("preparacion_id")
+    val preparacionId: Int,
     @SerialName("tipo_componente")
     val tipoComponente: TipoComponente,
     @SerialName("componente_id")

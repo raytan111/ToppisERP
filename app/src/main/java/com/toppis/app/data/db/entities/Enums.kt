@@ -15,7 +15,64 @@ enum class MetodoPago { EFECTIVO, DEBITO }
 enum class EstadoVenta { COMPLETADA, ANULADA }
 
 @Serializable
-enum class TipoComponente { INGREDIENTE, INSUMO, SALSA }
+enum class TipoComponente { ARTICULO, PREPARACION }
+
+/** Dimensión de unidad de medida. Cada una tiene su unidad base. */
+@Serializable
+enum class DimensionUnidad(val unidadBase: String, val label: String) {
+    MASA("g", "Masa (g)"),
+    VOLUMEN("ml", "Volumen (ml)"),
+    UNIDAD("un", "Unidad (un)")
+}
+
+/** Tipo de artículo: comprado (INGREDIENTE) o producido en casa (PREPARACION). */
+@Serializable
+enum class TipoArticulo { INGREDIENTE, PREPARACION }
+
+/**
+ * Unidad de medida seleccionable, asociada a una dimensión, con su factor de
+ * conversión a la unidad base de esa dimensión.
+ * Ej: 1 kg = 1000 g; 1 L = 1000 ml; 1 un = 1 un.
+ */
+enum class UnidadMedida(
+    val label: String,
+    val abreviatura: String,
+    val dimension: DimensionUnidad,
+    val factorBase: Double
+) {
+    GRAMO("Gramo", "g", DimensionUnidad.MASA, 1.0),
+    KILOGRAMO("Kilogramo", "kg", DimensionUnidad.MASA, 1000.0),
+    MILILITRO("Mililitro", "ml", DimensionUnidad.VOLUMEN, 1.0),
+    LITRO("Litro", "L", DimensionUnidad.VOLUMEN, 1000.0),
+    UNIDAD("Unidad", "un", DimensionUnidad.UNIDAD, 1.0);
+
+    companion object {
+        /** Unidades disponibles para una dimensión. */
+        fun deDimension(dim: DimensionUnidad): List<UnidadMedida> = entries.filter { it.dimension == dim }
+        /** Busca por abreviatura (para edición). */
+        fun porAbreviatura(abrev: String): UnidadMedida? = entries.firstOrNull { it.abreviatura == abrev }
+    }
+}
+
+/** Tipo de modificador aplicable a un item del menú en el POS. */
+@Serializable
+enum class TipoModificador(val label: String) {
+    DOBLE("Doble"),
+    QUITAR("Quitar"),
+    REEMPLAZAR("Reemplazar"),
+    EXTRA("Extra")
+}
+
+/** Acción de un componente de modificador sobre la receta. */
+@Serializable
+enum class AccionModificador { AGREGAR, QUITAR }
+
+/** Tipo de promoción. */
+@Serializable
+enum class TipoPromocion(val label: String) {
+    COMBO("Combo (precio fijo)"),
+    DESCUENTO_PORCENTAJE("Descuento %")
+}
 
 @Serializable
 enum class EstadoComanda { PENDIENTE, ENTREGADA }

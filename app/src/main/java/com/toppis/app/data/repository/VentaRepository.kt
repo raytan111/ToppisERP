@@ -18,7 +18,10 @@ data class LineaVenta(
     val cantidad: Int,
     val precioUnitario: Double,
     val subtotal: Double,
-    val salsas: String
+    val salsas: String,
+    val costoUnitario: Double = 0.0,
+    val modificadores: String = "",
+    val promocionId: Int? = null
 )
 
 /**
@@ -53,6 +56,9 @@ class VentaRepository {
                         put("precio_unitario", item.precioUnitario)
                         put("subtotal", item.subtotal)
                         put("salsas", item.salsas)
+                        put("costo_unitario", item.costoUnitario)
+                        put("modificadores", item.modificadores)
+                        put("promocion_id", item.promocionId?.toString() ?: "")
                     }
                 )
             }

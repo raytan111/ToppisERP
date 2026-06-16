@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.toppis.app.data.models.ItemMenu
 import com.toppis.app.data.models.Comprobante
 import com.toppis.app.data.db.entities.MetodoPago
-import com.toppis.app.data.models.Salsa
 import com.toppis.app.data.db.entities.ZonaEnvio
 import com.toppis.app.data.repository.ComandaRepository
 import com.toppis.app.data.repository.ComprobanteRepository
@@ -55,8 +54,8 @@ class PosViewModel(
     private val _itemsMenu = MutableStateFlow<List<ItemMenu>>(emptyList())
     val itemsMenu: StateFlow<List<ItemMenu>> = _itemsMenu.asStateFlow()
 
-    private val _salsasDisponibles = MutableStateFlow<List<Salsa>>(emptyList())
-    val salsasDisponibles: StateFlow<List<Salsa>> = _salsasDisponibles.asStateFlow()
+    private val _salsasDisponibles = MutableStateFlow<List<String>>(emptyList())
+    val salsasDisponibles: StateFlow<List<String>> = _salsasDisponibles.asStateFlow()
 
     // Comprobante emitido tras la venta (Fase 2A)
     private val _comprobante = MutableStateFlow<Comprobante?>(null)
@@ -84,9 +83,8 @@ class PosViewModel(
     init {
         refrescarMenu()
         refrescarSalsas()
-        // Realtime: el menú y las salsas se actualizan al instante
-        viewModelScope.launch { menuRepository.observeItemsMenu().collect { refrescarMenu() } }
-        viewModelScope.launch { menuRepository.observeSalsas().collect { refrescarSalsas() } }
+        // Realtime: el menú se actualiza al instante
+        viewModelScope.launch { menuRepository.observeItemsMenu().collect { refrescarMenu(); refrescarSalsas() } }
     }
 
     private fun refrescarMenu() {
@@ -94,7 +92,9 @@ class PosViewModel(
     }
 
     private fun refrescarSalsas() {
-        viewModelScope.launch { _salsasDisponibles.value = menuRepository.getSalsasActivas() }
+        viewModelScope.launch {
+            _salsasDisponibles.value = menuRepository.getOpcionesPos().map { it.nombre }
+        }
     }
 
     private val _carrito = MutableStateFlow<List<ItemCarritoMenu>>(emptyList())
@@ -164,7 +164,10 @@ class PosViewModel(
                         cantidad = item.cantidad,
                         precioUnitario = item.itemMenu.precio,
                         subtotal = item.subtotal,
-                        salsas = item.salsas.joinToString(", ")
+                        salsas = item.salsas.joinToString(", "),
+                        costoUnitario = item.itemMenu.costoTeorico,
+                        modificadores = "",
+                        promocionId = null
                     )
                 }
 
