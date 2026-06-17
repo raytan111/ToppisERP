@@ -106,6 +106,14 @@ class MainActivity : ComponentActivity() {
             com.toppis.app.data.repository.ArqueoRepository()
         )
 
+        // ── Fase 8: Empleados / Mano de obra ──
+        val empleadoFactory = com.toppis.app.ui.empleados.EmpleadoViewModelFactory(
+            com.toppis.app.data.repository.EmpleadoRepository()
+        )
+        val manoObraFactory = com.toppis.app.ui.manoobra.ManoObraViewModelFactory(
+            com.toppis.app.data.repository.ManoObraRepository()
+        )
+
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
         val authFactory = AuthViewModelFactory(authRepo)
@@ -153,6 +161,8 @@ class MainActivity : ComponentActivity() {
                         proveedorViewModelFactory = proveedorFactory,
                         compraViewModelFactory = compraFactory,
                         arqueoViewModelFactory = arqueoFactory,
+                        empleadoViewModelFactory = empleadoFactory,
+                        manoObraViewModelFactory = manoObraFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )

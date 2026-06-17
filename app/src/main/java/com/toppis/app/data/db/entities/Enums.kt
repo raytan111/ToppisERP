@@ -93,6 +93,14 @@ enum class TipoSobre(val label: String) {
     FONDO("Fondo (provisión)")
 }
 
+/** Forma de pago de un empleado. */
+@Serializable
+enum class TipoPago(val label: String) {
+    SUELDO_FIJO("Sueldo fijo mensual"),
+    POR_TURNO("Por turno"),
+    POR_HORA("Por hora")
+}
+
 @Serializable
 enum class EstadoComanda { PENDIENTE, ENTREGADA }
 

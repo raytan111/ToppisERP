@@ -302,6 +302,24 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Badge,
+                            label = "Empleados",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("empleados") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
+                            icon = Icons.Filled.Groups,
+                            label = "Mano de Obra / Prime Cost",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("mano_obra") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {
