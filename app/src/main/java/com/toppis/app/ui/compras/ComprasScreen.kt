@@ -271,12 +271,15 @@ private fun AgregarLineaCompraDialog(
     var articulo by remember { mutableStateOf(articulos.firstOrNull()) }
     var exp by remember { mutableStateOf(false) }
     var cantidadText by remember { mutableStateOf("") }
-    var costoText by remember { mutableStateOf("") }
+    var totalText by remember { mutableStateOf("") }
     var vencimiento by remember { mutableStateOf("") }
 
     val cantidad = cantidadText.replace(",", ".").toDoubleOrNull()
-    val costo = costoText.replace(",", ".").toDoubleOrNull()
-    val valido = articulo != null && cantidad != null && cantidad > 0 && costo != null && costo >= 0
+    val total = totalText.replace(",", ".").toDoubleOrNull()
+    val unidad = articulo?.unidadCompra ?: ""
+    // costo por unidad de compra = total / cantidad
+    val costoUnitario = if (cantidad != null && cantidad > 0 && total != null) total / cantidad else null
+    val valido = articulo != null && cantidad != null && cantidad > 0 && total != null && total >= 0
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -298,16 +301,22 @@ private fun AgregarLineaCompraDialog(
                 }
                 OutlinedTextField(
                     value = cantidadText, onValueChange = { cantidadText = it },
-                    label = { Text("Cantidad (${articulo?.unidadCompra ?: ""})") },
+                    label = { Text("Cantidad comprada (${unidad})") },
+                    supportingText = { Text("Cuánto compraste, en ${unidad}") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    value = costoText, onValueChange = { costoText = it },
-                    label = { Text("Costo por ${articulo?.unidadCompra ?: "unidad"} (CLP)") },
+                    value = totalText, onValueChange = { totalText = it },
+                    label = { Text("Total pagado (CLP)") },
+                    supportingText = { Text("Lo que pagaste por esa cantidad completa") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
+                if (costoUnitario != null) {
+                    Text("≈ ${money.format(costoUnitario)} por $unidad",
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                }
                 OutlinedTextField(
                     value = vencimiento, onValueChange = { vencimiento = it },
                     label = { Text("Vencimiento (yyyy-MM-dd, opcional)") },
@@ -318,7 +327,7 @@ private fun AgregarLineaCompraDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onAgregar(LineaCompra(articulo!!, cantidad!!, costo!!, vencimiento.ifBlank { null }))
+                    onAgregar(LineaCompra(articulo!!, cantidad!!, costoUnitario ?: 0.0, vencimiento.ifBlank { null }))
                 },
                 enabled = valido
             ) { Text("Agregar") }
