@@ -72,7 +72,7 @@ BEGIN
             CASE WHEN v_dif < 0 THEN p_sobre_id ELSE NULL END,
             CASE WHEN v_dif > 0 THEN p_sobre_id ELSE NULL END,
             abs(v_dif),
-            CASE WHEN v_dif < 0 THEN 'EGRESO' ELSE 'INGRESO' END,
+            (CASE WHEN v_dif < 0 THEN 'EGRESO' ELSE 'INGRESO' END)::tipo_movimiento,
             'Ajuste por arqueo de caja',
             p_usuario
         );
