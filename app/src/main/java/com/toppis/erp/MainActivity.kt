@@ -97,6 +97,9 @@ class MainActivity : ComponentActivity() {
         val proveedorFactory = com.toppis.app.ui.proveedores.ProveedorViewModelFactory(
             com.toppis.app.data.repository.ProveedorRepository()
         )
+        val compraFactory = com.toppis.app.ui.compras.CompraViewModelFactory(
+            com.toppis.app.data.repository.CompraRepository()
+        )
 
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
@@ -143,6 +146,7 @@ class MainActivity : ComponentActivity() {
                         compraSugeridaViewModelFactory = compraSugeridaFactory,
                         varianceViewModelFactory = varianceFactory,
                         proveedorViewModelFactory = proveedorFactory,
+                        compraViewModelFactory = compraFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )

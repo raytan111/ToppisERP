@@ -77,6 +77,9 @@ import com.toppis.app.ui.variance.VarianceScreen
 import com.toppis.app.ui.proveedores.ProveedorViewModel
 import com.toppis.app.ui.proveedores.ProveedorViewModelFactory
 import com.toppis.app.ui.proveedores.ProveedoresScreen
+import com.toppis.app.ui.compras.CompraViewModel
+import com.toppis.app.ui.compras.CompraViewModelFactory
+import com.toppis.app.ui.compras.ComprasScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -104,6 +107,7 @@ fun NavGraph(
     compraSugeridaViewModelFactory: CompraSugeridaViewModelFactory,
     varianceViewModelFactory: VarianceViewModelFactory,
     proveedorViewModelFactory: ProveedorViewModelFactory,
+    compraViewModelFactory: CompraViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -307,6 +311,11 @@ fun NavGraph(
                     val vm: ProveedorViewModel = viewModel(factory = proveedorViewModelFactory)
                     ProveedoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("compras") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: CompraViewModel = viewModel(factory = compraViewModelFactory)
+                    ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -478,6 +487,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: ProveedorViewModel = viewModel(factory = proveedorViewModelFactory)
                 ProveedoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("compras") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: CompraViewModel = viewModel(factory = compraViewModelFactory)
+                ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
             }
         }
     }
