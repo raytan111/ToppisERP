@@ -3,9 +3,12 @@ package com.toppis.app.ui.reportes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.toppis.app.data.db.entities.CategoriaGasto
+import com.toppis.app.data.models.Local
 import com.toppis.app.data.models.Sobre
 import com.toppis.app.data.models.Venta
+import com.toppis.app.data.repository.LocalSession
 import com.toppis.app.data.repository.ReporteRepository
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,7 +71,27 @@ class ReporteViewModel(
     private val _ivaProvisionado = MutableStateFlow(0.0)
     val ivaProvisionado: StateFlow<Double> = _ivaProvisionado.asStateFlow()
 
+    /** null = todos los locales (consolidado). */
+    private val _localFiltro = MutableStateFlow<Int?>(null)
+    val localFiltro: StateFlow<Int?> = _localFiltro.asStateFlow()
+
+    private val _locales = MutableStateFlow<List<Local>>(emptyList())
+    val locales: StateFlow<List<Local>> = _locales.asStateFlow()
+
     init {
+        viewModelScope.launch {
+            _locales.value = try {
+                com.toppis.app.data.supabase.SupabaseClient.client.postgrest.from("locales").select()
+                    .decodeList<Local>().filter { it.activo }.sortedBy { it.nombre }
+            } catch (_: Exception) { emptyList() }
+            // Default: local activo actual (o todos si ninguno)
+            _localFiltro.value = LocalSession.activoId.value
+        }
+        recargar()
+    }
+
+    fun seleccionarLocal(localId: Int?) {
+        _localFiltro.value = localId
         recargar()
     }
 
@@ -80,8 +103,9 @@ class ReporteViewModel(
     private fun recargar() {
         viewModelScope.launch {
             val inicio = inicioDePeriodo(_periodo.value)
-            val ventas = repository.getVentasDesde(inicio)
-            val gastos = repository.getGastosDesde(inicio)
+            val lid = _localFiltro.value
+            val ventas = repository.getVentasDesde(inicio, lid)
+            val gastos = repository.getGastosDesde(inicio, lid)
 
             _totalVentas.value = ventas.sumOf { it.total }
             _totalGastos.value = gastos.sumOf { it.monto }

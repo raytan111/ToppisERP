@@ -16,11 +16,14 @@ class ReporteRepository {
 
     private val client = SupabaseClient.client
 
-    /** Ventas COMPLETADAS desde [inicioMillis]. */
-    suspend fun getVentasDesde(inicioMillis: Long): List<Venta> = try {
+    /** Ventas COMPLETADAS desde [inicioMillis], opcionalmente filtradas por local. */
+    suspend fun getVentasDesde(inicioMillis: Long, localId: Int? = null): List<Venta> = try {
         val iso = FechaUtil.millisToIso(inicioMillis)
         client.postgrest.from("ventas").select {
-            filter { gte("fecha", iso) }
+            filter {
+                gte("fecha", iso)
+                if (localId != null) eq("local_id", localId)
+            }
         }.decodeList<Venta>()
             .filter { it.estado == EstadoVenta.COMPLETADA }
             .sortedByDescending { it.fecha }
@@ -29,11 +32,14 @@ class ReporteRepository {
         emptyList()
     }
 
-    /** Gastos desde [inicioMillis]. */
-    suspend fun getGastosDesde(inicioMillis: Long): List<Gasto> = try {
+    /** Gastos desde [inicioMillis], opcionalmente filtrados por local. */
+    suspend fun getGastosDesde(inicioMillis: Long, localId: Int? = null): List<Gasto> = try {
         val iso = FechaUtil.millisToIso(inicioMillis)
         client.postgrest.from("gastos").select {
-            filter { gte("fecha", iso) }
+            filter {
+                gte("fecha", iso)
+                if (localId != null) eq("local_id", localId)
+            }
         }.decodeList<Gasto>()
     } catch (e: Exception) {
         Log.e("ReporteRepository", "Error getGastosDesde: ${e.message}", e)

@@ -43,6 +43,8 @@ fun ReportesScreen(
     val gastosPorCategoria by viewModel.gastosPorCategoria.collectAsState()
     val sobres by viewModel.sobres.collectAsState()
     val ivaProvisionado by viewModel.ivaProvisionado.collectAsState()
+    val locales by viewModel.locales.collectAsState()
+    val localFiltro by viewModel.localFiltro.collectAsState()
 
     LazyColumn(
         modifier = modifier
@@ -53,6 +55,25 @@ fun ReportesScreen(
     ) {
         // ── Selector de período ──────────────────────────────────────────
             item {
+                if (locales.isNotEmpty()) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        FilterChip(
+                            selected = localFiltro == null,
+                            onClick = { viewModel.seleccionarLocal(null) },
+                            label = { Text("Todos") }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        locales.forEach { l ->
+                            FilterChip(
+                                selected = localFiltro == l.id,
+                                onClick = { viewModel.seleccionarLocal(l.id) },
+                                label = { Text(l.nombre) },
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
                 PeriodoSelector(
                     periodoActual = periodo,
                     onSeleccionar = { viewModel.seleccionarPeriodo(it) }
