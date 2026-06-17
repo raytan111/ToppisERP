@@ -68,6 +68,7 @@ class GastoRepository {
             if (usuarioId == null) put("p_usuario", JsonNull) else put("p_usuario", usuarioId)
             if (comprobante == null) put("p_comprobante", JsonNull) else put("p_comprobante", comprobante)
             put("p_tiene_iva", tieneIva)
+            LocalSession.activoId.value?.let { put("p_local_id", it) }
         }
         try {
             client.postgrest.rpc("registrar_gasto", params)

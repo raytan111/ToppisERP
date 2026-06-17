@@ -11,18 +11,41 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Sesión del local activo (en memoria). El id se usa para sellar transacciones.
+ * Sesión del local activo. Persiste en SharedPreferences y expone el id/nombre
+ * para sellar transacciones nuevas.
  */
 object LocalSession {
+    private const val PREFS = "toppis_session"
+    private const val KEY_ID = "local_id"
+    private const val KEY_NOMBRE = "local_nombre"
+
+    private var prefs: android.content.SharedPreferences? = null
+
     private val _activoId = MutableStateFlow<Int?>(null)
     val activoId: StateFlow<Int?> = _activoId.asStateFlow()
 
     private val _activoNombre = MutableStateFlow<String?>(null)
     val activoNombre: StateFlow<String?> = _activoNombre.asStateFlow()
 
+    /** Inicializa desde SharedPreferences (llamar en MainActivity.onCreate). */
+    fun init(context: android.content.Context) {
+        val p = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+        prefs = p
+        val id = p.getInt(KEY_ID, -1)
+        if (id > 0) {
+            _activoId.value = id
+            _activoNombre.value = p.getString(KEY_NOMBRE, null)
+        }
+    }
+
     fun setActivo(id: Int?, nombre: String?) {
         _activoId.value = id
         _activoNombre.value = nombre
+        prefs?.edit()?.apply {
+            if (id == null) { remove(KEY_ID); remove(KEY_NOMBRE) }
+            else { putInt(KEY_ID, id); putString(KEY_NOMBRE, nombre) }
+            apply()
+        }
     }
 }
 

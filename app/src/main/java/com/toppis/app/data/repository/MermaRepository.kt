@@ -69,6 +69,7 @@ class MermaRepository {
             put("p_motivo", motivo.name)
             put("p_nota", nota)
             if (usuarioId == null) put("p_usuario", JsonNull) else put("p_usuario", usuarioId)
+            LocalSession.activoId.value?.let { put("p_local_id", it) }
         }
         client.postgrest.rpc("registrar_merma", params)
     }

@@ -93,6 +93,7 @@ class VentaRepository {
             put("p_incluir_envio", zonaEnvio != ZonaEnvio.SIN_ENVIO)
             put("p_items", itemsJson)
             put("p_comanda_texto", comandaTexto)
+            LocalSession.activoId.value?.let { put("p_local_id", it) }
         }
 
         return try {

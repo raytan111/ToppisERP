@@ -39,6 +39,7 @@ import com.toppis.app.ui.sobres.SobreViewModelFactory
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.toppis.app.data.repository.LocalSession.init(applicationContext)
 
         // Manual DI (todos los repositorios usan Supabase)
         val inventarioRepo = ArticuloRepository()

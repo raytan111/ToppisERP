@@ -27,17 +27,19 @@ fun MainScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     var showMoreSheet by remember { mutableStateOf(false) }
+    val localNombre by com.toppis.app.data.repository.LocalSession.activoNombre.collectAsState()
+    fun conLocal(base: String): String = if (localNombre != null) "$base · $localNombre" else base
 
     Scaffold(
         topBar = {
             // TopBar solo en pantallas principales
             when (currentRoute) {
-                "dashboard" -> ToppisTopBar(titulo = "Dashboard")
-                "sobres" -> ToppisTopBar(titulo = "💰 Sobres")
-                "pos" -> ToppisTopBar(titulo = "Punto de Venta")
-                "inventario" -> ToppisTopBar(titulo = "Inventario")
-                "gastos" -> ToppisTopBar(titulo = "Gastos")
-                "reportes" -> ToppisTopBar(titulo = "Reportes")
+                "dashboard" -> ToppisTopBar(titulo = conLocal("Dashboard"))
+                "sobres" -> ToppisTopBar(titulo = conLocal("💰 Sobres"))
+                "pos" -> ToppisTopBar(titulo = conLocal("Punto de Venta"))
+                "inventario" -> ToppisTopBar(titulo = conLocal("Inventario"))
+                "gastos" -> ToppisTopBar(titulo = conLocal("Gastos"))
+                "reportes" -> ToppisTopBar(titulo = conLocal("Reportes"))
             }
         },
         bottomBar = {

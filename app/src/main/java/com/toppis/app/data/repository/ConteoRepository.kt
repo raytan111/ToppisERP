@@ -52,6 +52,7 @@ class ConteoRepository {
                 buildJsonObject {
                     put("estado", if (cerrar) "ABIERTO" else "ABIERTO") // se cierra vía RPC abajo
                     put("nota", nota)
+                    LocalSession.activoId.value?.let { put("local_id", it) }
                     if (usuarioId == null) put("created_by", JsonNull) else put("created_by", usuarioId)
                 }
             ) { select() }.decodeSingle<Conteo>().id

@@ -55,6 +55,7 @@ class ManoObraRepository {
                 put("cantidad", cantidad)
                 put("costo", costo)
                 put("nota", nota)
+                LocalSession.activoId.value?.let { put("local_id", it) }
             }
         )
     }
@@ -77,6 +78,7 @@ class ManoObraRepository {
                 put("fecha", fecha)
                 put("monto", monto)
                 put("nota", nota)
+                LocalSession.activoId.value?.let { put("local_id", it) }
             }
         )
     }

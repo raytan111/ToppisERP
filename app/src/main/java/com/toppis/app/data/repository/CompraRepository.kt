@@ -100,6 +100,7 @@ class CompraRepository {
             put("p_items", itemsJson)
             if (sobreId == null) put("p_sobre_id", JsonNull) else put("p_sobre_id", sobreId)
             if (usuarioId == null) put("p_usuario", JsonNull) else put("p_usuario", usuarioId)
+            LocalSession.activoId.value?.let { put("p_local_id", it) }
         }
         return try {
             client.postgrest.rpc("registrar_compra", params).decodeAs<Int>()
