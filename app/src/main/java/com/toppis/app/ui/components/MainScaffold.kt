@@ -254,6 +254,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.ShoppingCart,
+                            label = "Compra Sugerida",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("compra_sugerida") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

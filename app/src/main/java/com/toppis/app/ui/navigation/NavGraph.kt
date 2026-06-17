@@ -68,6 +68,9 @@ import com.toppis.app.ui.mermas.MermasScreen
 import com.toppis.app.ui.conteos.ConteoViewModel
 import com.toppis.app.ui.conteos.ConteoViewModelFactory
 import com.toppis.app.ui.conteos.ConteosScreen
+import com.toppis.app.ui.compras.CompraSugeridaViewModel
+import com.toppis.app.ui.compras.CompraSugeridaViewModelFactory
+import com.toppis.app.ui.compras.CompraSugeridaScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -92,6 +95,7 @@ fun NavGraph(
     foodCostViewModelFactory: FoodCostViewModelFactory,
     mermaViewModelFactory: MermaViewModelFactory,
     conteoViewModelFactory: ConteoViewModelFactory,
+    compraSugeridaViewModelFactory: CompraSugeridaViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -280,6 +284,11 @@ fun NavGraph(
                     val vm: ConteoViewModel = viewModel(factory = conteoViewModelFactory)
                     ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("compra_sugerida") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: CompraSugeridaViewModel = viewModel(factory = compraSugeridaViewModelFactory)
+                    CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -436,6 +445,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: ConteoViewModel = viewModel(factory = conteoViewModelFactory)
                 ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("compra_sugerida") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: CompraSugeridaViewModel = viewModel(factory = compraSugeridaViewModelFactory)
+                CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }
