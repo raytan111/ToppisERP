@@ -71,6 +71,9 @@ import com.toppis.app.ui.conteos.ConteosScreen
 import com.toppis.app.ui.compras.CompraSugeridaViewModel
 import com.toppis.app.ui.compras.CompraSugeridaViewModelFactory
 import com.toppis.app.ui.compras.CompraSugeridaScreen
+import com.toppis.app.ui.variance.VarianceViewModel
+import com.toppis.app.ui.variance.VarianceViewModelFactory
+import com.toppis.app.ui.variance.VarianceScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -96,6 +99,7 @@ fun NavGraph(
     mermaViewModelFactory: MermaViewModelFactory,
     conteoViewModelFactory: ConteoViewModelFactory,
     compraSugeridaViewModelFactory: CompraSugeridaViewModelFactory,
+    varianceViewModelFactory: VarianceViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -289,6 +293,11 @@ fun NavGraph(
                     val vm: CompraSugeridaViewModel = viewModel(factory = compraSugeridaViewModelFactory)
                     CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("variance") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: VarianceViewModel = viewModel(factory = varianceViewModelFactory)
+                    VarianceScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -450,6 +459,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: CompraSugeridaViewModel = viewModel(factory = compraSugeridaViewModelFactory)
                 CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("variance") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: VarianceViewModel = viewModel(factory = varianceViewModelFactory)
+                VarianceScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

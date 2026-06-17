@@ -263,6 +263,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Analytics,
+                            label = "Análisis de Inventario",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("variance") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

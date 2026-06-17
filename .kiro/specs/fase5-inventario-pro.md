@@ -102,4 +102,4 @@ Cada paso con build verde + commit.
 ---
 
 **Fecha**: 2026-06-16
-**Estado**: Spec lista; implementando módulo 1 (Mermas).
+**Estado**: Fase 5 completa — Mermas, Conteos, Compra Sugerida y Variance implementados.
