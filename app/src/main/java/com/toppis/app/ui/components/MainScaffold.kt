@@ -275,6 +275,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.LocalShipping,
+                            label = "Proveedores",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("proveedores") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {
