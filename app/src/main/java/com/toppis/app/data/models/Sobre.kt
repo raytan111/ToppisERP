@@ -15,6 +15,7 @@ data class Sobre(
     val nombre: String,
     val descripcion: String = "",
     val saldo: Double = 0.0,
+    val tipo: com.toppis.app.data.db.entities.TipoSobre = com.toppis.app.data.db.entities.TipoSobre.CUENTA,
     @SerialName("fecha_creacion")
     val fechaCreacion: String? = null,
     @SerialName("created_at")

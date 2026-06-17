@@ -80,6 +80,9 @@ import com.toppis.app.ui.proveedores.ProveedoresScreen
 import com.toppis.app.ui.compras.CompraViewModel
 import com.toppis.app.ui.compras.CompraViewModelFactory
 import com.toppis.app.ui.compras.ComprasScreen
+import com.toppis.app.ui.arqueo.ArqueoViewModel
+import com.toppis.app.ui.arqueo.ArqueoViewModelFactory
+import com.toppis.app.ui.arqueo.ArqueoScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -108,6 +111,7 @@ fun NavGraph(
     varianceViewModelFactory: VarianceViewModelFactory,
     proveedorViewModelFactory: ProveedorViewModelFactory,
     compraViewModelFactory: CompraViewModelFactory,
+    arqueoViewModelFactory: ArqueoViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -316,6 +320,11 @@ fun NavGraph(
                     val vm: CompraViewModel = viewModel(factory = compraViewModelFactory)
                     ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("arqueo") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: ArqueoViewModel = viewModel(factory = arqueoViewModelFactory)
+                    ArqueoScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -492,6 +501,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: CompraViewModel = viewModel(factory = compraViewModelFactory)
                 ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("arqueo") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: ArqueoViewModel = viewModel(factory = arqueoViewModelFactory)
+                ArqueoScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

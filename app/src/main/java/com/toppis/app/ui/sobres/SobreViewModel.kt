@@ -41,11 +41,11 @@ class SobreViewModel(private val repository: SobreRepository) : ViewModel() {
         }
     }
 
-    fun crearSobre(nombre: String, descripcion: String) {
+    fun crearSobre(nombre: String, descripcion: String, tipo: com.toppis.app.data.db.entities.TipoSobre = com.toppis.app.data.db.entities.TipoSobre.CUENTA) {
         viewModelScope.launch {
             _uiState.value = SobreUiState.Loading
             try {
-                repository.crearSobre(nombre, descripcion)
+                repository.crearSobre(nombre, descripcion, tipo)
                 refrescar()
                 _uiState.value = SobreUiState.Success
             } catch (e: Exception) {

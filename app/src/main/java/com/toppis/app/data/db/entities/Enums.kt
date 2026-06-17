@@ -86,6 +86,13 @@ enum class MotivoMerma(val label: String) {
     OTRO("Otro")
 }
 
+/** Tipo de sobre: CUENTA = dinero real; FONDO = provisión/aparte. */
+@Serializable
+enum class TipoSobre(val label: String) {
+    CUENTA("Cuenta (dinero real)"),
+    FONDO("Fondo (provisión)")
+}
+
 @Serializable
 enum class EstadoComanda { PENDIENTE, ENTREGADA }
 

@@ -63,12 +63,13 @@ class SobreRepository {
 
     // ── Escritura ─────────────────────────────────────────────────────────────
 
-    suspend fun crearSobre(nombre: String, descripcion: String) {
+    suspend fun crearSobre(nombre: String, descripcion: String, tipo: com.toppis.app.data.db.entities.TipoSobre = com.toppis.app.data.db.entities.TipoSobre.CUENTA) {
         client.postgrest.from("sobres").insert(
             buildJsonObject {
                 put("nombre", nombre)
                 put("descripcion", descripcion)
                 put("saldo", 0.0)
+                put("tipo", tipo.name)
             }
         )
     }
@@ -78,6 +79,7 @@ class SobreRepository {
             buildJsonObject {
                 put("nombre", sobre.nombre)
                 put("descripcion", sobre.descripcion)
+                put("tipo", sobre.tipo.name)
             }
         ) {
             filter { eq("id", sobre.id) }

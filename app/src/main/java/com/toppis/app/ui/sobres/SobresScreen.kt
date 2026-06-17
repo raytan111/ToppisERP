@@ -60,6 +60,25 @@ fun SobresScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            item {
+                val money = DecimalFormat("$#,##0")
+                val real = sobres.filter { it.tipo == com.toppis.app.data.db.entities.TipoSobre.CUENTA }.sumOf { it.saldo }
+                val provis = sobres.filter { it.tipo == com.toppis.app.data.db.entities.TipoSobre.FONDO }.sumOf { it.saldo }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("Dinero real (cuentas)", style = MaterialTheme.typography.labelSmall)
+                            Text(money.format(real), style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
+                    Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("Provisiones (fondos)", style = MaterialTheme.typography.labelSmall)
+                            Text(money.format(provis), style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
+                }
+            }
             items(sobres) { sobre ->
                 SobreCard(
                     sobre = sobre,
@@ -97,8 +116,8 @@ fun SobresScreen(
     if (showCreateDialog) {
         CreateSobreDialog(
             onDismiss = { showCreateDialog = false },
-            onConfirm = { nombre, desc ->
-                viewModel.crearSobre(nombre, desc)
+            onConfirm = { nombre, desc, tipo ->
+                viewModel.crearSobre(nombre, desc, tipo)
                 showCreateDialog = false
             }
         )
@@ -127,9 +146,9 @@ fun SobresScreen(
         EditarSobreDialog(
             sobre = selectedSobre!!,
             onDismiss = { showEditDialog = false },
-            onConfirm = { nombre, descripcion ->
+            onConfirm = { nombre, descripcion, tipo ->
                 viewModel.editarSobre(
-                    selectedSobre!!.copy(nombre = nombre, descripcion = descripcion)
+                    selectedSobre!!.copy(nombre = nombre, descripcion = descripcion, tipo = tipo)
                 )
                 showEditDialog = false
             }
@@ -180,6 +199,12 @@ fun SobreCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = sobre.nombre, style = MaterialTheme.typography.titleMedium)
                     Text(text = sobre.descripcion, style = MaterialTheme.typography.bodyMedium)
+                    val esCuenta = sobre.tipo == com.toppis.app.data.db.entities.TipoSobre.CUENTA
+                    Text(
+                        text = if (esCuenta) "Cuenta (dinero real)" else "Fondo (provisión)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (esCuenta) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                    )
                 }
                 Row {
                     IconButton(onClick = onEditarClick, modifier = Modifier.size(40.dp)) {
@@ -212,41 +237,43 @@ fun SobreCard(
 @Composable
 fun CreateSobreDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
+    onConfirm: (String, String, com.toppis.app.data.db.entities.TipoSobre) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
+    var tipo by remember { mutableStateOf(com.toppis.app.data.db.entities.TipoSobre.CUENTA) }
+    var exp by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nuevo Sobre") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre") }
-                )
-                OutlinedTextField(
-                    value = descripcion,
-                    onValueChange = { descripcion = it },
-                    label = { Text("Descripción") }
-                )
+                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
+                OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") })
+                ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+                    OutlinedTextField(
+                        value = tipo.label, onValueChange = {}, readOnly = true,
+                        label = { Text("Tipo") },
+                        supportingText = { Text("Cuenta = dinero real. Fondo = provisión (IVA, sueldos...).") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+                        com.toppis.app.data.db.entities.TipoSobre.entries.forEach { t ->
+                            DropdownMenuItem(text = { Text(t.label) }, onClick = { tipo = t; exp = false })
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, descripcion) },
+                onClick = { onConfirm(nombre, descripcion, tipo) },
                 enabled = nombre.isNotBlank() && descripcion.isNotBlank()
-            ) {
-                Text("Crear")
-            }
+            ) { Text("Crear") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
 
@@ -348,40 +375,41 @@ fun TransferDialog(
 fun EditarSobreDialog(
     sobre: Sobre,
     onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
+    onConfirm: (String, String, com.toppis.app.data.db.entities.TipoSobre) -> Unit
 ) {
     var nombre by remember { mutableStateOf(sobre.nombre) }
     var descripcion by remember { mutableStateOf(sobre.descripcion) }
+    var tipo by remember { mutableStateOf(sobre.tipo) }
+    var exp by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Editar Sobre") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre") }
-                )
-                OutlinedTextField(
-                    value = descripcion,
-                    onValueChange = { descripcion = it },
-                    label = { Text("Descripción") }
-                )
+                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
+                OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") })
+                ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+                    OutlinedTextField(
+                        value = tipo.label, onValueChange = {}, readOnly = true,
+                        label = { Text("Tipo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+                        com.toppis.app.data.db.entities.TipoSobre.entries.forEach { t ->
+                            DropdownMenuItem(text = { Text(t.label) }, onClick = { tipo = t; exp = false })
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, descripcion) },
+                onClick = { onConfirm(nombre, descripcion, tipo) },
                 enabled = nombre.isNotBlank() && descripcion.isNotBlank()
-            ) {
-                Text("Guardar")
-            }
+            ) { Text("Guardar") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }

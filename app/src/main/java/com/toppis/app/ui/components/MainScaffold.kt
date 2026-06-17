@@ -293,6 +293,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.PointOfSale,
+                            label = "Arqueo de Caja",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("arqueo") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

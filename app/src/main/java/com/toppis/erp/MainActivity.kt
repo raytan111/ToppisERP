@@ -101,6 +101,11 @@ class MainActivity : ComponentActivity() {
             com.toppis.app.data.repository.CompraRepository()
         )
 
+        // ── Fase 7: Arqueo de caja ──
+        val arqueoFactory = com.toppis.app.ui.arqueo.ArqueoViewModelFactory(
+            com.toppis.app.data.repository.ArqueoRepository()
+        )
+
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
         val authFactory = AuthViewModelFactory(authRepo)
@@ -147,6 +152,7 @@ class MainActivity : ComponentActivity() {
                         varianceViewModelFactory = varianceFactory,
                         proveedorViewModelFactory = proveedorFactory,
                         compraViewModelFactory = compraFactory,
+                        arqueoViewModelFactory = arqueoFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )
