@@ -30,16 +30,26 @@ fun ArqueoScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showNuevo by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState) {
         when (uiState) {
             is ArqueoUiState.Error -> {
-                snackbarHostState.showSnackbar((uiState as ArqueoUiState.Error).message)
+                errorMsg = (uiState as ArqueoUiState.Error).message
                 viewModel.resetState()
             }
             ArqueoUiState.Success -> { snackbarHostState.showSnackbar("Arqueo registrado"); viewModel.resetState() }
             else -> {}
         }
+    }
+
+    errorMsg?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { errorMsg = null },
+            title = { Text("No se pudo registrar el arqueo") },
+            text = { Text(msg) },
+            confirmButton = { TextButton(onClick = { errorMsg = null }) { Text("Entendido") } }
+        )
     }
 
     Scaffold(
