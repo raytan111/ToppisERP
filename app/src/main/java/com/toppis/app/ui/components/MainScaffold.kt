@@ -320,6 +320,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Store,
+                            label = "Locales",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("locales") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

@@ -114,6 +114,11 @@ class MainActivity : ComponentActivity() {
             com.toppis.app.data.repository.ManoObraRepository()
         )
 
+        // ── Fase 9: Locales / multi-local ──
+        val localFactory = com.toppis.app.ui.locales.LocalViewModelFactory(
+            com.toppis.app.data.repository.LocalRepository()
+        )
+
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
         val authFactory = AuthViewModelFactory(authRepo)
@@ -163,6 +168,7 @@ class MainActivity : ComponentActivity() {
                         arqueoViewModelFactory = arqueoFactory,
                         empleadoViewModelFactory = empleadoFactory,
                         manoObraViewModelFactory = manoObraFactory,
+                        localViewModelFactory = localFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )

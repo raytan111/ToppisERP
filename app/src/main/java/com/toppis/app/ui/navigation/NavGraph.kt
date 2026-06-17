@@ -89,6 +89,9 @@ import com.toppis.app.ui.empleados.EmpleadosScreen
 import com.toppis.app.ui.manoobra.ManoObraViewModel
 import com.toppis.app.ui.manoobra.ManoObraViewModelFactory
 import com.toppis.app.ui.manoobra.ManoObraScreen
+import com.toppis.app.ui.locales.LocalViewModel
+import com.toppis.app.ui.locales.LocalViewModelFactory
+import com.toppis.app.ui.locales.LocalesScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -120,6 +123,7 @@ fun NavGraph(
     arqueoViewModelFactory: ArqueoViewModelFactory,
     empleadoViewModelFactory: EmpleadoViewModelFactory,
     manoObraViewModelFactory: ManoObraViewModelFactory,
+    localViewModelFactory: LocalViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -343,6 +347,11 @@ fun NavGraph(
                     val vm: ManoObraViewModel = viewModel(factory = manoObraViewModelFactory)
                     ManoObraScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("locales") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: LocalViewModel = viewModel(factory = localViewModelFactory)
+                    LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -534,6 +543,11 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: ManoObraViewModel = viewModel(factory = manoObraViewModelFactory)
                 ManoObraScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("locales") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: LocalViewModel = viewModel(factory = localViewModelFactory)
+                LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }
