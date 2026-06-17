@@ -169,6 +169,15 @@ fun MainScaffold(
                         }
                     )
 
+                    MoreMenuItem(
+                        icon = Icons.Filled.History,
+                        label = "Historial de Ventas",
+                        onClick = {
+                            showMoreSheet = false
+                            navController.navigate("ventas_historial") { launchSingleTop = true }
+                        }
+                    )
+
                     // Opciones solo para Admin
                     if (isAdmin) {
                         Divider(modifier = Modifier.padding(vertical = 8.dp))

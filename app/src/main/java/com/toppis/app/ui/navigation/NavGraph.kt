@@ -92,6 +92,7 @@ import com.toppis.app.ui.manoobra.ManoObraScreen
 import com.toppis.app.ui.locales.LocalViewModel
 import com.toppis.app.ui.locales.LocalViewModelFactory
 import com.toppis.app.ui.locales.LocalesScreen
+import com.toppis.app.ui.ventas.VentasHistorialScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
 import com.toppis.app.ui.sobres.SobresScreen
@@ -352,6 +353,9 @@ fun NavGraph(
                     val vm: LocalViewModel = viewModel(factory = localViewModelFactory)
                     LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
                 }
+                composable("ventas_historial") {
+                    VentasHistorialScreen(onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -548,6 +552,9 @@ fun NavGraph(
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 val vm: LocalViewModel = viewModel(factory = localViewModelFactory)
                 LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("ventas_historial") {
+                VentasHistorialScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }
