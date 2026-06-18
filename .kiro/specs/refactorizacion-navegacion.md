@@ -9,7 +9,7 @@
 - [x] **Fase 4 — Navegación nueva** (sin bottom bar): `HomeScreen` con botón grande de POS + tarjetas de categoría; `CategoriaMenuScreen` (sub-menú pantalla completa); `BackScaffold` para envolver pantallas que dependían del bottom bar; NavGraph reescrito a un solo NavHost. Definiciones de menú en `ui/home/HomeMenu.kt`. Logout en TopBar del Home. (`MainScaffold` queda muerto → se borra en Fase 6.)
 - [x] **Fase 5 — Permisos por rol + scope local**: modelo `Permisos` (ui/auth/Permisos.kt) por rol con `rutas`, `puedeEditar`, `puedeBorrar`, `scopeLocal`. Home/CategoríaMenu filtran opciones por permisos; NavGraph gatea cada ruta con `permisos.puedeAbrir(...)`. Borrado oculto para SUPERVISOR en inventario/preparaciones/modificadores/promociones/conteos (CAJERO no las alcanza). Scope local: al iniciar sesión, no-admins quedan fijados a su local asignado (`AuthRepository.getLocalAsignado` + `aplicarScopeLocal` en AuthViewModel); ADMIN cambia de local libremente.
 - [x] **Fase 6 — Quitar Rendimiento Papa + bottom bar + código muerto**: eliminados `PapaRendimiento*` (screen/VM/factory/repo/modelo), `MainScaffold` (bottom bar), y `Dashboard*` (reemplazado por KPIs Ejecutivos). Limpiadas referencias en MainActivity y NavGraph.
-- [ ] **Fase 7 — Clean slate SQL**.
+- [x] **Fase 7 — Clean slate SQL**: `supabase-clean-slate.sql` creado (lo ejecuta el usuario en Supabase). Trunca transaccionales (DO block con `to_regclass` para tablas existentes), resetea stocks/saldos a 0, conserva usuarios/locales/configs.
 
 ---
 
