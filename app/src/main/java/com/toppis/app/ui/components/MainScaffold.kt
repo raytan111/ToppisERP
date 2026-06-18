@@ -349,6 +349,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.Dashboard,
+                            label = "KPIs Ejecutivos",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("kpis") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {

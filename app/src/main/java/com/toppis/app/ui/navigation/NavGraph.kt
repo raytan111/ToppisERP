@@ -93,6 +93,8 @@ import com.toppis.app.ui.locales.LocalViewModel
 import com.toppis.app.ui.locales.LocalViewModelFactory
 import com.toppis.app.ui.locales.LocalesScreen
 import com.toppis.app.ui.locales.AsignacionesScreen
+import com.toppis.app.ui.kpis.KpisViewModel
+import com.toppis.app.ui.kpis.KpisScreen
 import com.toppis.app.ui.ventas.VentasHistorialScreen
 import com.toppis.app.ui.sobres.SobreViewModel
 import com.toppis.app.ui.sobres.SobreViewModelFactory
@@ -361,6 +363,11 @@ fun NavGraph(
                     if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                     AsignacionesScreen(onNavigateBack = { navController.popBackStack() })
                 }
+                composable("kpis") {
+                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                    val vm: KpisViewModel = viewModel()
+                    KpisScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
     } else {
@@ -564,6 +571,11 @@ fun NavGraph(
             composable("asignaciones_local") {
                 if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
                 AsignacionesScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable("kpis") {
+                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+                val vm: KpisViewModel = viewModel()
+                KpisScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }
