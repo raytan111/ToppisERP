@@ -1,7 +1,7 @@
 package com.toppis.app.ui.navigation
 
-import androidx.compose.foundation.layout.padding
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -10,10 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.toppis.app.data.db.entities.Rol
 import com.toppis.app.ui.auth.AuthViewModel
 import com.toppis.app.ui.auth.LoginScreen
@@ -21,7 +22,7 @@ import com.toppis.app.ui.auth.UsuariosScreen
 import com.toppis.app.ui.comprobantes.ComprobantesScreen
 import com.toppis.app.ui.comprobantes.ComprobantesViewModel
 import com.toppis.app.ui.comprobantes.ComprobantesViewModelFactory
-import com.toppis.app.ui.components.MainScaffold
+import com.toppis.app.ui.components.BackScaffold
 import com.toppis.app.ui.contabilidad.ContabilidadScreen
 import com.toppis.app.ui.contabilidad.ContabilidadViewModel
 import com.toppis.app.ui.contabilidad.ContabilidadViewModelFactory
@@ -34,6 +35,9 @@ import com.toppis.app.ui.flujo.FlujoCajaViewModelFactory
 import com.toppis.app.ui.gastos.GastoViewModel
 import com.toppis.app.ui.gastos.GastoViewModelFactory
 import com.toppis.app.ui.gastos.GastosScreen
+import com.toppis.app.ui.home.CategoriaMenuScreen
+import com.toppis.app.ui.home.HomeScreen
+import com.toppis.app.ui.home.categoriaPorId
 import com.toppis.app.ui.inventario.InventarioScreen
 import com.toppis.app.ui.inventario.InventarioViewModel
 import com.toppis.app.ui.inventario.InventarioViewModelFactory
@@ -43,8 +47,6 @@ import com.toppis.app.ui.pos.PosViewModelFactory
 import com.toppis.app.ui.reportes.ReporteViewModel
 import com.toppis.app.ui.reportes.ReporteViewModelFactory
 import com.toppis.app.ui.reportes.ReportesScreen
-import com.toppis.app.ui.dashboard.DashboardScreen
-import com.toppis.app.ui.dashboard.DashboardViewModel
 import com.toppis.app.ui.dashboard.DashboardViewModelFactory
 import com.toppis.app.ui.menu.MenuConfigScreen
 import com.toppis.app.ui.menu.MenuConfigViewModel
@@ -58,9 +60,7 @@ import com.toppis.app.ui.modificadores.ModificadoresScreen
 import com.toppis.app.ui.promociones.PromocionViewModel
 import com.toppis.app.ui.promociones.PromocionViewModelFactory
 import com.toppis.app.ui.promociones.PromocionesScreen
-import com.toppis.app.ui.papa.PapaRendimientoViewModel
 import com.toppis.app.ui.papa.PapaRendimientoViewModelFactory
-import com.toppis.app.ui.papa.PapaRendimientoScreen
 import com.toppis.app.ui.foodcost.FoodCostViewModel
 import com.toppis.app.ui.foodcost.FoodCostViewModelFactory
 import com.toppis.app.ui.foodcost.FoodCostScreen
@@ -155,436 +155,220 @@ fun NavGraph(
         }
     }
 
-    // Obtener la ruta actual para MainScaffold
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
-
-    // Determinar si la ruta actual debe usar MainScaffold
-    val mainRoutes = listOf("dashboard", "sobres", "pos", "inventario", "gastos", "reportes")
-    val useMainScaffold = currentRoute in mainRoutes
-
-    if (useMainScaffold) {
-        MainScaffold(
-            currentRoute = currentRoute,
-            isAdmin = isAdmin,
-            navController = navController,
-            onLogout = { authViewModel.logout() }
-        ) { padding ->
-            NavHost(
-                navController = navController,
-                startDestination = "login",
-                modifier = modifier.padding(padding)
-            ) {
-                composable("login") {
-                    LoginScreen(
-                        viewModel = authViewModel,
-                        onLoginSuccess = {
-                            navController.navigate("dashboard") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable("dashboard") {
-                    val vm: DashboardViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = dashboardViewModelFactory)
-                    DashboardScreen(viewModel = vm)
-                }
-
-                composable("sobres") {
-                    val vm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
-                    SobresScreen(viewModel = vm, isAdmin = isAdmin)
-                }
-
-                composable("pos") {
-                    val posVm: PosViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = posViewModelFactory)
-                    val sobreVm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
-                    PosScreen(
-                        posViewModel = posVm,
-                        sobreViewModel = sobreVm,
-                        usuarioId = usuarioActual?.id
-                    )
-                }
-
-                composable("inventario") {
-                    val vm: InventarioViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = inventarioViewModelFactory)
-                    InventarioScreen(viewModel = vm, isAdmin = isAdmin)
-                }
-
-                composable("gastos") {
-                    val vm: GastoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = gastoViewModelFactory)
-                    GastosScreen(viewModel = vm, usuarioId = usuarioActual?.id, isAdmin = isAdmin)
-                }
-
-                composable("reportes") {
-                    val vm: ReporteViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = reporteViewModelFactory)
-                    ReportesScreen(viewModel = vm, isAdmin = isAdmin)
-                }
-
-                composable("usuarios") {
-                    if (!isAdmin) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        return@composable
+    NavHost(
+        navController = navController,
+        startDestination = "login",
+        modifier = modifier
+    ) {
+        // ── Login ──────────────────────────────────────────────────────────
+        composable("login") {
+            LoginScreen(
+                viewModel = authViewModel,
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
                     }
-                    UsuariosScreen(
-                        viewModel = authViewModel,
-                        onNavigateBack = { navController.popBackStack() }
-                    )
                 }
-
-                composable("exportacion") {
-                    if (!isAdmin) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        return@composable
-                    }
-                    val vm: ExportacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = exportacionViewModelFactory)
-                    ExportacionScreen(
-                        viewModel = vm,
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-
-                composable("flujo_caja") {
-                    if (!isAdmin) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        return@composable
-                    }
-                    val vm: FlujoCajaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = flujoCajaViewModelFactory)
-                    FlujoCajaScreen(
-                        viewModel = vm,
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-
-                composable("menu_config") {
-                    if (!isAdmin) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        return@composable
-                    }
-                    val vm: MenuConfigViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = menuConfigViewModelFactory)
-                    MenuConfigScreen(
-                        viewModel = vm,
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-
-                composable("comprobantes") {
-                    val vm: ComprobantesViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = comprobantesViewModelFactory)
-                    ComprobantesScreen(
-                        viewModel = vm,
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-
-                composable("contabilidad") {
-                    if (!isAdmin) {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                        return@composable
-                    }
-                    val vm: ContabilidadViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = contabilidadViewModelFactory)
-                    ContabilidadScreen(
-                        viewModel = vm,
-                        usuarioId = usuarioActual?.id,
-                        onNavigateBack = { navController.popBackStack() }
-                    )
-                }
-
-                composable("preparaciones") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: PreparacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = preparacionViewModelFactory)
-                    PreparacionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("modificadores") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: ModificadorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = modificadorViewModelFactory)
-                    ModificadoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("promociones") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: PromocionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = promocionViewModelFactory)
-                    PromocionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("papa_rendimientos") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: PapaRendimientoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = papaViewModelFactory)
-                    PapaRendimientoScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("food_cost") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: FoodCostViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = foodCostViewModelFactory)
-                    FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("mermas") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: MermaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = mermaViewModelFactory)
-                    MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("conteos") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: ConteoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = conteoViewModelFactory)
-                    ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("compra_sugerida") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: CompraSugeridaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraSugeridaViewModelFactory)
-                    CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("variance") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: VarianceViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = varianceViewModelFactory)
-                    VarianceScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("proveedores") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: ProveedorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = proveedorViewModelFactory)
-                    ProveedoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("compras") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: CompraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraViewModelFactory)
-                    ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("arqueo") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: ArqueoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = arqueoViewModelFactory)
-                    ArqueoScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("empleados") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: EmpleadoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = empleadoViewModelFactory)
-                    EmpleadosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("mano_obra") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: ManoObraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = manoObraViewModelFactory)
-                    ManoObraScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("locales") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: LocalViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = localViewModelFactory)
-                    LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-                composable("ventas_historial") {
-                    VentasHistorialScreen(onNavigateBack = { navController.popBackStack() })
-                }
-                composable("asignaciones_local") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    AsignacionesScreen(onNavigateBack = { navController.popBackStack() })
-                }
-                composable("kpis") {
-                    if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                    val vm: KpisViewModel = viewModel(viewModelStoreOwner = activityOwner)
-                    KpisScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-                }
-            }
+            )
         }
-    } else {
-        NavHost(
-            navController = navController,
-            startDestination = "login",
-            modifier = modifier
-        ) {
-            composable("login") {
-                LoginScreen(
-                    viewModel = authViewModel,
-                    onLoginSuccess = {
-                        navController.navigate("dashboard") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-                )
-            }
 
-            composable("dashboard") {
-                val vm: DashboardViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = dashboardViewModelFactory)
-                DashboardScreen(viewModel = vm)
-            }
+        // ── Home (menú principal, sin bottom bar) ────────────────────────────
+        composable("home") {
+            HomeScreen(
+                isAdmin = isAdmin,
+                onAbrirPos = { navController.navigate("pos") },
+                onAbrirCategoria = { catId -> navController.navigate("categoria/$catId") },
+                onLogout = { authViewModel.logout() }
+            )
+        }
 
-            composable("sobres") {
-                val vm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
-                SobresScreen(viewModel = vm, isAdmin = isAdmin)
+        // ── Sub-menú de categoría ────────────────────────────────────────────
+        composable(
+            route = "categoria/{catId}",
+            arguments = listOf(navArgument("catId") { type = NavType.StringType })
+        ) { entry ->
+            val cat = categoriaPorId(entry.arguments?.getString("catId"))
+            if (cat == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
             }
+            CategoriaMenuScreen(
+                categoria = cat,
+                isAdmin = isAdmin,
+                onAbrirOpcion = { ruta -> navController.navigate(ruta) },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
 
-            composable("pos") {
-                val posVm: PosViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = posViewModelFactory)
-                val sobreVm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
+        // ── Venta (POS) ──────────────────────────────────────────────────────
+        composable("pos") {
+            val posVm: PosViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = posViewModelFactory)
+            val sobreVm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
+            BackScaffold("Punto de Venta", onNavigateBack = { navController.popBackStack() }) { padding ->
                 PosScreen(
                     posViewModel = posVm,
                     sobreViewModel = sobreVm,
-                    usuarioId = usuarioActual?.id
-                )
-            }
-
-            composable("inventario") {
-                val vm: InventarioViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = inventarioViewModelFactory)
-                InventarioScreen(viewModel = vm, isAdmin = isAdmin)
-            }
-
-            composable("gastos") {
-                val vm: GastoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = gastoViewModelFactory)
-                GastosScreen(viewModel = vm, usuarioId = usuarioActual?.id, isAdmin = isAdmin)
-            }
-
-            composable("reportes") {
-                val vm: ReporteViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = reporteViewModelFactory)
-                ReportesScreen(viewModel = vm, isAdmin = isAdmin)
-            }
-
-            composable("usuarios") {
-                if (!isAdmin) {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
-                    return@composable
-                }
-                UsuariosScreen(
-                    viewModel = authViewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable("exportacion") {
-                if (!isAdmin) {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
-                    return@composable
-                }
-                val vm: ExportacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = exportacionViewModelFactory)
-                ExportacionScreen(
-                    viewModel = vm,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable("flujo_caja") {
-                if (!isAdmin) {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
-                    return@composable
-                }
-                val vm: FlujoCajaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = flujoCajaViewModelFactory)
-                FlujoCajaScreen(
-                    viewModel = vm,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable("menu_config") {
-                if (!isAdmin) {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
-                    return@composable
-                }
-                val vm: MenuConfigViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = menuConfigViewModelFactory)
-                MenuConfigScreen(
-                    viewModel = vm,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable("comprobantes") {
-                val vm: ComprobantesViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = comprobantesViewModelFactory)
-                ComprobantesScreen(
-                    viewModel = vm,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable("contabilidad") {
-                if (!isAdmin) {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
-                    return@composable
-                }
-                val vm: ContabilidadViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = contabilidadViewModelFactory)
-                ContabilidadScreen(
-                    viewModel = vm,
                     usuarioId = usuarioActual?.id,
-                    onNavigateBack = { navController.popBackStack() }
+                    modifier = Modifier.padding(padding)
                 )
             }
+        }
 
-            composable("preparaciones") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: PreparacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = preparacionViewModelFactory)
-                PreparacionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        // ── Fondos ───────────────────────────────────────────────────────────
+        composable("sobres") {
+            val vm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
+            BackScaffold("Sobres", onNavigateBack = { navController.popBackStack() }) { padding ->
+                SobresScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
             }
-            composable("modificadores") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: ModificadorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = modificadorViewModelFactory)
-                ModificadoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("gastos") {
+            val vm: GastoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = gastoViewModelFactory)
+            BackScaffold("Gastos", onNavigateBack = { navController.popBackStack() }) { padding ->
+                GastosScreen(viewModel = vm, usuarioId = usuarioActual?.id, isAdmin = isAdmin, modifier = Modifier.padding(padding))
             }
-            composable("promociones") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: PromocionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = promocionViewModelFactory)
-                PromocionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("arqueo") {
+            val vm: ArqueoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = arqueoViewModelFactory)
+            ArqueoScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("flujo_caja") {
+            val vm: FlujoCajaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = flujoCajaViewModelFactory)
+            FlujoCajaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("contabilidad") {
+            val vm: ContabilidadViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = contabilidadViewModelFactory)
+            ContabilidadScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("reportes") {
+            val vm: ReporteViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = reporteViewModelFactory)
+            BackScaffold("Reportes", onNavigateBack = { navController.popBackStack() }) { padding ->
+                ReportesScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
             }
-            composable("papa_rendimientos") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: PapaRendimientoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = papaViewModelFactory)
-                PapaRendimientoScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        // ── Inventario ───────────────────────────────────────────────────────
+        composable("inventario") {
+            val vm: InventarioViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = inventarioViewModelFactory)
+            BackScaffold("Artículos", onNavigateBack = { navController.popBackStack() }) { padding ->
+                InventarioScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
             }
-            composable("food_cost") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: FoodCostViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = foodCostViewModelFactory)
-                FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("mermas") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: MermaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = mermaViewModelFactory)
-                MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("conteos") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: ConteoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = conteoViewModelFactory)
-                ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("compra_sugerida") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: CompraSugeridaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraSugeridaViewModelFactory)
-                CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("variance") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: VarianceViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = varianceViewModelFactory)
-                VarianceScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("proveedores") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: ProveedorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = proveedorViewModelFactory)
-                ProveedoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("compras") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: CompraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraViewModelFactory)
-                ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("arqueo") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: ArqueoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = arqueoViewModelFactory)
-                ArqueoScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("empleados") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: EmpleadoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = empleadoViewModelFactory)
-                EmpleadosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("mano_obra") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: ManoObraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = manoObraViewModelFactory)
-                ManoObraScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("locales") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: LocalViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = localViewModelFactory)
-                LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
-            composable("ventas_historial") {
-                VentasHistorialScreen(onNavigateBack = { navController.popBackStack() })
-            }
-            composable("asignaciones_local") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                AsignacionesScreen(onNavigateBack = { navController.popBackStack() })
-            }
-            composable("kpis") {
-                if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
-                val vm: KpisViewModel = viewModel(viewModelStoreOwner = activityOwner)
-                KpisScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
-            }
+        }
+
+        composable("mermas") {
+            val vm: MermaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = mermaViewModelFactory)
+            MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("conteos") {
+            val vm: ConteoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = conteoViewModelFactory)
+            ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("compra_sugerida") {
+            val vm: CompraSugeridaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraSugeridaViewModelFactory)
+            CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("variance") {
+            val vm: VarianceViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = varianceViewModelFactory)
+            VarianceScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("compras") {
+            val vm: CompraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraViewModelFactory)
+            ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("proveedores") {
+            val vm: ProveedorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = proveedorViewModelFactory)
+            ProveedoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        // ── Cocina ───────────────────────────────────────────────────────────
+        composable("menu_config") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: MenuConfigViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = menuConfigViewModelFactory)
+            MenuConfigScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("preparaciones") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: PreparacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = preparacionViewModelFactory)
+            PreparacionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("modificadores") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: ModificadorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = modificadorViewModelFactory)
+            ModificadoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("food_cost") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: FoodCostViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = foodCostViewModelFactory)
+            FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        // ── Personal ─────────────────────────────────────────────────────────
+        composable("empleados") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: EmpleadoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = empleadoViewModelFactory)
+            EmpleadosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("mano_obra") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: ManoObraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = manoObraViewModelFactory)
+            ManoObraScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+        }
+
+        // ── Administración ───────────────────────────────────────────────────
+        composable("usuarios") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            UsuariosScreen(viewModel = authViewModel, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("locales") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: LocalViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = localViewModelFactory)
+            LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("asignaciones_local") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            AsignacionesScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("kpis") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: KpisViewModel = viewModel(viewModelStoreOwner = activityOwner)
+            KpisScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("ventas_historial") {
+            VentasHistorialScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("comprobantes") {
+            val vm: ComprobantesViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = comprobantesViewModelFactory)
+            ComprobantesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("promociones") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: PromocionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = promocionViewModelFactory)
+            PromocionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("exportacion") {
+            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: ExportacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = exportacionViewModelFactory)
+            ExportacionScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
     }
 }

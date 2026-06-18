@@ -6,7 +6,7 @@
 - [x] **Fase 1 — Roles v2**: enum Kotlin `Rol { ADMIN, ADMIN_LOCAL, SUPERVISOR, CAJERO }` actualizado; dropdown de usuarios muestra los 4; SQL en `supabase-roles-v2.sql` (ejecutar en Supabase).
 - [x] **Fase 2 — Sesión persistente**: `AuthViewModel.init` restaura sesión al arrancar; `AuthRepository.getCurrentUser()` espera `auth.awaitInitialization()` antes de leer el usuario, para no devolver null mientras Supabase restaura la sesión persistida.
 - [x] **Fase 3 — Performance / cache en memoria**: los ViewModels se scopean al Activity (`viewModelStoreOwner = activityOwner` en NavGraph) en vez de al NavBackStackEntry. Sobreviven a la navegación, conservan su data en StateFlow (no se reconsulta la DB al abrir cada pantalla) y Realtime los mantiene frescos. Equivale al CacheManager planeado con menos código. (Nota: los VM no se limpian al logout; Fase 5 maneja el scope por local.)
-- [ ] **Fase 4 — Navegación nueva** (sin bottom bar).
+- [x] **Fase 4 — Navegación nueva** (sin bottom bar): `HomeScreen` con botón grande de POS + tarjetas de categoría; `CategoriaMenuScreen` (sub-menú pantalla completa); `BackScaffold` para envolver pantallas que dependían del bottom bar; NavGraph reescrito a un solo NavHost. Definiciones de menú en `ui/home/HomeMenu.kt`. Logout en TopBar del Home. (`MainScaffold` queda muerto → se borra en Fase 6.)
 - [ ] **Fase 5 — Permisos por rol + scope local**.
 - [ ] **Fase 6 — Quitar Rendimiento Papa + bottom bar + código muerto**.
 - [ ] **Fase 7 — Clean slate SQL**.

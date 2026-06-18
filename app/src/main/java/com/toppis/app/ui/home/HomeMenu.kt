@@ -1,0 +1,109 @@
+package com.toppis.app.ui.home
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.vector.ImageVector
+
+/**
+ * Definición declarativa de la navegación tipo menú (sin bottom bar).
+ *
+ * - [MenuOpcion]: una pantalla concreta (ruta de navegación).
+ * - [MenuCategoria]: agrupa opciones bajo una tarjeta del Home.
+ *
+ * El POS ("Venta") es un acceso directo destacado del Home y no vive en una
+ * categoría.
+ */
+data class MenuOpcion(
+    val ruta: String,
+    val titulo: String,
+    val icono: ImageVector,
+    val soloAdmin: Boolean = false
+)
+
+data class MenuCategoria(
+    val id: String,            // ruta de la categoría, ej. "cat_cocina"
+    val titulo: String,
+    val emoji: String,
+    val icono: ImageVector,
+    val soloAdmin: Boolean = false,
+    val opciones: List<MenuOpcion>
+)
+
+/** Ruta del acceso directo al POS. */
+const val RUTA_POS = "pos"
+
+/** Todas las categorías del menú principal, en orden de presentación. */
+val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
+    MenuCategoria(
+        id = "cat_cocina",
+        titulo = "Cocina",
+        emoji = "🍔",
+        icono = Icons.Filled.Restaurant,
+        opciones = listOf(
+            MenuOpcion("menu_config", "Configurar Menú", Icons.Filled.Restaurant),
+            MenuOpcion("preparaciones", "Preparaciones", Icons.Filled.Blender),
+            MenuOpcion("modificadores", "Modificadores", Icons.Filled.Tune),
+            MenuOpcion("food_cost", "Food Cost & Menú", Icons.Filled.PieChart)
+        )
+    ),
+    MenuCategoria(
+        id = "cat_inventario",
+        titulo = "Inventario",
+        emoji = "📦",
+        icono = Icons.Filled.Inventory,
+        opciones = listOf(
+            MenuOpcion("inventario", "Artículos (stock)", Icons.AutoMirrored.Filled.List),
+            MenuOpcion("mermas", "Mermas", Icons.Filled.DeleteSweep),
+            MenuOpcion("conteos", "Conteo de Inventario", Icons.Filled.Inventory),
+            MenuOpcion("compra_sugerida", "Compra Sugerida", Icons.Filled.ShoppingCart),
+            MenuOpcion("variance", "Análisis de Inventario", Icons.Filled.Analytics),
+            MenuOpcion("compras", "Compras", Icons.Filled.AddShoppingCart),
+            MenuOpcion("proveedores", "Proveedores", Icons.Filled.LocalShipping)
+        )
+    ),
+    MenuCategoria(
+        id = "cat_fondos",
+        titulo = "Fondos",
+        emoji = "💰",
+        icono = Icons.Filled.AccountBalance,
+        opciones = listOf(
+            MenuOpcion("sobres", "Sobres", Icons.Filled.AccountBalance),
+            MenuOpcion("gastos", "Gastos", Icons.Filled.AttachMoney),
+            MenuOpcion("arqueo", "Arqueo de Caja", Icons.Filled.PointOfSale),
+            MenuOpcion("flujo_caja", "Flujo de Caja", Icons.Filled.ShowChart),
+            MenuOpcion("contabilidad", "Contabilidad", Icons.Filled.Calculate),
+            MenuOpcion("reportes", "Reportes", Icons.Filled.BarChart)
+        )
+    ),
+    MenuCategoria(
+        id = "cat_personal",
+        titulo = "Personal",
+        emoji = "👥",
+        icono = Icons.Filled.Groups,
+        opciones = listOf(
+            MenuOpcion("empleados", "Empleados", Icons.Filled.Badge),
+            MenuOpcion("mano_obra", "Mano de Obra / Prime Cost", Icons.Filled.Groups)
+        )
+    ),
+    MenuCategoria(
+        id = "cat_admin",
+        titulo = "Administración",
+        emoji = "⚙️",
+        icono = Icons.Filled.Settings,
+        soloAdmin = true,
+        opciones = listOf(
+            MenuOpcion("usuarios", "Usuarios", Icons.Filled.Group, soloAdmin = true),
+            MenuOpcion("locales", "Locales", Icons.Filled.Store, soloAdmin = true),
+            MenuOpcion("asignaciones_local", "Usuarios por Local", Icons.Filled.SupervisedUserCircle, soloAdmin = true),
+            MenuOpcion("kpis", "KPIs Ejecutivos", Icons.Filled.Dashboard, soloAdmin = true),
+            MenuOpcion("ventas_historial", "Historial de Ventas", Icons.Filled.History),
+            MenuOpcion("comprobantes", "Comprobantes", Icons.Filled.Receipt),
+            MenuOpcion("promociones", "Promociones", Icons.Filled.LocalOffer, soloAdmin = true),
+            MenuOpcion("exportacion", "Exportación", Icons.Filled.FileDownload, soloAdmin = true)
+        )
+    )
+)
+
+/** Busca una categoría por su id de ruta. */
+fun categoriaPorId(id: String?): MenuCategoria? = CATEGORIAS_MENU.firstOrNull { it.id == id }
