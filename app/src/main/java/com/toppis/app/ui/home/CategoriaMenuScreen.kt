@@ -20,12 +20,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CategoriaMenuScreen(
     categoria: MenuCategoria,
-    isAdmin: Boolean,
+    permisos: com.toppis.app.ui.auth.Permisos,
     onAbrirOpcion: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val opciones = remember(categoria, isAdmin) {
-        categoria.opciones.filter { isAdmin || !it.soloAdmin }
+    val opciones = remember(categoria, permisos) {
+        categoria.opciones.filter { permisos.puedeAbrir(it.ruta) }
     }
 
     Scaffold(

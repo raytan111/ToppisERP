@@ -25,6 +25,7 @@ import java.text.DecimalFormat
 fun ConteosScreen(
     viewModel: ConteoViewModel,
     usuarioId: String? = null,
+    puedeBorrar: Boolean = true,
     onNavigateBack: () -> Unit = {}
 ) {
     val conteos by viewModel.conteos.collectAsState()
@@ -85,7 +86,7 @@ fun ConteosScreen(
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
                     items(conteos) { c ->
-                        ConteoCard(c, onEliminar = { aEliminar = c.id })
+                        ConteoCard(c, puedeBorrar = puedeBorrar, onEliminar = { aEliminar = c.id })
                     }
                 }
             }
@@ -104,7 +105,7 @@ fun ConteosScreen(
 }
 
 @Composable
-private fun ConteoCard(c: Conteo, onEliminar: () -> Unit) {
+private fun ConteoCard(c: Conteo, puedeBorrar: Boolean = true, onEliminar: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -114,8 +115,10 @@ private fun ConteoCard(c: Conteo, onEliminar: () -> Unit) {
                 Text(c.estado, style = MaterialTheme.typography.labelMedium, color = color)
                 if (c.nota.isNotBlank()) Text(c.nota, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
             }
-            IconButton(onClick = onEliminar) {
-                Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+            if (puedeBorrar) {
+                IconButton(onClick = onEliminar) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

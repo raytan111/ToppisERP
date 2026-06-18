@@ -25,6 +25,7 @@ import java.text.DecimalFormat
 @Composable
 fun PreparacionesScreen(
     viewModel: PreparacionViewModel,
+    puedeBorrar: Boolean = true,
     onNavigateBack: () -> Unit = {}
 ) {
     val preparaciones by viewModel.preparaciones.collectAsState()
@@ -67,6 +68,7 @@ fun PreparacionesScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             PreparacionesList(
                 preparaciones = preparaciones,
+                puedeBorrar = puedeBorrar,
                 onVerReceta = { prep ->
                     selectedPrep = prep
                     componentes = emptyList()
@@ -131,6 +133,7 @@ private val cantidadFormat = DecimalFormat("#,##0.######")
 @Composable
 private fun PreparacionesList(
     preparaciones: List<Preparacion>,
+    puedeBorrar: Boolean = true,
     onVerReceta: (Preparacion) -> Unit,
     onEliminar: (Preparacion) -> Unit
 ) {
@@ -170,8 +173,10 @@ private fun PreparacionesList(
                     }
                     OutlinedButton(onClick = { onVerReceta(prep) }) { Text("Receta") }
                     Spacer(Modifier.width(8.dp))
-                    IconButton(onClick = { onEliminar(prep) }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                    if (puedeBorrar) {
+                        IconButton(onClick = { onEliminar(prep) }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }

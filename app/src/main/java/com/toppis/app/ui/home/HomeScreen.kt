@@ -26,14 +26,17 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    isAdmin: Boolean,
+    permisos: com.toppis.app.ui.auth.Permisos,
     onAbrirPos: () -> Unit,
     onAbrirCategoria: (String) -> Unit,
     onLogout: () -> Unit
 ) {
     val localNombre by com.toppis.app.data.repository.LocalSession.activoNombre.collectAsState()
-    val categorias = remember(isAdmin) {
-        CATEGORIAS_MENU.filter { isAdmin || !it.soloAdmin }
+    // Solo categorías que tengan al menos una opción visible para este rol.
+    val categorias = remember(permisos) {
+        CATEGORIAS_MENU.filter { cat ->
+            cat.opciones.any { permisos.puedeAbrir(it.ruta) }
+        }
     }
 
     Scaffold(
@@ -109,7 +112,8 @@ fun HomeScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(categorias, key = { it.id }) { cat ->
-                    CategoriaCard(cat = cat, onClick = { onAbrirCategoria(cat.id) })
+                    val visibles = cat.opciones.count { permisos.puedeAbrir(it.ruta) }
+                    CategoriaCard(cat = cat, visibles = visibles, onClick = { onAbrirCategoria(cat.id) })
                 }
             }
         }
@@ -117,7 +121,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun CategoriaCard(cat: MenuCategoria, onClick: () -> Unit) {
+private fun CategoriaCard(cat: MenuCategoria, visibles: Int, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier
@@ -138,7 +142,7 @@ private fun CategoriaCard(cat: MenuCategoria, onClick: () -> Unit) {
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                "${cat.opciones.size} opciones",
+                "$visibles opciones",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -21,7 +21,8 @@ import java.text.DecimalFormat
 @Composable
 fun InventarioScreen(
     viewModel: InventarioViewModel,
-    isAdmin: Boolean = false,
+    puedeEditar: Boolean = true,
+    puedeBorrar: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val articulos by viewModel.articulos.collectAsState()
@@ -53,6 +54,7 @@ fun InventarioScreen(
                 items(articulos) { art ->
                     ArticuloCard(
                         articulo = art,
+                        puedeBorrar = puedeBorrar,
                         onEditar = { enEdicion = art },
                         onEliminar = { aEliminar = art }
                     )
@@ -60,7 +62,7 @@ fun InventarioScreen(
             }
         }
 
-        if (isAdmin) {
+        if (puedeEditar) {
             FloatingActionButton(
                 onClick = { showCrear = true },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
@@ -118,6 +120,7 @@ fun InventarioScreen(
 @Composable
 private fun ArticuloCard(
     articulo: Articulo,
+    puedeBorrar: Boolean = true,
     onEditar: () -> Unit,
     onEliminar: () -> Unit
 ) {
@@ -165,8 +168,10 @@ private fun ArticuloCard(
                     Text("⚠ Bajo el stock mínimo", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }
             }
-            IconButton(onClick = onEliminar) {
-                Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+            if (puedeBorrar) {
+                IconButton(onClick = onEliminar) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

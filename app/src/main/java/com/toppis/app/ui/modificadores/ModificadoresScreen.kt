@@ -27,6 +27,7 @@ import java.text.DecimalFormat
 @Composable
 fun ModificadoresScreen(
     viewModel: ModificadorViewModel,
+    puedeBorrar: Boolean = true,
     onNavigateBack: () -> Unit = {}
 ) {
     val modificadores by viewModel.modificadores.collectAsState()
@@ -88,8 +89,10 @@ fun ModificadoresScreen(
                                     viewModel.loadComponentes(mod.id) { componentes = it }
                                 }) { Text("Receta") }
                                 Spacer(Modifier.width(8.dp))
-                                IconButton(onClick = { modAEliminar = mod }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                                if (puedeBorrar) {
+                                    IconButton(onClick = { modAEliminar = mod }) {
+                                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                                    }
                                 }
                             }
                         }

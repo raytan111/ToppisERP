@@ -136,6 +136,7 @@ fun NavGraph(
 ) {
     val usuarioActual by authViewModel.usuarioActual.collectAsState()
     val isAdmin = usuarioActual?.rol == Rol.ADMIN
+    val permisos = com.toppis.app.ui.auth.Permisos.de(usuarioActual?.rol)
 
     // Performance / cache en memoria: scopeamos los ViewModels al Activity (no al
     // NavBackStackEntry). Así sobreviven a la navegación entre pantallas: la data
@@ -175,7 +176,7 @@ fun NavGraph(
         // ── Home (menú principal, sin bottom bar) ────────────────────────────
         composable("home") {
             HomeScreen(
-                isAdmin = isAdmin,
+                permisos = permisos,
                 onAbrirPos = { navController.navigate("pos") },
                 onAbrirCategoria = { catId -> navController.navigate("categoria/$catId") },
                 onLogout = { authViewModel.logout() }
@@ -194,7 +195,7 @@ fun NavGraph(
             }
             CategoriaMenuScreen(
                 categoria = cat,
-                isAdmin = isAdmin,
+                permisos = permisos,
                 onAbrirOpcion = { ruta -> navController.navigate(ruta) },
                 onNavigateBack = { navController.popBackStack() }
             )
@@ -216,6 +217,7 @@ fun NavGraph(
 
         // ── Fondos ───────────────────────────────────────────────────────────
         composable("sobres") {
+            if (!permisos.puedeAbrir("sobres")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
             BackScaffold("Sobres", onNavigateBack = { navController.popBackStack() }) { padding ->
                 SobresScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
@@ -223,6 +225,7 @@ fun NavGraph(
         }
 
         composable("gastos") {
+            if (!permisos.puedeAbrir("gastos")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: GastoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = gastoViewModelFactory)
             BackScaffold("Gastos", onNavigateBack = { navController.popBackStack() }) { padding ->
                 GastosScreen(viewModel = vm, usuarioId = usuarioActual?.id, isAdmin = isAdmin, modifier = Modifier.padding(padding))
@@ -230,21 +233,25 @@ fun NavGraph(
         }
 
         composable("arqueo") {
+            if (!permisos.puedeAbrir("arqueo")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ArqueoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = arqueoViewModelFactory)
             ArqueoScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("flujo_caja") {
+            if (!permisos.puedeAbrir("flujo_caja")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: FlujoCajaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = flujoCajaViewModelFactory)
             FlujoCajaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("contabilidad") {
+            if (!permisos.puedeAbrir("contabilidad")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ContabilidadViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = contabilidadViewModelFactory)
             ContabilidadScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("reportes") {
+            if (!permisos.puedeAbrir("reportes")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ReporteViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = reporteViewModelFactory)
             BackScaffold("Reportes", onNavigateBack = { navController.popBackStack() }) { padding ->
                 ReportesScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
@@ -253,99 +260,106 @@ fun NavGraph(
 
         // ── Inventario ───────────────────────────────────────────────────────
         composable("inventario") {
+            if (!permisos.puedeAbrir("inventario")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: InventarioViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = inventarioViewModelFactory)
             BackScaffold("Artículos", onNavigateBack = { navController.popBackStack() }) { padding ->
-                InventarioScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
+                InventarioScreen(viewModel = vm, puedeEditar = permisos.puedeEditar, puedeBorrar = permisos.puedeBorrar, modifier = Modifier.padding(padding))
             }
         }
 
         composable("mermas") {
+            if (!permisos.puedeAbrir("mermas")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: MermaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = mermaViewModelFactory)
             MermasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("conteos") {
+            if (!permisos.puedeAbrir("conteos")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ConteoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = conteoViewModelFactory)
-            ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
+            ConteosScreen(viewModel = vm, usuarioId = usuarioActual?.id, puedeBorrar = permisos.puedeBorrar, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("compra_sugerida") {
+            if (!permisos.puedeAbrir("compra_sugerida")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: CompraSugeridaViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraSugeridaViewModelFactory)
             CompraSugeridaScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("variance") {
+            if (!permisos.puedeAbrir("variance")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: VarianceViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = varianceViewModelFactory)
             VarianceScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("compras") {
+            if (!permisos.puedeAbrir("compras")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: CompraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = compraViewModelFactory)
             ComprasScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("proveedores") {
+            if (!permisos.puedeAbrir("proveedores")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ProveedorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = proveedorViewModelFactory)
             ProveedoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         // ── Cocina ───────────────────────────────────────────────────────────
         composable("menu_config") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("menu_config")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: MenuConfigViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = menuConfigViewModelFactory)
             MenuConfigScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("preparaciones") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("preparaciones")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: PreparacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = preparacionViewModelFactory)
-            PreparacionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            PreparacionesScreen(viewModel = vm, puedeBorrar = permisos.puedeBorrar, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("modificadores") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("modificadores")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ModificadorViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = modificadorViewModelFactory)
-            ModificadoresScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            ModificadoresScreen(viewModel = vm, puedeBorrar = permisos.puedeBorrar, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("food_cost") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("food_cost")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: FoodCostViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = foodCostViewModelFactory)
             FoodCostScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         // ── Personal ─────────────────────────────────────────────────────────
         composable("empleados") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("empleados")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: EmpleadoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = empleadoViewModelFactory)
             EmpleadosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("mano_obra") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("mano_obra")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ManoObraViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = manoObraViewModelFactory)
             ManoObraScreen(viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() })
         }
 
         // ── Administración ───────────────────────────────────────────────────
         composable("usuarios") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("usuarios")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             UsuariosScreen(viewModel = authViewModel, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("locales") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("locales")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: LocalViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = localViewModelFactory)
             LocalesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("asignaciones_local") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("asignaciones_local")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             AsignacionesScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         composable("kpis") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("kpis")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: KpisViewModel = viewModel(viewModelStoreOwner = activityOwner)
             KpisScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
@@ -360,13 +374,13 @@ fun NavGraph(
         }
 
         composable("promociones") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("promociones")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: PromocionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = promocionViewModelFactory)
-            PromocionesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            PromocionesScreen(viewModel = vm, puedeBorrar = permisos.puedeBorrar, onNavigateBack = { navController.popBackStack() })
         }
 
         composable("exportacion") {
-            if (!isAdmin) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            if (!permisos.puedeAbrir("exportacion")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: ExportacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = exportacionViewModelFactory)
             ExportacionScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }

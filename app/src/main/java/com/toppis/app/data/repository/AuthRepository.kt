@@ -71,6 +71,26 @@ class AuthRepository {
 
     // ── Usuario actual ────────────────────────────────────────────────────────
 
+    /**
+     * Local asignado al usuario (para scope de no-admins). Retorna (id, nombre)
+     * del primer local activo asignado en usuarios_locales, o null.
+     */
+    suspend fun getLocalAsignado(usuarioId: String): Pair<Int, String>? {
+        return try {
+            val asignaciones = client.postgrest.from("usuarios_locales")
+                .select { filter { eq("usuario_id", usuarioId); eq("activo", true) } }
+                .decodeList<com.toppis.app.data.models.UsuarioLocal>()
+            val localId = asignaciones.firstOrNull()?.localId ?: return null
+            val local = client.postgrest.from("locales")
+                .select { filter { eq("id", localId) } }
+                .decodeSingleOrNull<com.toppis.app.data.models.Local>()
+            local?.let { it.id to it.nombre }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error getLocalAsignado: ${e.message}", e)
+            null
+        }
+    }
+
     /** Retorna el perfil del usuario con sesión activa, o null si no hay sesión. */
     suspend fun getCurrentUser(): Usuario? {
         // Esperar a que Supabase Auth restaure la sesión persistida desde el

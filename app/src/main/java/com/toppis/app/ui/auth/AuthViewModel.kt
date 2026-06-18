@@ -42,9 +42,25 @@ class AuthViewModel(
             val usuario = repository.getCurrentUser()
             if (usuario != null && usuario.activo) {
                 _usuarioActual.value = usuario
+                aplicarScopeLocal(usuario)
                 _authState.value = AuthState.Success(usuario)
             } else {
                 _authState.value = AuthState.Idle
+            }
+        }
+    }
+
+    /**
+     * Fija el local activo según el local asignado al usuario, para roles que
+     * están restringidos a su local (todos menos ADMIN). ADMIN puede cambiar de
+     * local libremente desde la pantalla de Locales.
+     */
+    private fun aplicarScopeLocal(usuario: Usuario) {
+        if (usuario.rol == Rol.ADMIN) return
+        viewModelScope.launch {
+            val asignado = repository.getLocalAsignado(usuario.id)
+            if (asignado != null) {
+                com.toppis.app.data.repository.LocalSession.setActivo(asignado.first, asignado.second)
             }
         }
     }
@@ -58,6 +74,7 @@ class AuthViewModel(
             result.fold(
                 onSuccess = { usuario ->
                     _usuarioActual.value = usuario
+                    aplicarScopeLocal(usuario)
                     _authState.value = AuthState.Success(usuario)
                 },
                 onFailure = { error ->

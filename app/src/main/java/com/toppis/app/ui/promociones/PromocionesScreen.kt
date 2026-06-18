@@ -29,6 +29,7 @@ private val pct = DecimalFormat("0.#")
 @Composable
 fun PromocionesScreen(
     viewModel: PromocionViewModel,
+    puedeBorrar: Boolean = true,
     onNavigateBack: () -> Unit = {}
 ) {
     val promociones by viewModel.promociones.collectAsState()
@@ -114,12 +115,14 @@ fun PromocionesScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                IconButton(onClick = { promoAEliminar = promo }) {
-                                    Icon(
-                                        Icons.Filled.Delete,
-                                        contentDescription = "Eliminar",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
+                                if (puedeBorrar) {
+                                    IconButton(onClick = { promoAEliminar = promo }) {
+                                        Icon(
+                                            Icons.Filled.Delete,
+                                            contentDescription = "Eliminar",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }
