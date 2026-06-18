@@ -3,7 +3,7 @@ package com.toppis.app.data.db.entities
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class Rol { ADMIN, CAJERO }
+enum class Rol { ADMIN, ADMIN_LOCAL, SUPERVISOR, CAJERO }
 
 @Serializable
 enum class TipoMovimiento { INGRESO, EGRESO, TRANSFERENCIA }

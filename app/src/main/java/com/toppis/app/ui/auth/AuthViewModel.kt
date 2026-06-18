@@ -35,6 +35,20 @@ class AuthViewModel(
     private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
     val usuarios: StateFlow<List<Usuario>> = _usuarios.asStateFlow()
 
+    /** Se intenta restaurar la sesión al iniciar (auto-login). */
+    init {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val usuario = repository.getCurrentUser()
+            if (usuario != null && usuario.activo) {
+                _usuarioActual.value = usuario
+                _authState.value = AuthState.Success(usuario)
+            } else {
+                _authState.value = AuthState.Idle
+            }
+        }
+    }
+
     // ── Acciones ──────────────────────────────────────────────────────────────
 
     fun login(email: String, password: String) {

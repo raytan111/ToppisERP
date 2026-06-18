@@ -73,6 +73,15 @@ class AuthRepository {
 
     /** Retorna el perfil del usuario con sesión activa, o null si no hay sesión. */
     suspend fun getCurrentUser(): Usuario? {
+        // Esperar a que Supabase Auth restaure la sesión persistida desde el
+        // almacenamiento antes de consultar el usuario actual. Sin esto, en el
+        // arranque de la app currentUserOrNull() puede devolver null aunque haya
+        // una sesión válida guardada.
+        try {
+            client.auth.awaitInitialization()
+        } catch (_: Exception) {
+            // Si falla la espera, continuamos con el chequeo normal.
+        }
         val userId = client.auth.currentUserOrNull()?.id ?: return null
         return try {
             client.postgrest.from("usuarios")
