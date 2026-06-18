@@ -15,7 +15,6 @@ import com.toppis.erp.ui.theme.ToppisERPTheme
 import com.toppis.app.data.repository.AuthRepository
 import com.toppis.app.data.repository.ComandaRepository
 import com.toppis.app.data.repository.ComprobanteRepository
-import com.toppis.app.data.repository.DashboardRepository
 import com.toppis.app.data.repository.ExportacionRepository
 import com.toppis.app.data.repository.FlujoCajaRepository
 import com.toppis.app.data.repository.GastoRepository
@@ -25,7 +24,6 @@ import com.toppis.app.data.repository.ReporteRepository
 import com.toppis.app.data.repository.SobreRepository
 import com.toppis.app.data.repository.VentaRepository
 import com.toppis.app.ui.auth.AuthViewModelFactory
-import com.toppis.app.ui.dashboard.DashboardViewModelFactory
 import com.toppis.app.ui.exportacion.ExportacionViewModelFactory
 import com.toppis.app.ui.flujo.FlujoCajaViewModelFactory
 import com.toppis.app.ui.gastos.GastoViewModelFactory
@@ -76,9 +74,6 @@ class MainActivity : ComponentActivity() {
 
         val promocionFactory = com.toppis.app.ui.promociones.PromocionViewModelFactory(promocionRepo)
         // promocionRepo y modificadorRepo se definen arriba (los usa también el POS)
-
-        val papaRepo = com.toppis.app.data.repository.PapaRendimientoRepository()
-        val papaFactory = com.toppis.app.ui.papa.PapaRendimientoViewModelFactory(papaRepo, inventarioRepo)
 
         val foodCostFactory = com.toppis.app.ui.foodcost.FoodCostViewModelFactory(menuRepo)
 
@@ -135,10 +130,6 @@ class MainActivity : ComponentActivity() {
         val flujoCajaRepo = FlujoCajaRepository()
         val flujoCajaFactory = FlujoCajaViewModelFactory(flujoCajaRepo)
 
-        // ── Dashboard ───────────────────────────────────────────────────────
-        val dashboardRepo = DashboardRepository()
-        val dashboardFactory = DashboardViewModelFactory(dashboardRepo)
-
         enableEdgeToEdge()
         setContent {
             ToppisERPTheme {
@@ -151,14 +142,12 @@ class MainActivity : ComponentActivity() {
                         reporteViewModelFactory = reporteFactory,
                         exportacionViewModelFactory = exportacionFactory,
                         flujoCajaViewModelFactory = flujoCajaFactory,
-                        dashboardViewModelFactory = dashboardFactory,
                         menuConfigViewModelFactory = menuConfigFactory,
                         comprobantesViewModelFactory = comprobantesFactory,
                         contabilidadViewModelFactory = contabilidadFactory,
                         preparacionViewModelFactory = preparacionFactory,
                         modificadorViewModelFactory = modificadorFactory,
                         promocionViewModelFactory = promocionFactory,
-                        papaViewModelFactory = papaFactory,
                         foodCostViewModelFactory = foodCostFactory,
                         mermaViewModelFactory = mermaFactory,
                         conteoViewModelFactory = conteoFactory,

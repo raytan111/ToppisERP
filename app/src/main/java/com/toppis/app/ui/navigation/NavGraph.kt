@@ -47,7 +47,6 @@ import com.toppis.app.ui.pos.PosViewModelFactory
 import com.toppis.app.ui.reportes.ReporteViewModel
 import com.toppis.app.ui.reportes.ReporteViewModelFactory
 import com.toppis.app.ui.reportes.ReportesScreen
-import com.toppis.app.ui.dashboard.DashboardViewModelFactory
 import com.toppis.app.ui.menu.MenuConfigScreen
 import com.toppis.app.ui.menu.MenuConfigViewModel
 import com.toppis.app.ui.menu.MenuConfigViewModelFactory
@@ -60,7 +59,6 @@ import com.toppis.app.ui.modificadores.ModificadoresScreen
 import com.toppis.app.ui.promociones.PromocionViewModel
 import com.toppis.app.ui.promociones.PromocionViewModelFactory
 import com.toppis.app.ui.promociones.PromocionesScreen
-import com.toppis.app.ui.papa.PapaRendimientoViewModelFactory
 import com.toppis.app.ui.foodcost.FoodCostViewModel
 import com.toppis.app.ui.foodcost.FoodCostViewModelFactory
 import com.toppis.app.ui.foodcost.FoodCostScreen
@@ -111,14 +109,12 @@ fun NavGraph(
     reporteViewModelFactory: ReporteViewModelFactory,
     exportacionViewModelFactory: ExportacionViewModelFactory,
     flujoCajaViewModelFactory: FlujoCajaViewModelFactory,
-    dashboardViewModelFactory: DashboardViewModelFactory,
     menuConfigViewModelFactory: MenuConfigViewModelFactory,
     comprobantesViewModelFactory: ComprobantesViewModelFactory,
     contabilidadViewModelFactory: ContabilidadViewModelFactory,
     preparacionViewModelFactory: PreparacionViewModelFactory,
     modificadorViewModelFactory: ModificadorViewModelFactory,
     promocionViewModelFactory: PromocionViewModelFactory,
-    papaViewModelFactory: PapaRendimientoViewModelFactory,
     foodCostViewModelFactory: FoodCostViewModelFactory,
     mermaViewModelFactory: MermaViewModelFactory,
     conteoViewModelFactory: ConteoViewModelFactory,
