@@ -340,6 +340,15 @@ fun MainScaffold(
                         )
 
                         MoreMenuItem(
+                            icon = Icons.Filled.SupervisedUserCircle,
+                            label = "Usuarios por Local",
+                            onClick = {
+                                showMoreSheet = false
+                                navController.navigate("asignaciones_local") { launchSingleTop = true }
+                            }
+                        )
+
+                        MoreMenuItem(
                             icon = Icons.Filled.ShowChart,
                             label = "Flujo de Caja",
                             onClick = {
