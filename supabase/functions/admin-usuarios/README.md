@@ -20,14 +20,30 @@ Solo un usuario con rol **ADMIN** puede invocarla (la función valida el JWT del
 
 ## Desplegar la función
 
+### Opción A (recomendada, sin CLI): desde el Dashboard
+1. Dashboard de Supabase → **Edge Functions**.
+2. **Deploy a new function → Via Editor**.
+3. Nombre exacto: `admin-usuarios`.
+4. Pegá todo el contenido de `index.ts` (este directorio) y **Deploy**.
+
+No hace falta configurar secretos: `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
+`SUPABASE_SERVICE_ROLE_KEY` ya están disponibles en el runtime.
+
+### Opción B: CLI con npx (si tenés Node, no compila nada)
 Desde la raíz del repo:
+```
+npx supabase login
+npx supabase link --project-ref dkgqrbxizegjpxdsypzf
+npx supabase functions deploy admin-usuarios
+```
+
+### Opción C: CLI por Homebrew
 ```
 supabase functions deploy admin-usuarios
 ```
-
-No hace falta configurar secretos: `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
-`SUPABASE_SERVICE_ROLE_KEY` ya están disponibles como variables de entorno en
-el runtime de Edge Functions de Supabase.
+⚠️ `brew install supabase/tap/supabase` puede fallar si intenta compilar desde
+código con Xcode/Command Line Tools viejos. En ese caso usá la Opción A o B, o
+bajá el binario de https://github.com/supabase/cli/releases.
 
 ## Verificar
 
