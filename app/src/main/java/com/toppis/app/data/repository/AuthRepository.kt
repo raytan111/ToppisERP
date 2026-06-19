@@ -254,32 +254,6 @@ class AuthRepository {
         }
     }
 
-    // ── Eliminar usuario ──────────────────────────────────────────────────────
-
-    /**
-     * Elimina el perfil de un usuario de la tabla "usuarios". La RLS sólo lo
-     * permite a ADMIN. Nota: no borra la cuenta de auth.users (eso requiere
-     * service_role); al quitar el perfil, el usuario ya no puede operar ni
-     * aparece en la lista, y el login le falla por falta de perfil.
-     */
-    suspend fun eliminarUsuario(usuarioId: String): Result<Unit> {
-        return try {
-            client.postgrest.from("usuarios").delete { filter { eq("id", usuarioId) } }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Error en eliminarUsuario: ${e.message}", e)
-            val raw = (e.message ?: "").lowercase()
-            val msg = when {
-                raw.contains("permission") || raw.contains("policy") || raw.contains("row-level") ->
-                    "No tenés permiso para eliminar usuarios."
-                raw.contains("foreign key") || raw.contains("violates") ->
-                    "No se puede eliminar: el usuario tiene registros asociados."
-                else -> e.message ?: "No se pudo eliminar el usuario."
-            }
-            Result.failure(Exception(msg))
-        }
-    }
-
     // ── Operaciones admin vía Edge Function (service_role) ─────────────────────
 
     /**

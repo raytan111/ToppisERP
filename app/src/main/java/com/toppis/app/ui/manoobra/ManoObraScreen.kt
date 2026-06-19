@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.toppis.app.data.db.entities.TipoPago
 import com.toppis.app.data.models.Empleado
 import com.toppis.app.ui.components.ToppisTopBar
+import com.toppis.app.ui.components.DatePickerField
 import java.text.DecimalFormat
 import java.time.LocalDate
 
@@ -203,7 +204,7 @@ private fun JornadaDialog(
                         empleados.forEach { e -> DropdownMenuItem(text = { Text("${e.nombre} (${e.tipoPago.label})") }, onClick = { empleado = e; exp = false }) }
                     }
                 }
-                OutlinedTextField(value = fecha, onValueChange = { fecha = it }, label = { Text("Fecha (yyyy-MM-dd)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                DatePickerField(value = fecha, onValueChange = { fecha = it }, label = "Fecha", modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(
                     value = cantidadText, onValueChange = { cantidadText = it },
                     label = { Text(if (esHora) "Horas trabajadas" else "Cantidad de turnos") },
@@ -243,7 +244,7 @@ private fun PropinaDialog(
         title = { Text("Registrar propina del día") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = fecha, onValueChange = { fecha = it }, label = { Text("Fecha (yyyy-MM-dd)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                DatePickerField(value = fecha, onValueChange = { fecha = it }, label = "Fecha", modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(
                     value = montoText, onValueChange = { montoText = it },
                     label = { Text("Total propinas del día (CLP)") },

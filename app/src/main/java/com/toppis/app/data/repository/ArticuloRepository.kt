@@ -119,7 +119,7 @@ class ArticuloRepository {
         }
     }
 
-    /** Actualiza el rendimiento del artículo (usado por papa_rendimientos) y recalcula costo. */
+    /** Actualiza el rendimiento del artículo y recalcula costo. */
     suspend fun actualizarRendimiento(articuloId: Int, rendimiento: Double) {
         val art = getArticuloPorId(articuloId) ?: return
         val costoBase = Articulo.calcularCostoBase(art.costoCompra, art.factorCompra, rendimiento)

@@ -377,7 +377,7 @@ private fun ArmarPromoDialog(
                         Button(
                             onClick = {
                                 val item = selectedItem ?: return@Button
-                                onAgregarItem(item.id, cantidadText.toInt())
+                                onAgregarItem(item.id, cantidadText.toIntOrNull() ?: return@Button)
                                 cantidadText = "1"
                             },
                             enabled = selectedItem != null && cantidadValida,

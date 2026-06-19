@@ -242,7 +242,7 @@ private fun CrearPreparacionDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onConfirm(nombre, dimension, rendimientoText.replace(",", ".").toDouble(), seleccionable)
+                    onConfirm(nombre, dimension, rendimientoText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, seleccionable)
                 },
                 enabled = nombre.isNotBlank() && rendimientoValido
             ) { Text("Crear") }
@@ -372,7 +372,7 @@ private fun RecetaPreparacionDialog(
                     Button(
                         onClick = {
                             val compId = selectedArticulo?.id ?: return@Button
-                            onAgregarComponente(TipoComponente.ARTICULO, compId, cantidadText.replace(",", ".").toDouble())
+                            onAgregarComponente(TipoComponente.ARTICULO, compId, cantidadText.replace(",", ".").toDoubleOrNull() ?: return@Button)
                             cantidadText = ""
                         },
                         enabled = cantidadValida && selectedArticulo != null,

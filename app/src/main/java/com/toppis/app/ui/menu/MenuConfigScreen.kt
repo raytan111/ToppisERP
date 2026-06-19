@@ -199,7 +199,7 @@ private fun CrearItemMenuDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, descripcion, precioText.replace(",", ".").toDouble(), categoria) },
+                onClick = { onConfirm(nombre, descripcion, precioText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria) },
                 enabled = nombre.isNotBlank() && precioValido
             ) { Text("Crear") }
         },
@@ -348,7 +348,7 @@ private fun RecetaMenuDialog(
                                 TipoComponente.ARTICULO -> selectedArticulo?.id ?: return@Button
                                 TipoComponente.PREPARACION -> selectedPrep?.id ?: return@Button
                             }
-                            onAgregarComponente(tipoSeleccionado, compId, cantidadText.replace(",", ".").toDouble())
+                            onAgregarComponente(tipoSeleccionado, compId, cantidadText.replace(",", ".").toDoubleOrNull() ?: return@Button)
                             cantidadText = ""
                         },
                         enabled = cantidadValida && when (tipoSeleccionado) {

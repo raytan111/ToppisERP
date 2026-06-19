@@ -585,7 +585,7 @@ private fun PresupuestoDialog(
         },
         confirmButton = {
             TextButton(
-                onClick  = { onConfirm(selectedCategoria, montoText.toDouble(), mes, anio) },
+                onClick  = { onConfirm(selectedCategoria, montoText.toDoubleOrNull() ?: return@TextButton, mes, anio) },
                 enabled  = formValido
             ) { Text("Guardar") }
         },

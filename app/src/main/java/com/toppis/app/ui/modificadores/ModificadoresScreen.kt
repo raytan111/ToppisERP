@@ -203,7 +203,7 @@ private fun CrearModificadorDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDouble()) },
+                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton) },
                 enabled = nombre.isNotBlank() && deltaValido
             ) { Text("Crear") }
         },
@@ -323,7 +323,7 @@ private fun RecetaModificadorDialog(
                                 TipoComponente.ARTICULO -> selectedArticulo?.id ?: return@Button
                                 TipoComponente.PREPARACION -> selectedPrep?.id ?: return@Button
                             }
-                            onAgregar(accion, tipo, compId, cantidadText.replace(",", ".").toDouble())
+                            onAgregar(accion, tipo, compId, cantidadText.replace(",", ".").toDoubleOrNull() ?: return@Button)
                             cantidadText = ""
                         },
                         enabled = cantidadValida && when (tipo) {

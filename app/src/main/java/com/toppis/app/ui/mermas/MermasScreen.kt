@@ -225,7 +225,7 @@ private fun RegistrarMermaDialog(
                         TipoComponente.ARTICULO -> selectedArticulo?.id ?: return@TextButton
                         TipoComponente.PREPARACION -> selectedPrep?.id ?: return@TextButton
                     }
-                    onConfirm(tipo, compId, cantidadText.replace(",", ".").toDouble(), motivo, nota)
+                    onConfirm(tipo, compId, cantidadText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, motivo, nota)
                 },
                 enabled = cantidadValida && when (tipo) {
                     TipoComponente.ARTICULO -> selectedArticulo != null

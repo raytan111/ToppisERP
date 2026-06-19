@@ -18,6 +18,7 @@ import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.models.Compra
 import com.toppis.app.data.models.Proveedor
 import com.toppis.app.data.models.Sobre
+import com.toppis.app.ui.components.DatePickerField
 import com.toppis.app.data.repository.LineaCompra
 import com.toppis.app.ui.components.ToppisTopBar
 import java.text.DecimalFormat
@@ -317,10 +318,10 @@ private fun AgregarLineaCompraDialog(
                     Text("≈ ${money.format(costoUnitario)} por $unidad",
                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 }
-                OutlinedTextField(
+                DatePickerField(
                     value = vencimiento, onValueChange = { vencimiento = it },
-                    label = { Text("Vencimiento (yyyy-MM-dd, opcional)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                    label = "Vencimiento", opcional = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
