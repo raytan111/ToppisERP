@@ -123,13 +123,30 @@ class AuthViewModel(
         _registroState.value = RegistroState.Idle
     }
 
-    /** Elimina un usuario (solo ADMIN según RLS). Reporta error vía registroState. */
+    /** Elimina un usuario por completo (cuenta Auth + perfil) vía Edge Function. Solo ADMIN. */
     fun eliminarUsuario(usuarioId: String) {
         viewModelScope.launch {
-            repository.eliminarUsuario(usuarioId).fold(
-                onSuccess = { cargarUsuarios() },
+            _registroState.value = RegistroState.Loading
+            repository.eliminarUsuarioCompleto(usuarioId).fold(
+                onSuccess = {
+                    cargarUsuarios()
+                    _registroState.value = RegistroState.Success
+                },
                 onFailure = { error ->
                     _registroState.value = RegistroState.Error(error.message ?: "No se pudo eliminar el usuario")
+                }
+            )
+        }
+    }
+
+    /** Cambia la contraseña de un usuario vía Edge Function. Solo ADMIN. */
+    fun resetPassword(usuarioId: String, nuevaPassword: String) {
+        viewModelScope.launch {
+            _registroState.value = RegistroState.Loading
+            repository.resetPassword(usuarioId, nuevaPassword).fold(
+                onSuccess = { _registroState.value = RegistroState.Success },
+                onFailure = { error ->
+                    _registroState.value = RegistroState.Error(error.message ?: "No se pudo cambiar la contraseña")
                 }
             )
         }

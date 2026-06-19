@@ -31,6 +31,19 @@ data class Permisos(
     /** ¿Puede abrir esta ruta de navegación? */
     fun puedeAbrir(ruta: String): Boolean = rol == Rol.ADMIN || ruta in rutas
 
+    /**
+     * Roles que este usuario puede asignar al crear/editar usuarios.
+     * - ADMIN: todos.
+     * - ADMIN_LOCAL: solo SUPERVISOR y CAJERO (no puede crear admins).
+     * - SUPERVISOR / CAJERO: ninguno (no gestionan usuarios).
+     */
+    val rolesAsignables: List<Rol>
+        get() = when (rol) {
+            Rol.ADMIN -> listOf(Rol.ADMIN, Rol.ADMIN_LOCAL, Rol.SUPERVISOR, Rol.CAJERO)
+            Rol.ADMIN_LOCAL -> listOf(Rol.SUPERVISOR, Rol.CAJERO)
+            else -> emptyList()
+        }
+
     companion object {
         // Rutas operativas de un local (las usa ADMIN_LOCAL completas).
         private val RUTAS_ADMIN_LOCAL = setOf(

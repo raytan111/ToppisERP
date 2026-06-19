@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.auth)
     implementation(libs.supabase.realtime)
+    implementation(libs.supabase.functions)
     // Ktor: motor HTTP requerido por Supabase (OkHttp soporta WebSockets para Realtime)
     implementation(libs.ktor.client.okhttp)
 

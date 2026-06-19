@@ -6,8 +6,13 @@ import com.toppis.app.data.models.Usuario
 import com.toppis.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -270,6 +275,66 @@ class AuthRepository {
                 raw.contains("foreign key") || raw.contains("violates") ->
                     "No se puede eliminar: el usuario tiene registros asociados."
                 else -> e.message ?: "No se pudo eliminar el usuario."
+            }
+            Result.failure(Exception(msg))
+        }
+    }
+
+    // ── Operaciones admin vía Edge Function (service_role) ─────────────────────
+
+    /**
+     * Borrado TOTAL del usuario (cuenta de auth.users + perfil por CASCADE),
+     * vía la Edge Function "admin-usuarios". Solo ADMIN.
+     */
+    suspend fun eliminarUsuarioCompleto(usuarioId: String): Result<Unit> = invocarAdmin(
+        accion = "eliminar",
+        usuarioId = usuarioId
+    )
+
+    /**
+     * Cambia la contraseña de un usuario, vía la Edge Function "admin-usuarios".
+     * Solo ADMIN.
+     */
+    suspend fun resetPassword(usuarioId: String, nuevaPassword: String): Result<Unit> = invocarAdmin(
+        accion = "reset_password",
+        usuarioId = usuarioId,
+        password = nuevaPassword
+    )
+
+    private suspend fun invocarAdmin(
+        accion: String,
+        usuarioId: String,
+        password: String? = null
+    ): Result<Unit> {
+        return try {
+            val resp: HttpResponse = client.functions.invoke(
+                function = "admin-usuarios",
+                body = buildJsonObject {
+                    put("action", accion)
+                    put("usuario_id", usuarioId)
+                    if (password != null) put("password", password)
+                },
+                headers = Headers.build {
+                    append(HttpHeaders.ContentType, "application/json")
+                }
+            )
+            val texto = try { resp.bodyAsText() } catch (_: Exception) { "" }
+            if (resp.status.value in 200..299) {
+                Result.success(Unit)
+            } else {
+                val msg = Regex("\"error\"\\s*:\\s*\"([^\"]+)\"").find(texto)?.groupValues?.get(1)
+                    ?: "No se pudo completar la operación (código ${resp.status.value})."
+                Result.failure(Exception(msg))
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error invocarAdmin($accion): ${e.message}", e)
+            val raw = (e.message ?: "").lowercase()
+            val msg = when {
+                raw.contains("not found") || raw.contains("404") ->
+                    "La función admin-usuarios no está desplegada en Supabase."
+                raw.contains("network") || raw.contains("timeout") || raw.contains("connect") ->
+                    "Error de conexión. Revisá tu internet e intentá de nuevo."
+                else -> e.message ?: "No se pudo completar la operación."
             }
             Result.failure(Exception(msg))
         }

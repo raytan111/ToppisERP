@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -32,9 +33,12 @@ fun UsuariosScreen(
     var errorRegistro by remember { mutableStateOf<String?>(null) }
     var aEliminar by remember { mutableStateOf<Usuario?>(null) }
     var enEdicion by remember { mutableStateOf<Usuario?>(null) }
+    var resetPasswordDe by remember { mutableStateOf<Usuario?>(null) }
 
-    val puedeBorrar = Permisos.de(usuarioActual?.rol).puedeBorrar
-    val puedeEditar = Permisos.de(usuarioActual?.rol).puedeEditar
+    val permisos = Permisos.de(usuarioActual?.rol)
+    val puedeBorrar = permisos.puedeBorrar
+    val puedeEditar = permisos.puedeEditar
+    val rolesAsignables = permisos.rolesAsignables
 
     // Cargar usuarios al abrir la pantalla
     LaunchedEffect(Unit) {
@@ -47,6 +51,7 @@ fun UsuariosScreen(
             is RegistroState.Success -> {
                 showCrearDialog = false
                 enEdicion = null
+                resetPasswordDe = null
                 errorRegistro = null
                 snackbarHostState.showSnackbar("Guardado")
                 viewModel.resetRegistroState()
@@ -101,6 +106,7 @@ fun UsuariosScreen(
                         puedeEditar = puedeEditar,
                         puedeBorrar = puedeBorrar && usuario.id != usuarioActual?.id,
                         onEditar = { enEdicion = usuario },
+                        onResetPassword = { resetPasswordDe = usuario },
                         onEliminar = { aEliminar = usuario }
                     )
                 }
@@ -111,6 +117,7 @@ fun UsuariosScreen(
     if (showCrearDialog) {
         CrearUsuarioDialog(
             cargando = registroState is RegistroState.Loading,
+            rolesAsignables = rolesAsignables,
             onDismiss = { showCrearDialog = false },
             onConfirm = { nombre, email, password, rol ->
                 viewModel.registrarUsuario(nombre, email, password, rol)
@@ -122,9 +129,21 @@ fun UsuariosScreen(
         EditarUsuarioDialog(
             usuario = u,
             cargando = registroState is RegistroState.Loading,
+            rolesAsignables = rolesAsignables,
             onDismiss = { enEdicion = null },
             onConfirm = { nombre, rol, activo ->
                 viewModel.actualizarUsuario(u.id, nombre, rol, activo)
+            }
+        )
+    }
+
+    resetPasswordDe?.let { u ->
+        ResetPasswordDialog(
+            usuario = u,
+            cargando = registroState is RegistroState.Loading,
+            onDismiss = { resetPasswordDe = null },
+            onConfirm = { nuevaPassword ->
+                viewModel.resetPassword(u.id, nuevaPassword)
             }
         )
     }
@@ -170,6 +189,7 @@ private fun UsuarioCard(
     puedeEditar: Boolean = false,
     puedeBorrar: Boolean = false,
     onEditar: () -> Unit = {},
+    onResetPassword: () -> Unit = {},
     onEliminar: () -> Unit = {}
 ) {
     val rolColor = if (usuario.rol == Rol.ADMIN)
@@ -231,6 +251,9 @@ private fun UsuarioCard(
                 IconButton(onClick = onEditar) {
                     Icon(Icons.Filled.Edit, contentDescription = "Editar")
                 }
+                IconButton(onClick = onResetPassword) {
+                    Icon(Icons.Filled.Key, contentDescription = "Cambiar contraseña")
+                }
             }
             if (puedeBorrar) {
                 IconButton(onClick = onEliminar) {
@@ -247,13 +270,14 @@ private fun UsuarioCard(
 @Composable
 private fun CrearUsuarioDialog(
     cargando: Boolean = false,
+    rolesAsignables: List<Rol> = Rol.entries,
     onDismiss: () -> Unit,
     onConfirm: (nombre: String, email: String, password: String, rol: Rol) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var selectedRol by remember { mutableStateOf(Rol.CAJERO) }
+    var selectedRol by remember { mutableStateOf(rolesAsignables.firstOrNull() ?: Rol.CAJERO) }
     var rolExpanded by remember { mutableStateOf(false) }
 
     val emailValido = email.contains("@") && email.contains(".")
@@ -316,7 +340,7 @@ private fun CrearUsuarioDialog(
                         expanded = rolExpanded,
                         onDismissRequest = { rolExpanded = false }
                     ) {
-                        Rol.entries.forEach { rol ->
+                        rolesAsignables.forEach { rol ->
                             DropdownMenuItem(
                                 text = { Text(rol.name) },
                                 onClick = {
@@ -355,6 +379,7 @@ private fun CrearUsuarioDialog(
 private fun EditarUsuarioDialog(
     usuario: Usuario,
     cargando: Boolean = false,
+    rolesAsignables: List<Rol> = Rol.entries,
     onDismiss: () -> Unit,
     onConfirm: (nombre: String, rol: Rol, activo: Boolean) -> Unit
 ) {
@@ -405,7 +430,7 @@ private fun EditarUsuarioDialog(
                         expanded = rolExpanded,
                         onDismissRequest = { rolExpanded = false }
                     ) {
-                        Rol.entries.forEach { rol ->
+                        rolesAsignables.forEach { rol ->
                             DropdownMenuItem(
                                 text = { Text(rol.name) },
                                 onClick = {
@@ -438,6 +463,65 @@ private fun EditarUsuarioDialog(
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
                     Text("Guardar")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !cargando) { Text("Cancelar") }
+        }
+    )
+}
+
+// ── Dialog reset de contraseña ──────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ResetPasswordDialog(
+    usuario: Usuario,
+    cargando: Boolean = false,
+    onDismiss: () -> Unit,
+    onConfirm: (nuevaPassword: String) -> Unit
+) {
+    var password by remember { mutableStateOf("") }
+    val passwordValido = password.length >= 6
+    val passwordError = password.isNotEmpty() && !passwordValido
+
+    AlertDialog(
+        onDismissRequest = { if (!cargando) onDismiss() },
+        title = { Text("Cambiar contraseña") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Nueva contraseña para ${usuario.nombre} (${usuario.email}).",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Nueva contraseña") },
+                    isError = passwordError,
+                    supportingText = {
+                        Text(
+                            if (passwordError)
+                                "Faltan caracteres: mínimo 6 (tenés ${password.length})."
+                            else
+                                "Mínimo 6 caracteres."
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(password) },
+                enabled = passwordValido && !cargando
+            ) {
+                if (cargando) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Cambiar")
                 }
             }
         },
