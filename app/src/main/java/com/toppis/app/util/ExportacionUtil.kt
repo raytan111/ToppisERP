@@ -62,7 +62,7 @@ object ExportacionUtil {
                 r.createCell(0).setCellValue(v.id.toDouble())
                 r.createCell(1).setCellValue(fmtIso(v.fecha))
                 r.createCell(2).setCellValue(v.total)
-                r.createCell(3).setCellValue(v.metodoPago.name)
+                r.createCell(3).setCellValue(v.metodoPago?.name ?: "-")
                 r.createCell(4).setCellValue(v.estado.name)
             }
         }
@@ -305,7 +305,7 @@ object ExportacionUtil {
                 r.createCell(0).setCellValue(v.id.toDouble())
                 r.createCell(1).setCellValue(fmtIso(v.fecha))
                 r.createCell(2).setCellValue(v.total)
-                r.createCell(3).setCellValue(v.metodoPago.name)
+                r.createCell(3).setCellValue(v.metodoPago?.name ?: "-")
                 r.createCell(4).setCellValue(v.estado.name)
             }
         }

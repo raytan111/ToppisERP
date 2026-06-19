@@ -367,7 +367,7 @@ private fun VentaReporteCard(venta: Venta) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = venta.metodoPago.name,
+                    text = venta.metodoPago?.name ?: "—",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

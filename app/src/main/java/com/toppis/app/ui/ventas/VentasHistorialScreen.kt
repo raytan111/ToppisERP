@@ -63,7 +63,11 @@ fun VentasHistorialScreen(
                                 Text("Venta #${v.id}", style = MaterialTheme.typography.titleSmall)
                                 Text(v.fecha?.take(16)?.replace("T", " ") ?: "",
                                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                                Text("${v.metodoPago.name} · ${v.estado.name}",
+                                if (!v.descripcion.isNullOrBlank()) {
+                                    Text(v.descripcion, style = MaterialTheme.typography.bodySmall)
+                                }
+                                val metodo = v.metodoPago?.name ?: (v.canal ?: "—")
+                                Text("$metodo · ${v.estado.name}",
                                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                             }
                             Text(money.format(v.total), style = MaterialTheme.typography.titleMedium,
@@ -81,7 +85,26 @@ fun VentasHistorialScreen(
             title = { Text("Venta #${v.id} — ${money.format(v.total)}") },
             text = {
                 if (detalle.isEmpty()) {
-                    Text("Sin detalle.", color = MaterialTheme.colorScheme.outline)
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (!v.descripcion.isNullOrBlank()) {
+                            Text(v.descripcion, style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            Text("Sin detalle.", color = MaterialTheme.colorScheme.outline)
+                        }
+                        if (v.montoEnvio > 0) {
+                            Text("Delivery: ${money.format(v.montoEnvio)}",
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        }
+                        if (!v.modoEntrega.isNullOrBlank()) {
+                            Text("Entrega: ${v.modoEntrega}",
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        }
+                        Text("Fecha: ${v.fecha?.take(16)?.replace("T", " ")}",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        val metodo = v.metodoPago?.name ?: (v.canal ?: "—")
+                        Text("$metodo · Estado: ${v.estado.name}",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(detalle) { d ->
@@ -98,7 +121,7 @@ fun VentasHistorialScreen(
                             HorizontalDivider(Modifier.padding(vertical = 4.dp))
                             Text("Fecha: ${v.fecha?.take(16)?.replace("T", " ")}",
                                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                            Text("Método: ${v.metodoPago.name} · Estado: ${v.estado.name}",
+                            Text("Método: ${v.metodoPago?.name ?: "—"} · Estado: ${v.estado.name}",
                                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                         }
                     }

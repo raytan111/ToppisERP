@@ -14,9 +14,9 @@ data class Venta(
     val fecha: String? = null,
     val total: Double = 0.0,
     @SerialName("metodo_pago")
-    val metodoPago: MetodoPago,
+    val metodoPago: MetodoPago? = null,
     @SerialName("sobre_id")
-    val sobreId: Int,
+    val sobreId: Int? = null,
     @SerialName("usuario_id")
     val usuarioId: String? = null,
     val estado: EstadoVenta = EstadoVenta.COMPLETADA,
@@ -26,6 +26,11 @@ data class Venta(
     val montoEnvio: Double = 0.0,
     @SerialName("stickers_enviados")
     val stickersEnviados: Int = 0,
+    val descripcion: String? = null,
+    val canal: String? = null,
+    @SerialName("modo_entrega")
+    val modoEntrega: String? = null,
+    val origen: String = "APP",
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")
