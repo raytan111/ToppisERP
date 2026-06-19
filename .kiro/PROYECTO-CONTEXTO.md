@@ -26,7 +26,7 @@ ToppisERP es una app Android para gestionar una hamburguesería / dark kitchen. 
 - **Patrón**: MVVM (StateFlow + ViewModel + Factory + Screen)
 - **Navegación**: Jetpack Navigation Compose (un solo NavHost, sin bottom bar)
 - **DI**: Manual (sin Hilt) — cableado en `MainActivity.onCreate`
-- **Backend**: Supabase (`supabase-kt` 3.1.4) — Postgrest, Auth, Realtime
+- **Backend**: Supabase (`supabase-kt` 3.1.4) — Postgrest, Auth, Realtime, **Functions** (Edge Functions)
 - **Exportación**: Apache POI (Excel/XLSX)
 
 ### Build / pruebas
@@ -43,6 +43,7 @@ ToppisERP es una app Android para gestionar una hamburguesería / dark kitchen. 
 - Enums en `data/db/entities/Enums.kt`.
 - Repositorios usan `client.postgrest` / `client.auth`.
 - **Operaciones atómicas** vía funciones RPC PostgreSQL (venta, gasto, arqueo, merma, compra, etc.). Errores del RPC se extraen con regex `"message"\s*:\s*"([^"]+)"`.
+- **Edge Function** `admin-usuarios` (`supabase/functions/`): operaciones que requieren `service_role` — borrado total de cuenta Auth y reset de contraseña. Valida JWT + rol ADMIN. Se invoca con `client.functions.invoke(...)`. La `service_role key` NUNCA está en la app.
 - **Realtime**: canales con nombre único (UUID) para evitar el crash "cannot call postgresChangeFlow after joining".
 - **Sellado por local**: las RPCs/inserts agregan `local_id` desde `LocalSession.activoId`.
 
@@ -63,7 +64,7 @@ Tablas principales en Postgres:
 - **Inventario pro**: `mermas`, `conteos` (+ `conteo_detalle`)
 - **Compras**: `proveedores`, `compras` (+ `compra_detalle`) — recepción suma stock + costo promedio ponderado + caducidad por lote
 - **Dinero**: `sobres` (tipo CUENTA = dinero real / FONDO = provisión), `movimientos_sobre`, `arqueos`, `gastos`, `presupuestos`, `comprobantes`, `cierres_mensuales`
-- **Ventas**: `ventas`, `items_venta_menu`, `comandas`
+- **Ventas**: `ventas` (incluye `descripcion`, `canal`, `modo_entrega`, `origen`='APP'|'IMPORT_HISTORICO'; `metodo_pago` y `sobre_id` son NULL-ables para ventas históricas importadas), `items_venta_menu`, `comandas`
 - **Mano de obra**: `empleados`, `jornadas`, `propinas`
 
 ### Enums (`data/db/entities/Enums.kt`)
@@ -118,7 +119,7 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 | SUPERVISOR | POS, inventario, mermas, conteos, preparaciones, modificadores, promos, historial, comprobantes | Sí | **No** | Su local |
 | CAJERO | POS, historial, comprobantes | Solo ventas | No | Su local |
 
-- `Permisos.de(rol)` expone `rutas`, `puedeEditar`, `puedeBorrar`, `scopeLocal`.
+- `Permisos.de(rol)` expone `rutas`, `puedeEditar`, `puedeBorrar`, `scopeLocal` y `rolesAsignables` (qué roles puede crear/asignar: ADMIN todos; ADMIN_LOCAL solo SUPERVISOR/CAJERO).
 - Home/CategoríaMenu filtran opciones; NavGraph gatea cada ruta con `permisos.puedeAbrir(...)`.
 - Borrado oculto para SUPERVISOR en inventario/preparaciones/modificadores/promociones/conteos.
 - **Scope local**: al iniciar sesión, no-admins quedan fijados a su local asignado (`AuthRepository.getLocalAsignado` + `aplicarScopeLocal`). ADMIN cambia de local desde la pantalla Locales.
@@ -134,8 +135,9 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 - **Fondos**: sobres CUENTA/FONDO, gastos, arqueo de caja, flujo de caja, contabilidad, reportes (filtrables por local).
 - **Personal**: empleados (sueldo fijo/turno/hora), jornadas, propinas, Prime Cost.
 - **Multi-local**: locales, asignaciones usuario-local, reportes por local.
+- **Usuarios** (solo ADMIN): crear, editar (nombre/rol/activo), eliminar (borrado total vía Edge Function, con confirmación, no a sí mismo), resetear contraseña. Roles asignables limitados por `Permisos.rolesAsignables`.
 - **KPIs Ejecutivos**: ventas, ticket, food/labor/prime cost %, merma, alertas.
-- **Historial de Ventas**: lista con detalle en popup.
+- **Historial de Ventas**: lista con detalle en popup; muestra `descripcion`/delivery/modo de entrega para ventas históricas (sin ítems).
 - **Exportación**: Excel/CSV/ZIP (Apache POI).
 
 ---
@@ -146,6 +148,9 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 - Tablas plural snake_case; modelos singular.
 - VM: `MutableStateFlow` privado + `StateFlow` público, `viewModelScope.launch`, sealed UiState, refresh-after-write.
 - Errores de operaciones normales → mostrar en **popup (AlertDialog)**, no solo snackbar.
+- **Inputs de fecha**: usar `ui/components/DatePickerField` (calendario Material 3), no texto libre.
+- **Parseo numérico**: siempre `toDoubleOrNull()` / `toIntOrNull()` con guarda (`?: return@...`), nunca `toDouble()`/`toInt()` directo sobre texto de usuario.
+- Mensajes de error de Auth/Supabase se traducen a español (ver helpers en `AuthRepository`).
 - Cada pantalla nueva: ViewModel + Factory + Screen, cableada en `MainActivity` (DI), `NavGraph` (composable + guarda de permiso) y `ui/home/HomeMenu.kt` (opción en su categoría).
 - Material 3 estricto; content descriptions obligatorios.
 - Cada módulo con build verde → commit + push a GitHub.
@@ -154,6 +159,17 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.1 — Usuarios, datos históricos, robustez (2026-06-19)
+- Gestión de usuarios completa (solo ADMIN): crear, editar, eliminar (borrado
+  total vía Edge Function `admin-usuarios`), resetear contraseña; roles asignables
+  por rol; mensajes de error traducidos.
+- Sesión: confirmación de email documentada (`NOTAS-SUPABASE-AUTH.md`).
+- Import de ventas históricas (Mar–Jun 2026, 99 ventas en texto libre): columnas
+  nuevas en `ventas` + scripts (`supabase-import-01/02`, `supabase-clean-slate`).
+- UX/robustez: inputs de fecha con calendario (`DatePickerField`); parseo numérico
+  seguro; limpieza de código muerto.
+- Seguridad: revisión en `NOTAS-SEGURIDAD.md` + fix RLS de gastos para roles nuevos.
 
 ### v3.0 — Refactor de navegación, roles, performance (2026-06-18)
 Spec: `.kiro/specs/refactorizacion-navegacion.md`
@@ -188,7 +204,8 @@ Spec: `.kiro/specs/roadmap-erp-franquicia.md`
 
 Archivos de contexto:
 - Este archivo: `.kiro/PROYECTO-CONTEXTO.md`
-- Specs: `.kiro/specs/refactorizacion-navegacion.md`, `.kiro/specs/roadmap-erp-franquicia.md`, `.kiro/specs/fase4-food-cost.md`, `fase5-inventario-pro.md`, etc.
-- SQL: `.kiro/database/`
+- Specs: `.kiro/specs/refactorizacion-navegacion.md`, `roadmap-erp-franquicia.md`, `import-ventas-historicas.md`, `fase4-food-cost.md`, `fase5-inventario-pro.md`, etc.
+- SQL y notas: `.kiro/database/` (incluye `NOTAS-SUPABASE-AUTH.md`, `NOTAS-SEGURIDAD.md`)
+- Edge Functions: `supabase/functions/admin-usuarios/`
 
 Actualizar este documento al completar cada fase mayor o cambio estructural.
