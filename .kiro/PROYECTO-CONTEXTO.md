@@ -108,6 +108,20 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 
 **Performance/cache**: los ViewModels se scopean al **Activity** (`viewModelStoreOwner = activityOwner` en `NavGraph`), así sobreviven a la navegación y no reconsultan la DB cada vez; Realtime los mantiene frescos.
 
+## 5b. Tema / Diseño
+
+- **Tema de marca dinámico**: `com.toppis.erp.ui.theme.ThemeManager` guarda el
+  color semilla (hex) y el modo (sistema/claro/oscuro) en SharedPreferences.
+  `ToppisERPTheme` genera todo el `ColorScheme` Material 3 desde ese seed con
+  **MaterialKolor** (`rememberDynamicColorScheme`, estilo Vibrant). Shapes
+  redondeadas en `AppShapes`. Default seed `#E63946`.
+- **Configurar Colores** (Administración, solo ADMIN): `ui/ajustes/ConfiguracionColorScreen`
+  — input hex `#`, presets, vista previa en vivo, modo claro/oscuro. Aplica y
+  persiste al instante.
+- **Logo**: `res/drawable/toppis_logo.xml` (placeholder) usado en Login y Home.
+  Reemplazo de assets documentado en `.kiro/ASSETS-DISENO.md`.
+- Librería de diseño: **MaterialKolor** `com.materialkolor:material-kolor:2.0.0`.
+
 ---
 
 ## 6. Roles y Permisos (`ui/auth/Permisos.kt`)
