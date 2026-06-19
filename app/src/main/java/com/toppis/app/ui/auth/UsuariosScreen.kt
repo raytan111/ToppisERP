@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,19 +23,30 @@ fun UsuariosScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val usuarios by viewModel.usuarios.collectAsState()
-    val authState by viewModel.authState.collectAsState()
+    val registroState by viewModel.registroState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
+    var errorRegistro by remember { mutableStateOf<String?>(null) }
 
     // Cargar usuarios al abrir la pantalla
     LaunchedEffect(Unit) {
         viewModel.cargarUsuarios()
     }
 
-    LaunchedEffect(authState) {
-        if (authState is AuthState.Error) {
-            snackbarHostState.showSnackbar((authState as AuthState.Error).message)
-            viewModel.resetState()
+    // Reaccionar al resultado de crear usuario
+    LaunchedEffect(registroState) {
+        when (val st = registroState) {
+            is RegistroState.Success -> {
+                showCrearDialog = false
+                errorRegistro = null
+                snackbarHostState.showSnackbar("Usuario creado")
+                viewModel.resetRegistroState()
+            }
+            is RegistroState.Error -> {
+                errorRegistro = st.message
+                viewModel.resetRegistroState()
+            }
+            else -> {}
         }
     }
 
@@ -83,10 +95,23 @@ fun UsuariosScreen(
 
     if (showCrearDialog) {
         CrearUsuarioDialog(
+            cargando = registroState is RegistroState.Loading,
             onDismiss = { showCrearDialog = false },
             onConfirm = { nombre, email, password, rol ->
                 viewModel.registrarUsuario(nombre, email, password, rol)
-                showCrearDialog = false
+            }
+        )
+    }
+
+    // Popup de error de creación de usuario
+    errorRegistro?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { errorRegistro = null },
+            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("No se pudo crear el usuario") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { errorRegistro = null }) { Text("Entendido") }
             }
         )
     }
@@ -160,6 +185,7 @@ private fun UsuarioCard(usuario: Usuario) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CrearUsuarioDialog(
+    cargando: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (nombre: String, email: String, password: String, rol: Rol) -> Unit
 ) {
@@ -169,10 +195,13 @@ private fun CrearUsuarioDialog(
     var selectedRol by remember { mutableStateOf(Rol.CAJERO) }
     var rolExpanded by remember { mutableStateOf(false) }
 
-    val formValido = nombre.isNotBlank() && email.isNotBlank() && password.length >= 4
+    val emailValido = email.contains("@") && email.contains(".")
+    val passwordValido = password.length >= 6
+    val formValido = nombre.isNotBlank() && emailValido && passwordValido && !cargando
+    val passwordError = password.isNotEmpty() && !passwordValido
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!cargando) onDismiss() },
         title = { Text("Nuevo usuario") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -187,13 +216,23 @@ private fun CrearUsuarioDialog(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
+                    isError = email.isNotEmpty() && !emailValido,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Contraseña (mín. 4 caracteres)") },
+                    label = { Text("Contraseña") },
+                    isError = passwordError,
+                    supportingText = {
+                        Text(
+                            if (passwordError)
+                                "Faltan caracteres: mínimo 6 (tenés ${password.length})."
+                            else
+                                "Mínimo 6 caracteres."
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -234,11 +273,15 @@ private fun CrearUsuarioDialog(
                 onClick = { onConfirm(nombre, email, password, selectedRol) },
                 enabled = formValido
             ) {
-                Text("Crear")
+                if (cargando) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Crear")
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss, enabled = !cargando) { Text("Cancelar") }
         }
     )
 }

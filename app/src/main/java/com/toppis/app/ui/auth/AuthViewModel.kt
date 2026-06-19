@@ -17,6 +17,14 @@ sealed class AuthState {
     data class Error(val message: String) : AuthState()
 }
 
+/** Estado del flujo de creación de usuario (separado del login). */
+sealed class RegistroState {
+    object Idle : RegistroState()
+    object Loading : RegistroState()
+    object Success : RegistroState()
+    data class Error(val message: String) : RegistroState()
+}
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
 class AuthViewModel(
@@ -34,6 +42,10 @@ class AuthViewModel(
     /** Lista reactiva de todos los usuarios (para UsuariosScreen). */
     private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
     val usuarios: StateFlow<List<Usuario>> = _usuarios.asStateFlow()
+
+    /** Estado del flujo de creación de usuario. */
+    private val _registroState = MutableStateFlow<RegistroState>(RegistroState.Idle)
+    val registroState: StateFlow<RegistroState> = _registroState.asStateFlow()
 
     /** Se intenta restaurar la sesión al iniciar (auto-login). */
     init {
@@ -94,13 +106,21 @@ class AuthViewModel(
 
     fun registrarUsuario(nombre: String, email: String, password: String, rol: Rol) {
         viewModelScope.launch {
-            val ok = repository.registrarUsuario(nombre, email, password, rol)
-            if (!ok) {
-                _authState.value = AuthState.Error("El email ya está registrado o hubo un error")
-            } else {
-                cargarUsuarios()
-            }
+            _registroState.value = RegistroState.Loading
+            repository.registrarUsuario(nombre, email, password, rol).fold(
+                onSuccess = {
+                    cargarUsuarios()
+                    _registroState.value = RegistroState.Success
+                },
+                onFailure = { error ->
+                    _registroState.value = RegistroState.Error(error.message ?: "No se pudo crear el usuario")
+                }
+            )
         }
+    }
+
+    fun resetRegistroState() {
+        _registroState.value = RegistroState.Idle
     }
 
     /** Carga la lista de usuarios desde Supabase. */

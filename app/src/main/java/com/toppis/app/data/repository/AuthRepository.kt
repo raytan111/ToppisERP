@@ -134,14 +134,14 @@ class AuthRepository {
      * del nuevo usuario activa para el admin. Para MVP es aceptable; en una fase
      * posterior se moverá a una Edge Function con service_role.
      *
-     * @return true si se creó correctamente, false si el email ya existe o falla.
+     * @return Result.success si se creó, Result.failure con mensaje claro si no.
      */
     suspend fun registrarUsuario(
         nombre: String,
         email: String,
         password: String,
         rol: Rol
-    ): Boolean {
+    ): Result<Unit> {
         val normalizedEmail = email.trim().lowercase()
         // Guardar la sesión del admin actual para restaurarla luego
         // (signUp cambia la sesión al usuario recién creado)
@@ -151,7 +151,8 @@ class AuthRepository {
                 this.email = normalizedEmail
                 this.password = password
             }
-            val newUserId = result?.id ?: return false
+            val newUserId = result?.id
+                ?: return Result.failure(Exception("No se pudo crear el usuario (sin id)."))
 
             client.postgrest.from("usuarios").insert(
                 Usuario(
@@ -162,10 +163,10 @@ class AuthRepository {
                     activo = true
                 )
             )
-            true
+            Result.success(Unit)
         } catch (e: Exception) {
             Log.e("AuthRepository", "Error en registrarUsuario: ${e.message}", e)
-            false
+            Result.failure(Exception(mensajeErrorRegistro(e)))
         } finally {
             // Restaurar la sesión del admin (signUp la había reemplazado)
             if (sesionAdmin != null) {
@@ -175,6 +176,23 @@ class AuthRepository {
                     Log.e("AuthRepository", "No se pudo restaurar sesión admin: ${e.message}", e)
                 }
             }
+        }
+    }
+
+    /** Traduce errores comunes de registro a mensajes claros en español. */
+    private fun mensajeErrorRegistro(e: Exception): String {
+        val raw = (e.message ?: "").lowercase()
+        return when {
+            raw.contains("weak_password") || raw.contains("at least 6") ->
+                "La contraseña es muy débil: debe tener al menos 6 caracteres."
+            raw.contains("already") || raw.contains("registered") || raw.contains("exists") ||
+                raw.contains("duplicate") ->
+                "El email ya está registrado."
+            raw.contains("invalid") && raw.contains("email") ->
+                "El email no es válido."
+            raw.contains("network") || raw.contains("timeout") || raw.contains("connect") ->
+                "Error de conexión. Revisá tu internet e intentá de nuevo."
+            else -> e.message ?: "No se pudo crear el usuario."
         }
     }
 }
