@@ -8,6 +8,8 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Repositorio de autenticación basado en Supabase Auth.
@@ -208,6 +210,42 @@ class AuthRepository {
             raw.contains("network") || raw.contains("timeout") || raw.contains("connect") ->
                 "Error de conexión. Revisá tu internet e intentá de nuevo."
             else -> e.message ?: "No se pudo crear el usuario."
+        }
+    }
+
+    // ── Editar usuario ──────────────────────────────────────────────────────
+
+    /**
+     * Actualiza el perfil de un usuario (nombre, rol, activo) en la tabla
+     * "usuarios". El email no se edita (está ligado a la cuenta de Auth). La RLS
+     * sólo lo permite a ADMIN.
+     */
+    suspend fun actualizarUsuario(
+        usuarioId: String,
+        nombre: String,
+        rol: Rol,
+        activo: Boolean
+    ): Result<Unit> {
+        return try {
+            client.postgrest.from("usuarios").update(
+                buildJsonObject {
+                    put("nombre", nombre.trim())
+                    put("rol", rol.name)
+                    put("activo", activo)
+                }
+            ) {
+                filter { eq("id", usuarioId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error en actualizarUsuario: ${e.message}", e)
+            val raw = (e.message ?: "").lowercase()
+            val msg = when {
+                raw.contains("permission") || raw.contains("policy") || raw.contains("row-level") ->
+                    "No tenés permiso para editar usuarios."
+                else -> e.message ?: "No se pudo actualizar el usuario."
+            }
+            Result.failure(Exception(msg))
         }
     }
 

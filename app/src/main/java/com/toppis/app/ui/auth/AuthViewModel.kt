@@ -135,6 +135,22 @@ class AuthViewModel(
         }
     }
 
+    /** Edita nombre/rol/activo de un usuario (solo ADMIN según RLS). */
+    fun actualizarUsuario(usuarioId: String, nombre: String, rol: Rol, activo: Boolean) {
+        viewModelScope.launch {
+            _registroState.value = RegistroState.Loading
+            repository.actualizarUsuario(usuarioId, nombre, rol, activo).fold(
+                onSuccess = {
+                    cargarUsuarios()
+                    _registroState.value = RegistroState.Success
+                },
+                onFailure = { error ->
+                    _registroState.value = RegistroState.Error(error.message ?: "No se pudo actualizar el usuario")
+                }
+            )
+        }
+    }
+
     /** Carga la lista de usuarios desde Supabase. */
     fun cargarUsuarios() {
         viewModelScope.launch {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -30,8 +31,10 @@ fun UsuariosScreen(
     var showCrearDialog by remember { mutableStateOf(false) }
     var errorRegistro by remember { mutableStateOf<String?>(null) }
     var aEliminar by remember { mutableStateOf<Usuario?>(null) }
+    var enEdicion by remember { mutableStateOf<Usuario?>(null) }
 
     val puedeBorrar = Permisos.de(usuarioActual?.rol).puedeBorrar
+    val puedeEditar = Permisos.de(usuarioActual?.rol).puedeEditar
 
     // Cargar usuarios al abrir la pantalla
     LaunchedEffect(Unit) {
@@ -43,8 +46,9 @@ fun UsuariosScreen(
         when (val st = registroState) {
             is RegistroState.Success -> {
                 showCrearDialog = false
+                enEdicion = null
                 errorRegistro = null
-                snackbarHostState.showSnackbar("Usuario creado")
+                snackbarHostState.showSnackbar("Guardado")
                 viewModel.resetRegistroState()
             }
             is RegistroState.Error -> {
@@ -94,7 +98,9 @@ fun UsuariosScreen(
                 items(usuarios) { usuario ->
                     UsuarioCard(
                         usuario = usuario,
+                        puedeEditar = puedeEditar,
                         puedeBorrar = puedeBorrar && usuario.id != usuarioActual?.id,
+                        onEditar = { enEdicion = usuario },
                         onEliminar = { aEliminar = usuario }
                     )
                 }
@@ -112,12 +118,23 @@ fun UsuariosScreen(
         )
     }
 
+    enEdicion?.let { u ->
+        EditarUsuarioDialog(
+            usuario = u,
+            cargando = registroState is RegistroState.Loading,
+            onDismiss = { enEdicion = null },
+            onConfirm = { nombre, rol, activo ->
+                viewModel.actualizarUsuario(u.id, nombre, rol, activo)
+            }
+        )
+    }
+
     // Popup de error de creación de usuario
     errorRegistro?.let { msg ->
         AlertDialog(
             onDismissRequest = { errorRegistro = null },
             icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("No se pudo crear el usuario") },
+            title = { Text("Operación no completada") },
             text = { Text(msg) },
             confirmButton = {
                 TextButton(onClick = { errorRegistro = null }) { Text("Entendido") }
@@ -150,7 +167,9 @@ fun UsuariosScreen(
 @Composable
 private fun UsuarioCard(
     usuario: Usuario,
+    puedeEditar: Boolean = false,
     puedeBorrar: Boolean = false,
+    onEditar: () -> Unit = {},
     onEliminar: () -> Unit = {}
 ) {
     val rolColor = if (usuario.rol == Rol.ADMIN)
@@ -207,6 +226,11 @@ private fun UsuarioCard(
                     color = rolTextColor,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
+            }
+            if (puedeEditar) {
+                IconButton(onClick = onEditar) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                }
             }
             if (puedeBorrar) {
                 IconButton(onClick = onEliminar) {
@@ -323,3 +347,102 @@ private fun CrearUsuarioDialog(
     )
 }
 
+
+// ── Dialog editar usuario ──────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditarUsuarioDialog(
+    usuario: Usuario,
+    cargando: Boolean = false,
+    onDismiss: () -> Unit,
+    onConfirm: (nombre: String, rol: Rol, activo: Boolean) -> Unit
+) {
+    var nombre by remember { mutableStateOf(usuario.nombre) }
+    var selectedRol by remember { mutableStateOf(usuario.rol) }
+    var activo by remember { mutableStateOf(usuario.activo) }
+    var rolExpanded by remember { mutableStateOf(false) }
+
+    val formValido = nombre.isNotBlank() && !cargando
+
+    AlertDialog(
+        onDismissRequest = { if (!cargando) onDismiss() },
+        title = { Text("Editar usuario") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = usuario.email,
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
+                    label = { Text("Email (no editable)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                ExposedDropdownMenuBox(
+                    expanded = rolExpanded,
+                    onExpandedChange = { rolExpanded = !rolExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = selectedRol.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Rol") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = rolExpanded) },
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = rolExpanded,
+                        onDismissRequest = { rolExpanded = false }
+                    ) {
+                        Rol.entries.forEach { rol ->
+                            DropdownMenuItem(
+                                text = { Text(rol.name) },
+                                onClick = {
+                                    selectedRol = rol
+                                    rolExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Activo", modifier = Modifier.weight(1f))
+                    Switch(checked = activo, onCheckedChange = { activo = it })
+                }
+                if (!activo) {
+                    Text(
+                        "Inactivo: el usuario no podrá iniciar sesión.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(nombre, selectedRol, activo) },
+                enabled = formValido
+            ) {
+                if (cargando) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Guardar")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !cargando) { Text("Cancelar") }
+        }
+    )
+}
