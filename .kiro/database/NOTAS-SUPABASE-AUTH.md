@@ -33,11 +33,20 @@ Resumen de las reglas y ajustes que afectan a la creación y el login de usuario
 
 ## 5. Eliminar usuarios
 
-- Solo **ADMIN** puede eliminar (regla RLS en `usuarios`: DELETE solo si `get_user_rol() = 'ADMIN'`).
+- Solo **ADMIN** puede eliminar.
 - La app pide **confirmación** antes de borrar y **no permite eliminarte a vos mismo**.
-- El borrado quita el **perfil** (`usuarios`); la cuenta de `auth.users` queda en Supabase.
-  - Efecto: el usuario ya no aparece ni puede operar; el login le falla por no tener perfil.
-  - Para borrar también la cuenta de Auth se necesita service_role / Edge Function (pendiente si se requiere).
+- El borrado es **total** vía la Edge Function `admin-usuarios`: elimina la cuenta
+  de `auth.users` y el perfil cae por `ON DELETE CASCADE`.
+  - Requiere desplegar la función (ver `supabase/functions/admin-usuarios/README.md`).
+  - Si la función no está desplegada, el botón muestra un aviso y no borra.
+
+## 5b. Editar usuarios y resetear contraseña
+
+- Solo **ADMIN** (RLS de UPDATE en `usuarios` + Edge Function).
+- **Editar**: cambia nombre, rol y activo/inactivo (el email no se edita).
+- **Cambiar contraseña**: vía Edge Function `admin-usuarios` (mínimo 6 caracteres).
+- **Roles asignables**: ADMIN puede asignar cualquier rol; ADMIN_LOCAL solo
+  SUPERVISOR/CAJERO (no puede crear admins). Definido en `ui/auth/Permisos.kt`.
 
 ## 6. Roles (enum `rol`)
 
