@@ -123,6 +123,18 @@ class AuthViewModel(
         _registroState.value = RegistroState.Idle
     }
 
+    /** Elimina un usuario (solo ADMIN según RLS). Reporta error vía registroState. */
+    fun eliminarUsuario(usuarioId: String) {
+        viewModelScope.launch {
+            repository.eliminarUsuario(usuarioId).fold(
+                onSuccess = { cargarUsuarios() },
+                onFailure = { error ->
+                    _registroState.value = RegistroState.Error(error.message ?: "No se pudo eliminar el usuario")
+                }
+            )
+        }
+    }
+
     /** Carga la lista de usuarios desde Supabase. */
     fun cargarUsuarios() {
         viewModelScope.launch {

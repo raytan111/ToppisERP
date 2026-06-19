@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -23,10 +24,14 @@ fun UsuariosScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val usuarios by viewModel.usuarios.collectAsState()
+    val usuarioActual by viewModel.usuarioActual.collectAsState()
     val registroState by viewModel.registroState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
     var errorRegistro by remember { mutableStateOf<String?>(null) }
+    var aEliminar by remember { mutableStateOf<Usuario?>(null) }
+
+    val puedeBorrar = Permisos.de(usuarioActual?.rol).puedeBorrar
 
     // Cargar usuarios al abrir la pantalla
     LaunchedEffect(Unit) {
@@ -87,7 +92,11 @@ fun UsuariosScreen(
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
                 items(usuarios) { usuario ->
-                    UsuarioCard(usuario = usuario)
+                    UsuarioCard(
+                        usuario = usuario,
+                        puedeBorrar = puedeBorrar && usuario.id != usuarioActual?.id,
+                        onEliminar = { aEliminar = usuario }
+                    )
                 }
             }
         }
@@ -115,12 +124,35 @@ fun UsuariosScreen(
             }
         )
     }
+
+    // Confirmación de eliminación de usuario
+    aEliminar?.let { u ->
+        AlertDialog(
+            onDismissRequest = { aEliminar = null },
+            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Eliminar usuario") },
+            text = { Text("¿Seguro que querés eliminar a \"${u.nombre}\"? Perderá el acceso a la app. Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.eliminarUsuario(u.id)
+                    aEliminar = null
+                }) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { aEliminar = null }) { Text("Cancelar") }
+            }
+        )
+    }
 }
 
 // ── Card de usuario ────────────────────────────────────────────────────────────
 
 @Composable
-private fun UsuarioCard(usuario: Usuario) {
+private fun UsuarioCard(
+    usuario: Usuario,
+    puedeBorrar: Boolean = false,
+    onEliminar: () -> Unit = {}
+) {
     val rolColor = if (usuario.rol == Rol.ADMIN)
         MaterialTheme.colorScheme.primaryContainer
     else
@@ -175,6 +207,11 @@ private fun UsuarioCard(usuario: Usuario) {
                     color = rolTextColor,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
+            }
+            if (puedeBorrar) {
+                IconButton(onClick = onEliminar) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
