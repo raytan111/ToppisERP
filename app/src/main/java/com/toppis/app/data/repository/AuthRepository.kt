@@ -55,7 +55,22 @@ class AuthRepository {
             }
         } catch (e: Exception) {
             Log.e("AuthRepository", "Error en login: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(Exception(mensajeErrorLogin(e)))
+        }
+    }
+
+    /** Traduce errores comunes de login a mensajes claros en español. */
+    private fun mensajeErrorLogin(e: Exception): String {
+        val raw = (e.message ?: "").lowercase()
+        return when {
+            raw.contains("email_not_confirmed") || raw.contains("not confirmed") ->
+                "El email no está confirmado. Pedile al administrador que lo confirme en Supabase o que desactive la confirmación de email."
+            raw.contains("invalid_credentials") || raw.contains("invalid login") ||
+                raw.contains("invalid_grant") || raw.contains("invalid email or password") ->
+                "Email o contraseña incorrectos."
+            raw.contains("network") || raw.contains("timeout") || raw.contains("connect") ->
+                "Error de conexión. Revisá tu internet e intentá de nuevo."
+            else -> e.message ?: "No se pudo iniciar sesión."
         }
     }
 
