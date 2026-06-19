@@ -1,58 +1,49 @@
 package com.toppis.erp.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import com.materialkolor.PaletteStyle
+import com.materialkolor.rememberDynamicColorScheme
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
-
+/**
+ * Tema de la app basado en el color de marca configurable (ThemeManager).
+ *
+ * A partir de un único color semilla (elegido por el admin en hex "#"), se
+ * genera todo el esquema Material 3 (primary, secondary, tertiary, containers,
+ * superficies) tanto en claro como en oscuro, usando MaterialKolor.
+ */
 @Composable
 fun ToppisERPTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    val seedHex by ThemeManager.seedHex.collectAsState()
+    val modo by ThemeManager.modoOscuro.collectAsState()
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val systemDark = isSystemInDarkTheme()
+    val dark = when (modo) {
+        1 -> false
+        2 -> true
+        else -> systemDark
     }
+
+    val seed: Color = ThemeManager.hexToColor(seedHex)
+        ?: ThemeManager.hexToColor(ThemeManager.SEED_POR_DEFECTO)!!
+
+    val colorScheme = rememberDynamicColorScheme(
+        seedColor = seed,
+        isDark = dark,
+        isAmoled = false,
+        style = PaletteStyle.Vibrant
+    )
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
         content = content
     )
 }

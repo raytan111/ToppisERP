@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Placeholder de logo (hamburguesa). Reemplazar por el logo real. -->
+    <!-- Pan superior -->
+    <path
+        android:fillColor="#E8A33D"
+        android:pathData="M8,16c0,-6 7,-10 16,-10s16,4 16,10v1H8z" />
+    <!-- Semillas -->
+    <path android:fillColor="#FFF3D6" android:pathData="M17,11m-1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0" />
+    <path android:fillColor="#FFF3D6" android:pathData="M24,9m-1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0" />
+    <path android:fillColor="#FFF3D6" android:pathData="M31,11m-1,0a1,1 0,1 1,2 0a1,1 0,1 1,-2 0" />
+    <!-- Lechuga -->
+    <path
+        android:fillColor="#5BA84F"
+        android:pathData="M7,18h34l-3,3l3,2H7l3,-2z" />
+    <!-- Carne -->
+    <path
+        android:fillColor="#7A4B2B"
+        android:pathData="M9,24h30v4H9z" />
+    <!-- Queso -->
+    <path
+        android:fillColor="#F2B233"
+        android:pathData="M12,23l6,4h-6z" />
+    <!-- Pan inferior -->
+    <path
+        android:fillColor="#E8A33D"
+        android:pathData="M9,29h30v3c0,4 -7,7 -15,7s-15,-3 -15,-7z" />
+</vector>

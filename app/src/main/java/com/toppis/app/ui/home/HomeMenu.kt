@@ -100,6 +100,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("ventas_historial", "Historial de Ventas", Icons.Filled.History),
             MenuOpcion("comprobantes", "Comprobantes", Icons.Filled.Receipt),
             MenuOpcion("promociones", "Promociones", Icons.Filled.LocalOffer, soloAdmin = true),
+            MenuOpcion("config_color", "Configurar Colores", Icons.Filled.Palette, soloAdmin = true),
             MenuOpcion("exportacion", "Exportación", Icons.Filled.FileDownload, soloAdmin = true)
         )
     )

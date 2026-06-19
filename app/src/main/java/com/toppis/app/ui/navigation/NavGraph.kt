@@ -380,5 +380,10 @@ fun NavGraph(
             val vm: ExportacionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = exportacionViewModelFactory)
             ExportacionScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
+
+        composable("config_color") {
+            if (!permisos.puedeAbrir("config_color")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            com.toppis.app.ui.ajustes.ConfiguracionColorScreen(onNavigateBack = { navController.popBackStack() })
+        }
     }
 }

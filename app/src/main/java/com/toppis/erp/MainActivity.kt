@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         com.toppis.app.data.repository.LocalSession.init(applicationContext)
+        com.toppis.erp.ui.theme.ThemeManager.init(applicationContext)
 
         // Manual DI (todos los repositorios usan Supabase)
         val inventarioRepo = ArticuloRepository()

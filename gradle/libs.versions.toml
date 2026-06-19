@@ -42,6 +42,8 @@ supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgre
 supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
 supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt" }
 supabase-functions = { group = "io.github.jan-tennert.supabase", name = "functions-kt" }
+# MaterialKolor: genera el ColorScheme Material 3 desde un color semilla de marca
+material-kolor = { group = "com.materialkolor", name = "material-kolor", version = "2.0.0" }
 # Ktor (motor HTTP requerido por Supabase)
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 

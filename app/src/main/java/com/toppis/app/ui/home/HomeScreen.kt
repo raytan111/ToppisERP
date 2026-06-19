@@ -1,6 +1,7 @@
 package com.toppis.app.ui.home
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,13 +45,21 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text("ToppisERP", fontWeight = FontWeight.Bold)
-                        if (localNombre != null) {
-                            Text(
-                                text = localNombre!!,
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = com.toppis.erp.R.drawable.toppis_logo),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("ToppisERP", fontWeight = FontWeight.Bold)
+                            if (localNombre != null) {
+                                Text(
+                                    text = localNombre!!,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
                     }
                 },

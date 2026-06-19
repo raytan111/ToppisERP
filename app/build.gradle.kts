@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.supabase.auth)
     implementation(libs.supabase.realtime)
     implementation(libs.supabase.functions)
+    implementation(libs.material.kolor)
     // Ktor: motor HTTP requerido por Supabase (OkHttp soporta WebSockets para Realtime)
     implementation(libs.ktor.client.okhttp)
 
