@@ -133,7 +133,31 @@ class ArticuloRepository {
         }
     }
 
+    /**
+     * Elimina un artículo. Antes lo quita de las recetas de menú, preparaciones y
+     * modificadores (solo esas líneas), SIN borrar el plato/preparación/modificador
+     * completo. No borra historial de compras: si el artículo tiene compras
+     * registradas, la base lo impedirá (mensaje de error claro en pantalla).
+     */
     suspend fun eliminarArticulo(articuloId: Int) {
+        val tipo = "ARTICULO"
+        // Quitar el artículo de cada receta donde aparece (solo la línea).
+        runCatching {
+            client.postgrest.from("recetas_menu").delete {
+                filter { eq("tipo_componente", tipo); eq("componente_id", articuloId) }
+            }
+        }
+        runCatching {
+            client.postgrest.from("preparacion_componentes").delete {
+                filter { eq("tipo_componente", tipo); eq("componente_id", articuloId) }
+            }
+        }
+        runCatching {
+            client.postgrest.from("modificador_componentes").delete {
+                filter { eq("tipo_componente", tipo); eq("componente_id", articuloId) }
+            }
+        }
+        // Finalmente, el artículo.
         client.postgrest.from("articulos").delete {
             filter { eq("id", articuloId) }
         }

@@ -104,7 +104,22 @@ class MenuRepository {
         }
     }
 
+    /**
+     * Elimina un ítem del menú. Antes lo quita de las promociones (líneas) para
+     * que no lo bloqueen; su receta cae en cascada (es inútil sin el ítem). Si el
+     * ítem tiene ventas registradas, la base lo impedirá (error claro en pantalla).
+     */
     suspend fun eliminarItemMenu(item: ItemMenu) {
+        runCatching {
+            client.postgrest.from("promocion_items").delete {
+                filter { eq("item_menu_id", item.id) }
+            }
+        }
+        runCatching {
+            client.postgrest.from("recetas_menu").delete {
+                filter { eq("item_menu_id", item.id) }
+            }
+        }
         client.postgrest.from("items_menu").delete {
             filter { eq("id", item.id) }
         }
