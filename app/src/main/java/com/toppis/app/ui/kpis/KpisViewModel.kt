@@ -30,6 +30,16 @@ data class Kpis(
     val lotesProxVencer: Int = 0
 )
 
+/** Delivery de un día concreto. */
+data class DiaDelivery(val dia: String, val monto: Double, val pedidos: Int)
+
+/** Resumen de delivery de un mes: total + desglose por día. */
+data class DeliveryMes(
+    val total: Double = 0.0,
+    val pedidosConEnvio: Int = 0,
+    val porDia: List<DiaDelivery> = emptyList()
+)
+
 class KpisViewModel : ViewModel() {
 
     private val _kpis = MutableStateFlow(Kpis())
@@ -38,7 +48,50 @@ class KpisViewModel : ViewModel() {
     private val _cargando = MutableStateFlow(true)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
 
-    init { cargar() }
+    // ── Delivery por mes (con selector) ──────────────────────────────────────
+    private val _mesDelivery = MutableStateFlow(YearMonth.now())
+    val mesDelivery: StateFlow<YearMonth> = _mesDelivery.asStateFlow()
+
+    private val _delivery = MutableStateFlow(DeliveryMes())
+    val delivery: StateFlow<DeliveryMes> = _delivery.asStateFlow()
+
+    init { cargar(); cargarDelivery() }
+
+    /** Cambia el mes del delivery (delta = -1 anterior, +1 siguiente). */
+    fun cambiarMesDelivery(delta: Long) {
+        _mesDelivery.value = _mesDelivery.value.plusMonths(delta)
+        cargarDelivery()
+    }
+
+    fun cargarDelivery() {
+        viewModelScope.launch {
+            val client = SupabaseClient.client
+            val ym = _mesDelivery.value
+            val desdeIso = ym.atDay(1).atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val hastaIso = ym.plusMonths(1).atDay(1).atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val lid = LocalSession.activoId.value
+
+            val ventas = try {
+                client.postgrest.from("ventas").select {
+                    filter {
+                        gte("fecha", desdeIso)
+                        lt("fecha", hastaIso)
+                        if (lid != null) eq("local_id", lid)
+                    }
+                }.decodeList<Venta>().filter { it.estado == EstadoVenta.COMPLETADA }
+            } catch (_: Exception) { emptyList() }
+
+            val total = ventas.sumOf { it.montoEnvio }
+            val pedidosConEnvio = ventas.count { it.montoEnvio > 0 }
+            val porDia = ventas
+                .filter { it.montoEnvio > 0 }
+                .groupBy { (it.fecha ?: "").take(10) }
+                .map { (dia, lst) -> DiaDelivery(dia, lst.sumOf { it.montoEnvio }, lst.size) }
+                .sortedBy { it.dia }
+
+            _delivery.value = DeliveryMes(total, pedidosConEnvio, porDia)
+        }
+    }
 
     fun cargar() {
         viewModelScope.launch {

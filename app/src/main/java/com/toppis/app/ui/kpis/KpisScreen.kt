@@ -3,13 +3,19 @@ package com.toppis.app.ui.kpis
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toppis.app.ui.components.ToppisTopBar
 import java.text.DecimalFormat
+import java.time.format.TextStyle
+import java.util.Locale
 
 private val money = DecimalFormat("$#,##0")
 private val pct = DecimalFormat("0.#")
@@ -22,6 +28,8 @@ fun KpisScreen(
 ) {
     val k by viewModel.kpis.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
+    val mesDelivery by viewModel.mesDelivery.collectAsState()
+    val delivery by viewModel.delivery.collectAsState()
 
     Scaffold(
         topBar = { ToppisTopBar(titulo = "KPIs Ejecutivos", onBack = onNavigateBack) }
@@ -77,6 +85,89 @@ fun KpisScreen(
                 }
                 if (k.lotesProxVencer > 0) {
                     KpiCard("Lotes por vencer (<7 días)", "${k.lotesProxVencer}", MaterialTheme.colorScheme.error, Modifier.fillMaxWidth())
+                }
+
+                HorizontalDivider()
+
+                // ── Delivery por mes ──────────────────────────────────────────
+                DeliverySection(
+                    mes = mesDelivery,
+                    delivery = delivery,
+                    onPrev = { viewModel.cambiarMesDelivery(-1) },
+                    onNext = { viewModel.cambiarMesDelivery(1) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeliverySection(
+    mes: java.time.YearMonth,
+    delivery: DeliveryMes,
+    onPrev: () -> Unit,
+    onNext: () -> Unit
+) {
+    val mesLabel = "${mes.month.getDisplayName(TextStyle.FULL, Locale("es")).replaceFirstChar { it.uppercase() }} ${mes.year}"
+
+    // Selector de mes
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("🛵 Delivery", style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onPrev) { Icon(Icons.Filled.ChevronLeft, contentDescription = "Mes anterior") }
+            Text(mesLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            IconButton(onClick = onNext) { Icon(Icons.Filled.ChevronRight, contentDescription = "Mes siguiente") }
+        }
+    }
+
+    // Total del mes
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KpiCard("Delivery del mes", money.format(delivery.total), MaterialTheme.colorScheme.tertiary, Modifier.weight(1f))
+        KpiCard("Pedidos con envío", delivery.pedidosConEnvio.toString(), MaterialTheme.colorScheme.secondary, Modifier.weight(1f))
+    }
+
+    // Por día
+    if (delivery.porDia.isEmpty()) {
+        Text(
+            "Sin delivery este mes.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+    } else {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(vertical = 4.dp)) {
+                Text(
+                    "Por día",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                )
+                delivery.porDia.forEach { d ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(d.dia, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "${d.pedidos} ${if (d.pedidos == 1) "pedido" else "pedidos"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                        Text(
+                            money.format(d.monto),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                    HorizontalDivider()
                 }
             }
         }
