@@ -24,6 +24,9 @@ fun ComprobantesScreen(
     val comprobantes by viewModel.comprobantes.collectAsState()
     val money = DecimalFormat("$#,##0")
 
+    // Recargar al abrir (refleja cambios hechos fuera de la app).
+    LaunchedEffect(Unit) { viewModel.recargar() }
+
     Scaffold(
         topBar = {
             ToppisTopBar(titulo = "Comprobantes", onBack = onNavigateBack)

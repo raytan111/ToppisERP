@@ -50,6 +50,9 @@ fun GastosScreen(
 
     val sobresConSaldo = sobres.filter { it.saldo > 0 }
 
+    // Recargar al abrir la pantalla (refleja cambios hechos fuera de la app).
+    LaunchedEffect(Unit) { viewModel.recargar() }
+
     LaunchedEffect(uiState) {
         when (uiState) {
             is GastoUiState.Error -> {

@@ -27,6 +27,9 @@ class ComprobantesViewModel(
     private fun refrescar() {
         viewModelScope.launch { _comprobantes.value = repository.getComprobantes() }
     }
+
+    /** Recarga manual (al abrir la pantalla). */
+    fun recargar() = refrescar()
 }
 
 class ComprobantesViewModelFactory(

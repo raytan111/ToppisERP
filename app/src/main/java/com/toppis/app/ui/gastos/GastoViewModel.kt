@@ -51,6 +51,12 @@ class GastoViewModel(
         }
     }
 
+    /** Recarga manual (al abrir la pantalla), por si cambió algo fuera de la app. */
+    fun recargar() {
+        refrescarGastos()
+        refrescarSobres()
+    }
+
     private fun refrescarSobres() {
         viewModelScope.launch { _sobres.value = sobreRepository.getSobres() }
     }
