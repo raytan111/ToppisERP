@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,12 +33,23 @@ fun InventarioScreen(
     var showCrear by remember { mutableStateOf(false) }
     var enEdicion by remember { mutableStateOf<Articulo?>(null) }
     var aEliminar by remember { mutableStateOf<Articulo?>(null) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState) {
         if (uiState is InventarioUiState.Error) {
-            snackbarHostState.showSnackbar((uiState as InventarioUiState.Error).message)
+            errorMsg = (uiState as InventarioUiState.Error).message
             viewModel.resetState()
         }
+    }
+
+    errorMsg?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { errorMsg = null },
+            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("No se pudo completar") },
+            text = { Text(msg) },
+            confirmButton = { TextButton(onClick = { errorMsg = null }) { Text("Entendido") } }
+        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {

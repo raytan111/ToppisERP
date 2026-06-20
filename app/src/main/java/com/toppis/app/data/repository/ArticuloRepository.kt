@@ -158,8 +158,21 @@ class ArticuloRepository {
             }
         }
         // Finalmente, el artículo.
-        client.postgrest.from("articulos").delete {
-            filter { eq("id", articuloId) }
+        try {
+            client.postgrest.from("articulos").delete {
+                filter { eq("id", articuloId) }
+            }
+        } catch (e: Exception) {
+            val raw = (e.message ?: "").lowercase()
+            if (raw.contains("foreign key") || raw.contains("violates") ||
+                raw.contains("compra") || raw.contains("conteo") || raw.contains("restrict")
+            ) {
+                throw Exception(
+                    "No se puede eliminar: el artículo tiene compras o conteos registrados. " +
+                        "Borrá esas compras/conteos primero, o desactivá el artículo en lugar de borrarlo."
+                )
+            }
+            throw e
         }
     }
 
