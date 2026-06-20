@@ -157,6 +157,13 @@ class ArticuloRepository {
                 filter { eq("tipo_componente", tipo); eq("componente_id", articuloId) }
             }
         }
+        // Quitar las líneas de compra que usan este artículo (la compra/cabecera
+        // se conserva), para que la FK no bloquee el borrado del artículo.
+        runCatching {
+            client.postgrest.from("compra_detalle").delete {
+                filter { eq("articulo_id", articuloId) }
+            }
+        }
         // Finalmente, el artículo.
         try {
             client.postgrest.from("articulos").delete {
