@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toppis.app.data.models.ItemMenu
 import com.toppis.app.data.db.entities.MetodoPago
@@ -84,10 +85,13 @@ fun PosScreen(
                     .fillMaxHeight()
                     .padding(8.dp)
             ) {
-                Text("Menú", style = MaterialTheme.typography.titleMedium)
+                Text("🍔 Menú", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 if (promociones.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedButton(onClick = { showPromosDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FilledTonalButton(
+                        onClick = { showPromosDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text("🏷️ Promociones (${promociones.size})")
                     }
                 }
@@ -128,7 +132,12 @@ fun PosScreen(
                     .fillMaxHeight()
                     .padding(8.dp)
             ) {
-                Text("Carrito", style = MaterialTheme.typography.titleMedium)
+                val unidadesCarrito = carrito.sumOf { it.cantidad }
+                Text(
+                    "🛒 Carrito" + if (unidadesCarrito > 0) " ($unidadesCarrito)" else "",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (carrito.isEmpty()) {
@@ -165,33 +174,62 @@ fun PosScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 val formatter = DecimalFormat("$#,##0")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Total:", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        formatter.format(total),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                "Total",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                "$unidadesCarrito ${if (unidadesCarrito == 1) "ítem" else "ítems"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        Text(
+                            formatter.format(total),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 Button(
                     onClick = { showCheckoutDialog = true },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = MaterialTheme.shapes.large,
                     enabled = carrito.isNotEmpty()
                 ) {
-                    Text("COBRAR")
+                    Icon(Icons.Filled.ShoppingCart, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        if (carrito.isEmpty()) "COBRAR" else "Cobrar ${formatter.format(total)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
+                Spacer(modifier = Modifier.height(4.dp))
+                TextButton(
                     onClick = { posViewModel.limpiarCarrito() },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = carrito.isNotEmpty()
                 ) {
-                    Text("LIMPIAR")
+                    Text("Limpiar carrito")
                 }
             }
         }
@@ -301,38 +339,46 @@ fun PosScreen(
 @Composable
 private fun ItemMenuCard(item: ItemMenu, onAdd: () -> Unit) {
     val formatter = DecimalFormat("$#,##0")
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onAdd
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.Start
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     item.nombre,
                     style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f)
+                    fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    formatter.format(item.precio),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.titleSmall
-                )
+                if (item.descripcion.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        item.descripcion,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        maxLines = 2
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        formatter.format(item.precio),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
             }
-            if (item.descripcion.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    item.descripcion,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    maxLines = 2
-                )
+            Spacer(modifier = Modifier.width(8.dp))
+            FilledIconButton(onClick = onAdd, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Filled.Add, contentDescription = "Agregar ${item.nombre}")
             }
         }
     }
@@ -420,64 +466,22 @@ private fun ItemCarritoMenuCard(
             ) {
                 FilledTonalIconButton(
                     onClick = { onCantidadChange(item.cantidad - 1) },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(38.dp)
                 ) {
-                    Text("-", style = MaterialTheme.typography.titleSmall)
+                    Text("−", style = MaterialTheme.typography.titleMedium)
                 }
                 Text(
                     "${item.cantidad}",
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
                 FilledTonalIconButton(
                     onClick = { onCantidadChange(item.cantidad + 1) },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(38.dp)
                 ) {
-                    Text("+", style = MaterialTheme.typography.titleSmall)
+                    Text("+", style = MaterialTheme.typography.titleMedium)
                 }
-            }
-        }
-    }
-}
-
-// ── Fila de carrito menú (legacy, mantener por compatibilidad) ────────────────────
-
-@Composable
-private fun ItemCarritoMenuRow(
-    item: ItemCarritoMenu,
-    onCantidadChange: (Int) -> Unit,
-    onDelete: () -> Unit
-) {
-    val formatter = DecimalFormat("$#,##0")
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(item.itemMenu.nombre, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                formatter.format(item.subtotal),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            if (item.salsas.isNotEmpty()) {
-                Text(
-                    "Salsas: ${item.salsasTexto}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onCantidadChange(item.cantidad - 1) }) {
-                Text("-", style = MaterialTheme.typography.titleLarge)
-            }
-            Text("${item.cantidad}", modifier = Modifier.padding(horizontal = 8.dp))
-            IconButton(onClick = { onCantidadChange(item.cantidad + 1) }) {
-                Text("+", style = MaterialTheme.typography.titleLarge)
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, "Eliminar", tint = MaterialTheme.colorScheme.error)
             }
         }
     }
