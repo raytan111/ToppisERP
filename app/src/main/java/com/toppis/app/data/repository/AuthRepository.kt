@@ -26,17 +26,36 @@ class AuthRepository {
 
     private val client = SupabaseClient.client
 
+    companion object {
+        /** Dominio interno para usuarios sin email real (login por nombre de usuario). */
+        const val DOMINIO_USUARIO = "toppis.local"
+
+        /**
+         * Normaliza un login a email para Supabase Auth.
+         * - Si contiene "@", se usa tal cual (email real, compatibilidad hacia atrás).
+         * - Si no, se trata como nombre de usuario y se le agrega "@toppis.local".
+         */
+        fun aEmail(input: String): String {
+            val limpio = input.trim().lowercase()
+            return if (limpio.contains("@")) limpio else "$limpio@$DOMINIO_USUARIO"
+        }
+
+        /** Muestra el "usuario" legible a partir del email (oculta el dominio interno). */
+        fun nombreUsuario(email: String): String =
+            if (email.endsWith("@$DOMINIO_USUARIO")) email.substringBefore("@") else email
+    }
+
     // ── Login ───────────────────────────────────────────────────────────────
 
     /**
-     * Autentica con email/password contra Supabase Auth y luego obtiene el
-     * perfil desde la tabla "usuarios". Retorna null si las credenciales son
-     * inválidas o el usuario está inactivo.
+     * Autentica con usuario/email + password contra Supabase Auth y luego obtiene
+     * el perfil desde la tabla "usuarios". El primer parámetro acepta un nombre de
+     * usuario (se convierte a usuario@toppis.local) o un email real.
      */
     suspend fun login(email: String, password: String): Result<Usuario> {
         return try {
             client.auth.signInWith(Email) {
-                this.email = email.trim().lowercase()
+                this.email = aEmail(email)
                 this.password = password
             }
 
@@ -72,6 +91,8 @@ class AuthRepository {
         return when {
             raw.contains("email_not_confirmed") || raw.contains("not confirmed") ->
                 "El email no está confirmado. Pedile al administrador que lo confirme en Supabase o que desactive la confirmación de email."
+            raw.contains("provider_disabled") || raw.contains("logins are disabled") ->
+                "El inicio de sesión está deshabilitado en Supabase. Activá el proveedor Email en Authentication → Providers."
             raw.contains("invalid_credentials") || raw.contains("invalid login") ||
                 raw.contains("invalid_grant") || raw.contains("invalid email or password") ->
                 "Email o contraseña incorrectos."
@@ -164,7 +185,7 @@ class AuthRepository {
         password: String,
         rol: Rol
     ): Result<Unit> {
-        val normalizedEmail = email.trim().lowercase()
+        val normalizedEmail = aEmail(email)
         // Guardar la sesión del admin actual para restaurarla luego
         // (signUp cambia la sesión al usuario recién creado)
         val sesionAdmin = client.auth.currentSessionOrNull()

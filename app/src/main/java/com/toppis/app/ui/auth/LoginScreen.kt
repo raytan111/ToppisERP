@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -80,13 +81,13 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ── Campo email ──────────────────────────────────────────────────
+            // ── Campo usuario ─────────────────────────────────────────────────
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
-                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = "Email") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                label = { Text("Usuario") },
+                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Usuario") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )

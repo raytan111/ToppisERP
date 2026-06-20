@@ -2,6 +2,19 @@
 
 Resumen de las reglas y ajustes que afectan a la creación y el login de usuarios en ToppisERP. Tenelo a mano para no equivocarte.
 
+> ⭐ LOGIN POR NOMBRE DE USUARIO (importante): la app usa **nombre de usuario**,
+> no email real. Por debajo cada usuario se guarda como `usuario@toppis.local`
+> (dominio interno que nunca recibe correos). Esto evita los **emails rebotados**
+> que Supabase penaliza. Reglas clave:
+> - **Authentication → Providers → Email**: el **proveedor Email debe estar
+>   ENCENDIDO** (es el motor del login), pero **"Confirm email" APAGADO**.
+> - Con "Confirm email" apagado, Supabase **no envía ningún correo** → cero
+>   rebotes. No volver a encenderlo mientras se usen usuarios sin email real.
+> - Compatibilidad: si alguien escribe un email con `@`, se usa tal cual
+>   (el `admin@toppis.com` original sigue funcionando).
+> - Errores típicos: `email_provider_disabled` = apagaste el proveedor Email
+>   (encendelo); `email_not_confirmed` = "Confirm email" encendido sin confirmar.
+
 ---
 
 ## 1. Contraseña

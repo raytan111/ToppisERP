@@ -224,7 +224,7 @@ private fun UsuarioCard(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = usuario.email,
+                    text = com.toppis.app.data.repository.AuthRepository.nombreUsuario(usuario.email),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -280,9 +280,9 @@ private fun CrearUsuarioDialog(
     var selectedRol by remember { mutableStateOf(rolesAsignables.firstOrNull() ?: Rol.CAJERO) }
     var rolExpanded by remember { mutableStateOf(false) }
 
-    val emailValido = email.contains("@") && email.contains(".")
+    val usuarioValido = email.isNotBlank() && !email.contains(" ")
     val passwordValido = password.length >= 6
-    val formValido = nombre.isNotBlank() && emailValido && passwordValido && !cargando
+    val formValido = nombre.isNotBlank() && usuarioValido && passwordValido && !cargando
     val passwordError = password.isNotEmpty() && !passwordValido
 
     AlertDialog(
@@ -299,9 +299,10 @@ private fun CrearUsuarioDialog(
                 )
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    isError = email.isNotEmpty() && !emailValido,
+                    onValueChange = { email = it.trim() },
+                    label = { Text("Usuario") },
+                    isError = email.isNotEmpty() && !usuarioValido,
+                    supportingText = { Text("Sin espacios. Ej: juan, cajero1") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -396,11 +397,11 @@ private fun EditarUsuarioDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
-                    value = usuario.email,
+                    value = com.toppis.app.data.repository.AuthRepository.nombreUsuario(usuario.email),
                     onValueChange = {},
                     readOnly = true,
                     enabled = false,
-                    label = { Text("Email (no editable)") },
+                    label = { Text("Usuario (no editable)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -492,7 +493,7 @@ private fun ResetPasswordDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Nueva contraseña para ${usuario.nombre} (${usuario.email}).",
+                    "Nueva contraseña para ${usuario.nombre} (${com.toppis.app.data.repository.AuthRepository.nombreUsuario(usuario.email)}).",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 OutlinedTextField(
