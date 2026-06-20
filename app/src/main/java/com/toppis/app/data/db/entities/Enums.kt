@@ -9,7 +9,11 @@ enum class Rol { ADMIN, ADMIN_LOCAL, SUPERVISOR, CAJERO }
 enum class TipoMovimiento { INGRESO, EGRESO, TRANSFERENCIA }
 
 @Serializable
-enum class MetodoPago { EFECTIVO, DEBITO }
+enum class MetodoPago(val label: String) {
+    EFECTIVO("Efectivo"),
+    TARJETA("Tarjeta"),
+    TRANSFERENCIA("Transferencia")
+}
 
 @Serializable
 enum class EstadoVenta { COMPLETADA, ANULADA }

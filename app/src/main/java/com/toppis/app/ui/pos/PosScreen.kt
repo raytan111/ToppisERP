@@ -607,7 +607,8 @@ private fun CheckoutDialog(
     var expanded by remember { mutableStateOf(false) }
 
     val sobreAutomatico = when (selectedMetodo) {
-        MetodoPago.DEBITO -> sobres.firstOrNull { it.nombre.lowercase().contains("tarjeta") || it.nombre.lowercase().contains("débito") }
+        MetodoPago.TARJETA -> sobres.firstOrNull { it.nombre.lowercase().contains("tarjeta") || it.nombre.lowercase().contains("débito") || it.nombre.lowercase().contains("debito") }
+        MetodoPago.TRANSFERENCIA -> sobres.firstOrNull { it.nombre.lowercase().contains("transferencia") || it.nombre.lowercase().contains("banco") }
         MetodoPago.EFECTIVO -> sobres.firstOrNull { it.nombre.lowercase().contains("efectivo") }
     }
     var selectedSobre by remember { mutableStateOf(sobreAutomatico ?: sobres.firstOrNull()) }
@@ -638,17 +639,19 @@ private fun CheckoutDialog(
 
                 // Método de Pago
                 Text("Método de Pago:", style = MaterialTheme.typography.labelMedium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = selectedMetodo == MetodoPago.EFECTIVO,
-                        onClick = { selectedMetodo = MetodoPago.EFECTIVO }
-                    )
-                    Text("EFECTIVO", modifier = Modifier.weight(1f))
-                    RadioButton(
-                        selected = selectedMetodo == MetodoPago.DEBITO,
-                        onClick = { selectedMetodo = MetodoPago.DEBITO }
-                    )
-                    Text("DÉBITO")
+                MetodoPago.entries.forEach { metodo ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedMetodo = metodo },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedMetodo == metodo,
+                            onClick = { selectedMetodo = metodo }
+                        )
+                        Text(metodo.label, modifier = Modifier.weight(1f))
+                    }
                 }
 
                 // Zona de envío
