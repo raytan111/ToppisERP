@@ -1,7 +1,7 @@
 # ToppisERP - Contexto del Proyecto
 
-**Última Actualización**: 2026-06-18
-**Versión Actual**: 3.0 (Supabase Cloud + ERP Franquicia)
+**Última Actualización**: 2026-06-20
+**Versión Actual**: 3.2 (Supabase Cloud + ERP Franquicia)
 **Ubicación**: Chile (CLP, español chileno, integración SII futura)
 
 ---
@@ -173,6 +173,14 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.2 — Ajustes operativos (2026-06-20)
+- Método de pago: **EFECTIVO / TARJETA / TRANSFERENCIA** (`supabase-metodo-pago-v2.sql`).
+- KPIs: sección **Delivery** con selector de mes, total y desglose por día.
+- POS: rediseño de legibilidad (tarjetas con chip de precio, total destacado, COBRAR con monto).
+- Borrado limpio: borrar un **artículo** solo lo quita de recetas/preparaciones/modificadores y de sus líneas de compra (conserva la compra); borrar un **ítem de menú** lo quita de promos y su receta cae.
+- Gastos/Comprobantes recargan al abrir (evita cache vieja tras cambios por SQL).
+- Import histórico verificado: 99 ventas = $1.003.545 (el resumen del Excel tenía +$7.990 por error propio en Sem 3 May).
 
 ### v3.1 — Usuarios, datos históricos, robustez (2026-06-19)
 - Gestión de usuarios completa (solo ADMIN): crear, editar, eliminar (borrado

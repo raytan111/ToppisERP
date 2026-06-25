@@ -1,25 +1,25 @@
 # ToppisERP
 
-ERP móvil en la nube para **dark kitchens**: punto de venta, inventario, control de caja, gastos y reportes, todo sincronizado en tiempo real.
+ERP móvil en la nube para una **hamburguesería / dark kitchen**: punto de venta, food cost, inventario profesional, compras, control de caja, mano de obra, multi-local y KPIs ejecutivos — todo sincronizado en tiempo real.
 
-Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube).
+Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube). Español chileno, CLP.
 
 ---
 
 ## ✨ Características
 
-- 🛒 **Punto de Venta (POS)** — venta con carrito, salsas, envíos y generación de comanda
-- 📦 **Inventario** — insumos e ingredientes con cálculo de merma y costo por gramo
-- 💰 **Sobres** — múltiples cajas de dinero con transferencias atómicas
-- 💵 **Gastos** — registro por categoría con descuento automático de saldo
-- 🍽️ **Menú y recetas** — items con receta (ingredientes, insumos y salsas en gramos)
-- 📊 **Reportes** — ventas vs gastos por período, desglose por categoría
-- 📈 **Dashboard** — KPIs, serie temporal y distribución de egresos
-- 💹 **Flujo de caja** — proyecciones y presupuesto vs real
-- 📤 **Exportación** — Excel / CSV / ZIP
-- 👥 **Usuarios y roles** — Admin y Cajero con permisos diferenciados
-- ⚡ **Tiempo real** — los cambios se reflejan al instante entre dispositivos
-- 🔒 **Seguridad** — Row Level Security (RLS) a nivel de base de datos
+- 🛒 **Punto de Venta (POS)** — carrito, modificadores (extra/doble/quitar/cambiar sobre la receta real), salsas con cantidad, promociones, envíos, comanda y comprobante interno.
+- 🍔 **Cocina / Food Cost** — artículos unificados, preparaciones (sub-recetas), recetas de menú, food cost % por plato y menu engineering.
+- 📦 **Inventario Pro** — stock en unidad base, mermas (waste log), conteos, compra sugerida y análisis de variación.
+- 🚚 **Compras** — proveedores y recepción con costo promedio ponderado y caducidad por lote.
+- 💰 **Fondos** — sobres (cuenta = dinero real / fondo = provisión), gastos, **arqueo de caja**, flujo de caja y contabilidad (IVA).
+- 👥 **Personal** — empleados (sueldo fijo/turno/hora), jornadas, propinas y **Prime Cost**.
+- 🏪 **Multi-local** — locales, asignación de usuarios y reportes por local.
+- 📈 **KPIs Ejecutivos** — ventas, ticket, food/labor/prime cost %, merma, alertas y **delivery por mes/día**.
+- 👤 **Usuarios y roles** — ADMIN, ADMIN_LOCAL, SUPERVISOR, CAJERO con permisos y alcance por local. Login por **nombre de usuario**.
+- 🎨 **Tema de marca configurable** — color de la empresa por código hex; modo claro/oscuro.
+- 📤 **Exportación** — Excel / CSV / ZIP.
+- ⚡ **Tiempo real** + 🔒 **Row Level Security (RLS)**.
 
 ---
 
@@ -30,112 +30,103 @@ Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube).
 | Lenguaje | Kotlin |
 | UI | Jetpack Compose + Material 3 |
 | Arquitectura | MVVM + Repository (DI manual) |
-| Navegación | Navigation Compose |
-| Backend | Supabase (PostgreSQL, Auth, Realtime) |
+| Navegación | Navigation Compose (un NavHost, menú por categorías, sin bottom bar) |
+| Backend | Supabase (PostgreSQL, Auth, Realtime, Edge Functions) |
 | Cliente | supabase-kt + Ktor (OkHttp) |
+| Tema | MaterialKolor (esquema dinámico desde un color semilla) |
 | Exportación | Apache POI |
 
-**Operaciones críticas atómicas** (ventas, gastos, transferencias) se ejecutan vía **funciones RPC en PostgreSQL**, garantizando consistencia: si algo falla, se revierte todo (nunca se pierde dinero ni stock).
+**Operaciones críticas atómicas** (ventas, gastos, compras, arqueo, mermas, transferencias) se ejecutan vía **funciones RPC en PostgreSQL**. Operaciones admin que requieren `service_role` (borrar cuenta de auth, reset de contraseña) van por una **Edge Function** (`admin-usuarios`).
 
 ---
 
 ## 📋 Requisitos
 
-- Android Studio (versión reciente)
-- JDK 11+
-- Un proyecto en [Supabase](https://supabase.com) (free tier es suficiente)
-- Android API 26+ (Android 8.0)
+- Android Studio (versión reciente) · JDK 11+ · Android API 26+ (Android 8.0)
+- Un proyecto en [Supabase](https://supabase.com)
 
 ---
 
 ## 🚀 Configuración
 
-### 1. Clonar el repositorio
-
+### 1. Clonar
 ```bash
 git clone https://github.com/raytan111/ToppisERP.git
 cd ToppisERP
 ```
 
-### 2. Crear el proyecto en Supabase
+### 2. Base de datos (Supabase SQL Editor)
+Ejecutá los scripts de `.kiro/database/`. El orden general: primero el esquema base y RLS/realtime, luego los de cada fase (food cost, inventario, compras, dinero, mano de obra, multi-local) y por último los de ajustes recientes. Scripts clave:
+- `supabase-schema.sql`, `supabase-rls.sql`, `supabase-realtime.sql`
+- `supabase-fase4-*` (food cost), `supabase-fase5-*` (mermas/conteos), `supabase-fase6-*` (compras), `supabase-fase7-dinero.sql`, `supabase-fase8-manoobra.sql`, `supabase-fase9-*` (locales/roles)
+- `supabase-roles-v2.sql` — roles ADMIN_LOCAL / SUPERVISOR
+- `supabase-metodo-pago-v2.sql` — método de pago EFECTIVO / TARJETA / TRANSFERENCIA
+- `supabase-clean-slate.sql` — dejar la app lista para operar (borra transaccionales, conserva configs)
 
-1. Crea un proyecto en [supabase.com](https://supabase.com)
-2. En el **SQL Editor**, ejecuta los scripts de `.kiro/database/` en este orden:
-   1. `supabase-schema.sql` — tablas, enums y triggers
-   2. `supabase-rls.sql` — políticas de seguridad (RLS)
-   3. `supabase-realtime.sql` — sincronización en tiempo real
-   4. `supabase-fix-movimientos.sql` — tabla de movimientos + función de transferencia
-   5. `supabase-fix-ingredientes.sql` — corrección de ingredientes
-   6. `supabase-add-cantidad-comprada.sql`
-   7. `supabase-fix-menu.sql` — salsas y recetas
-   8. `supabase-add-salsa-componente.sql`
-   9. `supabase-venta-rpc.sql` — función de venta atómica
-   10. `supabase-gasto-rpc.sql` — función de gasto atómica
-   11. `supabase-fix-usuarios-insert.sql` — política de creación de usuarios
+> Notas de auth en `.kiro/database/NOTAS-SUPABASE-AUTH.md` y de seguridad en `NOTAS-SEGURIDAD.md`.
 
-### 3. Configurar credenciales
-
-Crea (o edita) el archivo `local.properties` en la raíz del proyecto y agrega:
-
+### 3. Credenciales
+Editá `local.properties` (no se sube al repo):
 ```properties
 SUPABASE_URL=https://TU-PROYECTO.supabase.co
 SUPABASE_ANON_KEY=tu-anon-key
 ```
 
-> 🔑 Obtén la URL y la anon key en Supabase → **Settings → API**.
-> Este archivo está en `.gitignore` y **no se sube** al repositorio.
+### 4. Auth (importante)
+- **Authentication → Providers → Email**: dejá el proveedor **ENCENDIDO** y **"Confirm email" APAGADO** (la app usa login por usuario con dominio interno `@toppis.local`, no envía correos).
 
-### 4. Crear el primer administrador
-
-1. En Supabase → **Authentication → Users → Add user** (marca *Auto Confirm User*)
-2. Copia el **User UID** y ejecuta en el SQL Editor:
-
+### 5. Primer administrador
+Creá el usuario en Authentication (Auto Confirm) y su perfil:
 ```sql
 INSERT INTO usuarios (id, nombre, email, rol, activo)
-VALUES ('UID-COPIADO', 'Administrador', 'admin@tucorreo.com', 'ADMIN', true);
+VALUES ('UID-COPIADO', 'Administrador', 'admin@toppis.local', 'ADMIN', true);
 ```
 
-### 5. Compilar y correr
+### 6. Edge Function (opcional, para borrar/resetear usuarios)
+Desplegar `supabase/functions/admin-usuarios` (ver su README: Dashboard o `npx supabase functions deploy admin-usuarios`).
 
-Abre el proyecto en Android Studio y presiona **Run**, o desde terminal:
-
+### 7. Compilar
 ```bash
-./gradlew assembleDebug
+./gradlew :app:assembleDebug
 ```
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Estructura
 
 ```
 app/src/main/java/com/toppis/app/
 ├── data/
-│   ├── models/        # Modelos serializables (Supabase)
-│   ├── repository/    # Repositorios (acceso a datos + RPC)
-│   ├── supabase/      # Cliente Supabase centralizado
-│   ├── util/          # Utilidades (fechas, etc.)
-│   └── db/entities/   # Enumeraciones compartidas
+│   ├── models/        # Modelos @Serializable (Supabase)
+│   ├── repository/    # Repositorios (datos + RPC)
+│   ├── supabase/      # Cliente Supabase
+│   └── db/entities/   # Enums (Enums.kt)
 └── ui/
-    ├── auth/ · dashboard/ · pos/ · sobres/ · inventario/
-    ├── menu/ · gastos/ · reportes/ · flujo/ · exportacion/
-    ├── components/    # MainScaffold, TopBar
-    └── navigation/    # NavGraph centralizado
+    ├── home/          # Menú principal (Home + categorías)
+    ├── auth/ · pos/ · sobres/ · inventario/ · menu/ · gastos/
+    ├── preparaciones/ · modificadores/ · promociones/ · foodcost/
+    ├── mermas/ · conteos/ · compras/ · proveedores/ · variance/
+    ├── arqueo/ · empleados/ · manoobra/ · locales/ · kpis/
+    ├── reportes/ · flujo/ · contabilidad/ · exportacion/ · ventas/
+    ├── ajustes/       # Configurar Colores
+    ├── components/    # BackScaffold, DatePickerField, TopBar
+    └── navigation/    # NavGraph
 
-.kiro/
-├── database/          # Scripts SQL de Supabase
-├── specs/             # Documentos de diseño
-└── PROYECTO-CONTEXTO.md
+com/toppis/erp/ui/theme/   # Theme + ThemeManager (color de marca)
+supabase/functions/        # Edge Functions (admin-usuarios)
+.kiro/                     # database/ (SQL + notas), specs/, PROYECTO-CONTEXTO.md
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] **Fase 1** — Migración a la nube (Supabase) ✅
-- [ ] **Fase 2** — Boletas electrónicas (integración SII Chile)
-- [ ] **Fase 3** — Módulo de contabilidad e impuestos
-- [ ] **Fase 4** — Arquitectura multi-app
-- [ ] **Fase 5** — Preparación para IA
+- [x] Migración a la nube (Supabase)
+- [x] ERP de operación: food cost, inventario, compras, dinero, mano de obra, multi-local, KPIs
+- [x] Roles + permisos + login por usuario + tema de marca
+- [ ] Boletas electrónicas (SII Chile)
+- [ ] Contabilidad/tributario completo
+- [ ] Pulido de diseño (splash, tipografía, animaciones) e IA
 
 ---
 
@@ -143,6 +134,4 @@ app/src/main/java/com/toppis/app/
 
 Proyecto privado. Todos los derechos reservados.
 
----
-
-Hecho con ❤️ para dark kitchens en Chile 🇨🇱
+Hecho con ❤️ para una hamburguesería en Chile 🇨🇱
