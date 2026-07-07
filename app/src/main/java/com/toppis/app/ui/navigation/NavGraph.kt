@@ -1,6 +1,10 @@
 package com.toppis.app.ui.navigation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -155,7 +159,32 @@ fun NavGraph(
     NavHost(
         navController = navController,
         startDestination = "login",
-        modifier = modifier
+        modifier = modifier,
+        // Transiciones suaves: deslizar + fundido al navegar entre pantallas.
+        enterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(320)
+            ) + fadeIn(tween(320))
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(320)
+            ) + fadeOut(tween(320))
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(320)
+            ) + fadeIn(tween(320))
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(320)
+            ) + fadeOut(tween(320))
+        }
     ) {
         // ── Login ──────────────────────────────────────────────────────────
         composable("login") {

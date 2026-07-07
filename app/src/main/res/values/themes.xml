@@ -9,6 +9,8 @@
     <style name="Theme.ToppisERP.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/toppis_rojo</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <!-- Círculo del ícono del mismo rojo: borde invisible, logo centrado -->
+        <item name="windowSplashScreenIconBackgroundColor">@color/toppis_rojo</item>
         <item name="postSplashScreenTheme">@style/Theme.ToppisERP</item>
     </style>
 </resources>

@@ -117,7 +117,7 @@ fun HomeScreen(
                     CategoriaCard(
                         cat = cat,
                         visibles = visibles,
-                        accent = accentDe(cat.id),
+                        accent = accentDeCategoria(cat.id),
                         onClick = { onAbrirCategoria(cat.id) }
                     )
                 }
@@ -244,12 +244,4 @@ private fun CategoriaCard(
     }
 }
 
-/** Color de acento por categoría (paleta apetitosa y contrastada). */
-private fun accentDe(id: String): Color = when (id) {
-    "cat_cocina" -> Color(0xFFF4511E)      // naranja brasa
-    "cat_inventario" -> Color(0xFF00897B)  // teal
-    "cat_fondos" -> Color(0xFF2E7D32)      // verde dinero
-    "cat_personal" -> Color(0xFF5E35B1)    // violeta
-    "cat_admin" -> Color(0xFF455A64)       // slate
-    else -> Color(0xFFE63946)              // rojo marca
-}
+

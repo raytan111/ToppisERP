@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Icono del splash. El logo real (toppis_logo.png) se centra con un pequeño
-  inset para que no lo recorte la máscara circular del splash de Android 12+.
+  Icono del splash. El logo real (toppis_logo.png) se mete con inset generoso
+  para que la máscara circular del splash de Android 12+ NO lo recorte ni lo
+  muestre con zoom. El color del círculo del ícono se iguala al fondo (rojo),
+  así el borde del círculo es invisible y el logo se ve centrado y completo.
 -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:drawable="@drawable/toppis_logo"
-        android:gravity="center" />
-</layer-list>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/toppis_logo"
+    android:insetLeft="20%"
+    android:insetTop="20%"
+    android:insetRight="20%"
+    android:insetBottom="20%" />

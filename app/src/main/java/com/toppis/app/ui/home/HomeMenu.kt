@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -109,3 +110,13 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
 
 /** Busca una categoría por su id de ruta. */
 fun categoriaPorId(id: String?): MenuCategoria? = CATEGORIAS_MENU.firstOrNull { it.id == id }
+
+/** Color de acento por categoría (paleta apetitosa y contrastada). */
+fun accentDeCategoria(id: String): Color = when (id) {
+    "cat_cocina" -> Color(0xFFF4511E)      // naranja brasa
+    "cat_inventario" -> Color(0xFF00897B)  // teal
+    "cat_fondos" -> Color(0xFF2E7D32)      // verde dinero
+    "cat_personal" -> Color(0xFF5E35B1)    // violeta
+    "cat_admin" -> Color(0xFF455A64)       // slate
+    else -> Color(0xFFE63946)              // rojo marca
+}

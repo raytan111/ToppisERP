@@ -37,7 +37,9 @@ fun ToppisERPTheme(
         seedColor = seed,
         isDark = dark,
         isAmoled = false,
-        style = PaletteStyle.Vibrant
+        style = PaletteStyle.Vibrant,
+        // Más contraste en oscuro: superficies más profundas y texto legible.
+        contrastLevel = if (dark) 0.4 else 0.0
     )
 
     MaterialTheme(
