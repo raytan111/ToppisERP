@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -283,15 +284,27 @@ fun PosScreen(
                                 showPromosDialog = false
                             }
                         ) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text(promo.nombre, style = MaterialTheme.typography.titleSmall)
-                                val detalle = when (promo.tipo) {
-                                    com.toppis.app.data.db.entities.TipoPromocion.COMBO ->
-                                        "Combo ${DecimalFormat("$#,##0").format(promo.precio)}"
-                                    com.toppis.app.data.db.entities.TipoPromocion.DESCUENTO_PORCENTAJE ->
-                                        "Descuento ${DecimalFormat("0.#").format(promo.descuentoPct)}%"
+                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                if (promo.imagenUrl != null) {
+                                    coil.compose.AsyncImage(
+                                        model = promo.imagenUrl,
+                                        contentDescription = null,
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        modifier = Modifier.size(48.dp)
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                    )
+                                    Spacer(Modifier.width(10.dp))
                                 }
-                                Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                Column(Modifier.weight(1f)) {
+                                    Text(promo.nombre, style = MaterialTheme.typography.titleSmall)
+                                    val detalle = when (promo.tipo) {
+                                        com.toppis.app.data.db.entities.TipoPromocion.COMBO ->
+                                            "Combo ${DecimalFormat("$#,##0").format(promo.precio)}"
+                                        com.toppis.app.data.db.entities.TipoPromocion.DESCUENTO_PORCENTAJE ->
+                                            "Descuento ${DecimalFormat("0.#").format(promo.descuentoPct)}%"
+                                    }
+                                    Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                }
                             }
                         }
                     }
@@ -347,6 +360,17 @@ private fun ItemMenuCard(item: ItemMenu, onAdd: () -> Unit) {
             modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (item.imagenUrl != null) {
+                coil.compose.AsyncImage(
+                    model = item.imagenUrl,
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                )
+                Spacer(Modifier.width(12.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     item.nombre,

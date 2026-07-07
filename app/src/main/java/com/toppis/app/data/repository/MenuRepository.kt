@@ -78,7 +78,7 @@ class MenuRepository {
         emptyList()
     }
 
-    suspend fun crearItemMenu(nombre: String, descripcion: String, precio: Double, categoria: String = "") {
+    suspend fun crearItemMenu(nombre: String, descripcion: String, precio: Double, categoria: String = "", imagenUrl: String? = null) {
         client.postgrest.from("items_menu").insert(
             buildJsonObject {
                 put("nombre", nombre)
@@ -86,6 +86,7 @@ class MenuRepository {
                 put("precio", precio)
                 put("categoria", categoria)
                 put("activo", true)
+                if (imagenUrl != null) put("imagen_url", imagenUrl)
             }
         )
     }
@@ -98,6 +99,7 @@ class MenuRepository {
                 put("precio", item.precio)
                 put("categoria", item.categoria)
                 put("activo", item.activo)
+                put("imagen_url", item.imagenUrl)
             }
         ) {
             filter { eq("id", item.id) }

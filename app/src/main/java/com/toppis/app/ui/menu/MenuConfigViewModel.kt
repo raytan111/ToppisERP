@@ -52,10 +52,10 @@ class MenuConfigViewModel(
 
     // ── ItemMenu CRUD ───────────────────────────────────────────────────────────
 
-    fun crearItemMenu(nombre: String, descripcion: String, precio: Double, categoria: String = "") {
+    fun crearItemMenu(nombre: String, descripcion: String, precio: Double, categoria: String = "", imagenUrl: String? = null) {
         viewModelScope.launch {
             try {
-                menuRepository.crearItemMenu(nombre, descripcion, precio, categoria)
+                menuRepository.crearItemMenu(nombre, descripcion, precio, categoria, imagenUrl)
                 refrescarItems()
                 _uiState.value = MenuConfigUiState.Success
             } catch (e: Exception) {

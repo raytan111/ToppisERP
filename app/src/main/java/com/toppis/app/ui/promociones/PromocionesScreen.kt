@@ -4,23 +4,51 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.toppis.app.data.db.entities.TipoPromocion
 import com.toppis.app.data.models.AnalisisPromocion
 import com.toppis.app.data.models.ItemMenu
 import com.toppis.app.data.models.Promocion
 import com.toppis.app.data.repository.PromocionItemDetalle
+import com.toppis.app.ui.components.ImagePickerField
 import com.toppis.app.ui.components.ToppisTopBar
 import java.text.DecimalFormat
+
+@Composable
+private fun PromoThumb(url: String?, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.size(56.dp)
+    ) {
+        if (url != null) {
+            AsyncImage(
+                model = url, contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.AddAPhoto, contentDescription = "Agregar foto", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
 
 private val money = DecimalFormat("$#,##0")
 private val pct = DecimalFormat("0.#")
@@ -39,6 +67,7 @@ fun PromocionesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
     var promoAEliminar by remember { mutableStateOf<Promocion?>(null) }
+    var fotoDe by remember { mutableStateOf<Promocion?>(null) }
 
     var promoSeleccionada by remember { mutableStateOf<Promocion?>(null) }
     var detalleItems by remember { mutableStateOf<List<PromocionItemDetalle>>(emptyList()) }
@@ -98,6 +127,8 @@ fun PromocionesScreen(
                                 modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                PromoThumb(promo.imagenUrl, onClick = { fotoDe = promo })
+                                Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(promo.nombre, style = MaterialTheme.typography.titleMedium)
                                     Text(
@@ -130,6 +161,25 @@ fun PromocionesScreen(
                 }
             }
         }
+    }
+
+    fotoDe?.let { promo ->
+        AlertDialog(
+            onDismissRequest = { fotoDe = null },
+            title = { Text("Foto de ${promo.nombre}") },
+            text = {
+                ImagePickerField(
+                    imagenUrl = promo.imagenUrl,
+                    carpeta = "promos",
+                    onImagenSubida = { url ->
+                        viewModel.actualizarImagen(promo.id, url)
+                        fotoDe = null
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = { TextButton(onClick = { fotoDe = null }) { Text("Cerrar") } }
+        )
     }
 
     if (showCrearDialog) {

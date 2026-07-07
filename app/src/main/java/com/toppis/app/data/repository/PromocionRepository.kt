@@ -82,6 +82,13 @@ class PromocionRepository {
         client.postgrest.from("promociones").delete { filter { eq("id", id) } }
     }
 
+    /** Actualiza solo la imagen de una promoción. */
+    suspend fun actualizarImagen(id: Int, url: String) {
+        client.postgrest.from("promociones").update(
+            buildJsonObject { put("imagen_url", url) }
+        ) { filter { eq("id", id) } }
+    }
+
     // ── Items de la promoción ────────────────────────────────────────────────
 
     suspend fun getItems(promocionId: Int): List<PromocionItem> = try {

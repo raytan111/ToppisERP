@@ -20,6 +20,8 @@ data class Promocion(
     @SerialName("fecha_fin")
     val fechaFin: String? = null,
     val activo: Boolean = true,
+    @SerialName("imagen_url")
+    val imagenUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

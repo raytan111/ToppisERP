@@ -16,6 +16,8 @@ data class ItemMenu(
     val costoTeorico: Double = 0.0,
     val categoria: String = "",
     val activo: Boolean = true,
+    @SerialName("imagen_url")
+    val imagenUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

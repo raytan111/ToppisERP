@@ -4,15 +4,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.toppis.app.ui.components.ImagePickerField
 import com.toppis.app.data.db.entities.TipoComponente
 import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.models.ItemMenu
@@ -35,6 +41,7 @@ fun MenuConfigScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearItemDialog by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<ItemMenu?>(null) }
+    var fotoDe by remember { mutableStateOf<ItemMenu?>(null) }
     var componentesReceta by remember { mutableStateOf<List<ComponenteReceta>>(emptyList()) }
 
     LaunchedEffect(uiState) {
@@ -65,6 +72,7 @@ fun MenuConfigScreen(
                     componentesReceta = emptyList()
                     viewModel.loadComponentesReceta(item.id) { componentesReceta = it }
                 },
+                onFoto = { fotoDe = it },
                 onEliminar = { viewModel.eliminarItemMenu(it) }
             )
         }
@@ -73,10 +81,30 @@ fun MenuConfigScreen(
     if (showCrearItemDialog) {
         CrearItemMenuDialog(
             onDismiss = { showCrearItemDialog = false },
-            onConfirm = { nombre, desc, precio, categoria ->
-                viewModel.crearItemMenu(nombre, desc, precio, categoria)
+            onConfirm = { nombre, desc, precio, categoria, imagenUrl ->
+                viewModel.crearItemMenu(nombre, desc, precio, categoria, imagenUrl)
                 showCrearItemDialog = false
             }
+        )
+    }
+
+    // Diálogo para agregar/cambiar la foto de un item existente
+    fotoDe?.let { item ->
+        AlertDialog(
+            onDismissRequest = { fotoDe = null },
+            title = { Text("Foto de ${item.nombre}") },
+            text = {
+                com.toppis.app.ui.components.ImagePickerField(
+                    imagenUrl = item.imagenUrl,
+                    carpeta = "items",
+                    onImagenSubida = { url ->
+                        viewModel.actualizarItemMenu(item.copy(imagenUrl = url))
+                        fotoDe = null
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = { TextButton(onClick = { fotoDe = null }) { Text("Cerrar") } }
         )
     }
 
@@ -108,6 +136,7 @@ fun MenuConfigScreen(
 private fun ItemsMenuTab(
     items: List<ItemMenu>,
     onVerReceta: (ItemMenu) -> Unit,
+    onFoto: (ItemMenu) -> Unit,
     onEliminar: (ItemMenu) -> Unit
 ) {
     if (items.isEmpty()) {
@@ -132,6 +161,8 @@ private fun ItemsMenuTab(
             }
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    MenuThumb(item.imagenUrl, onClick = { onFoto(item) })
+                    Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(item.nombre, style = MaterialTheme.typography.titleMedium)
                         Text(
@@ -161,14 +192,37 @@ private fun ItemsMenuTab(
 }
 
 @Composable
+private fun MenuThumb(url: String?, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.size(56.dp)
+    ) {
+        if (url != null) {
+            AsyncImage(
+                model = url, contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.AddAPhoto, contentDescription = "Agregar foto", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
 private fun CrearItemMenuDialog(
     onDismiss: () -> Unit,
-    onConfirm: (nombre: String, descripcion: String, precio: Double, categoria: String) -> Unit
+    onConfirm: (nombre: String, descripcion: String, precio: Double, categoria: String, imagenUrl: String?) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("") }
     var precioText by remember { mutableStateOf("") }
+    var imagenUrl by remember { mutableStateOf<String?>(null) }
 
     val precioValido = precioText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
 
@@ -177,6 +231,12 @@ private fun CrearItemMenuDialog(
         title = { Text("Nuevo Item del Menú") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ImagePickerField(
+                    imagenUrl = imagenUrl,
+                    carpeta = "items",
+                    onImagenSubida = { imagenUrl = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 OutlinedTextField(
                     value = nombre, onValueChange = { nombre = it },
                     label = { Text("Nombre (ej: Hamburguesa)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
@@ -199,7 +259,7 @@ private fun CrearItemMenuDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, descripcion, precioText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria) },
+                onClick = { onConfirm(nombre, descripcion, precioText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria, imagenUrl) },
                 enabled = nombre.isNotBlank() && precioValido
             ) { Text("Crear") }
         },
