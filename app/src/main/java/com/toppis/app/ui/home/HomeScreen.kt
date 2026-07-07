@@ -1,28 +1,35 @@
 package com.toppis.app.ui.home
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /**
  * Pantalla principal (Home) — menú de la app, sin bottom bar.
  *
- * - Botón grande y destacado para "Venta" (POS): entrada veloz.
- * - Grilla de tarjetas pequeñas: una por categoría.
+ * - Hero POS con gradiente de marca: entrada veloz y de alto impacto.
+ * - Grilla de tarjetas de categoría, cada una con su color de acento.
  * - Logout en la TopBar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,15 +56,22 @@ fun HomeScreen(
                         Image(
                             painter = painterResource(id = com.toppis.erp.R.drawable.toppis_logo),
                             contentDescription = null,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(10.dp))
                         Column {
-                            Text("ToppisERP", fontWeight = FontWeight.Bold)
+                            Text(
+                                "ToppisERP",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold
+                            )
                             if (localNombre != null) {
                                 Text(
                                     text = localNombre!!,
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -77,53 +91,35 @@ fun HomeScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // ── Acceso directo destacado: POS ─────────────────────────────
-            ElevatedButton(
-                onClick = onAbrirPos,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.elevatedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.ShoppingCart,
-                        contentDescription = null,
-                        modifier = Modifier.size(44.dp)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Venta", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                        Text("Punto de Venta · entrada rápida", fontSize = 13.sp)
-                    }
-                }
-            }
+            // ── Hero POS con gradiente ────────────────────────────────────
+            HeroPos(onClick = onAbrirPos)
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
 
             Text(
                 "Gestión",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // ── Tarjetas de categoría (más pequeñas) ──────────────────────
+            // ── Tarjetas de categoría ─────────────────────────────────────
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(categorias, key = { it.id }) { cat ->
                     val visibles = cat.opciones.count { permisos.puedeAbrir(it.ruta) }
-                    CategoriaCard(cat = cat, visibles = visibles, onClick = { onAbrirCategoria(cat.id) })
+                    CategoriaCard(
+                        cat = cat,
+                        visibles = visibles,
+                        accent = accentDe(cat.id),
+                        onClick = { onAbrirCategoria(cat.id) }
+                    )
                 }
             }
         }
@@ -131,31 +127,129 @@ fun HomeScreen(
 }
 
 @Composable
-private fun CategoriaCard(cat: MenuCategoria, visibles: Int, onClick: () -> Unit) {
-    ElevatedCard(
+private fun HeroPos(onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    val gradiente = Brush.linearGradient(
+        colors = listOf(cs.primary, cs.tertiary)
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp)
+            .shadow(
+                elevation = 14.dp,
+                shape = RoundedCornerShape(28.dp),
+                spotColor = cs.primary
+            )
+            .clip(RoundedCornerShape(28.dp))
+            .background(gradiente)
+            .clickable(onClick = onClick)
+            .padding(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.align(Alignment.CenterStart)
+        ) {
+            Text(
+                "VENTA",
+                style = MaterialTheme.typography.displaySmall,
+                color = cs.onPrimary
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Punto de venta · entrada rápida",
+                style = MaterialTheme.typography.bodyMedium,
+                color = cs.onPrimary.copy(alpha = 0.85f)
+            )
+        }
+        // Ícono grande semitransparente a la derecha
+        Icon(
+            imageVector = Icons.Filled.PointOfSale,
+            contentDescription = null,
+            tint = cs.onPrimary.copy(alpha = 0.28f),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .size(96.dp)
+        )
+        // Chip de flecha "ir"
+        Surface(
+            shape = CircleShape,
+            color = cs.onPrimary.copy(alpha = 0.22f),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = cs.onPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoriaCard(
+    cat: MenuCategoria,
+    visibles: Int,
+    accent: Color,
+    onClick: () -> Unit
+) {
+    Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
+            .height(132.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.Center
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(cat.emoji, fontSize = 26.sp)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                cat.titulo,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                "$visibles opciones",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Contenedor de ícono con acento de color
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = cat.icono,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Column {
+                Text(
+                    cat.titulo,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "$visibles opciones",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
+}
+
+/** Color de acento por categoría (paleta apetitosa y contrastada). */
+private fun accentDe(id: String): Color = when (id) {
+    "cat_cocina" -> Color(0xFFF4511E)      // naranja brasa
+    "cat_inventario" -> Color(0xFF00897B)  // teal
+    "cat_fondos" -> Color(0xFF2E7D32)      // verde dinero
+    "cat_personal" -> Color(0xFF5E35B1)    // violeta
+    "cat_admin" -> Color(0xFF455A64)       // slate
+    else -> Color(0xFFE63946)              // rojo marca
 }

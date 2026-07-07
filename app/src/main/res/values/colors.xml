@@ -7,4 +7,8 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Marca Toppis: rojo apetitoso (splash) y crema -->
+    <color name="toppis_rojo">#E63946</color>
+    <color name="toppis_crema">#FFF3E9</color>
 </resources>

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- Tema base de la app (una vez pasado el splash, Compose maneja el color). -->
     <style name="Theme.ToppisERP" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Splash screen de arranque (androidx.core:core-splashscreen).
+         Fondo rojo de marca + logo centrado. El icono queda estático. -->
+    <style name="Theme.ToppisERP.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/toppis_rojo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.ToppisERP</item>
+    </style>
 </resources>

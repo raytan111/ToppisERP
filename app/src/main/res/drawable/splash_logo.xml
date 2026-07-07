@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icono del splash. El logo real (toppis_logo.png) se centra con un pequeño
+  inset para que no lo recorte la máscara circular del splash de Android 12+.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/toppis_logo"
+        android:gravity="center" />
+</layer-list>

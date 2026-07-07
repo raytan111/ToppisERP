@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -36,6 +37,8 @@ import com.toppis.app.ui.sobres.SobreViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Splash de arranque (debe ir ANTES de super.onCreate).
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         com.toppis.app.data.repository.LocalSession.init(applicationContext)
         com.toppis.erp.ui.theme.ThemeManager.init(applicationContext)
