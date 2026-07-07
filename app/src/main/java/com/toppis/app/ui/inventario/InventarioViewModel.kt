@@ -27,6 +27,10 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
     private val _articulos = MutableStateFlow<List<Articulo>>(emptyList())
     val articulos: StateFlow<List<Articulo>> = _articulos.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescar()
         viewModelScope.launch {
@@ -35,7 +39,10 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
     }
 
     private fun refrescar() {
-        viewModelScope.launch { _articulos.value = repository.getArticulos() }
+        viewModelScope.launch {
+            _articulos.value = repository.getArticulos()
+            _cargandoInicial.value = false
+        }
     }
 
     /** Recarga manual (al abrir la pantalla). */

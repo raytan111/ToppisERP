@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +29,7 @@ fun InventarioScreen(
 ) {
     val articulos by viewModel.articulos.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrear by remember { mutableStateOf(false) }
@@ -56,10 +58,14 @@ fun InventarioScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        if (articulos.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Sin artículos. Usá el botón + para agregar.", color = MaterialTheme.colorScheme.outline)
-            }
+        if (cargandoInicial && articulos.isEmpty()) {
+            com.toppis.app.ui.components.SkeletonList()
+        } else if (articulos.isEmpty()) {
+            com.toppis.app.ui.components.EmptyState(
+                icon = Icons.Filled.Inventory2,
+                titulo = "Sin artículos",
+                subtitulo = "Usá el botón + para agregar tu primer artículo al inventario."
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
