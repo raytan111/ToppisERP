@@ -35,6 +35,9 @@ fun InventarioScreen(
     var aEliminar by remember { mutableStateOf<Articulo?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
+    // Recargar al abrir (refleja cambios hechos fuera de la app).
+    LaunchedEffect(Unit) { viewModel.recargar() }
+
     LaunchedEffect(uiState) {
         if (uiState is InventarioUiState.Error) {
             errorMsg = (uiState as InventarioUiState.Error).message

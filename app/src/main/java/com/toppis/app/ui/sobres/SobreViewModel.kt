@@ -41,6 +41,9 @@ class SobreViewModel(private val repository: SobreRepository) : ViewModel() {
         }
     }
 
+    /** Recarga manual (al abrir la pantalla). */
+    fun recargar() = refrescar()
+
     fun crearSobre(nombre: String, descripcion: String, tipo: com.toppis.app.data.db.entities.TipoSobre = com.toppis.app.data.db.entities.TipoSobre.CUENTA) {
         viewModelScope.launch {
             _uiState.value = SobreUiState.Loading

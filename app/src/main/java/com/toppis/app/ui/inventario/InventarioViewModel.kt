@@ -38,6 +38,9 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
         viewModelScope.launch { _articulos.value = repository.getArticulos() }
     }
 
+    /** Recarga manual (al abrir la pantalla). */
+    fun recargar() = refrescar()
+
     fun crearArticulo(
         nombre: String,
         dimension: DimensionUnidad,

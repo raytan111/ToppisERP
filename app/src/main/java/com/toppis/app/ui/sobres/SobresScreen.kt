@@ -43,6 +43,9 @@ fun SobresScreen(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var selectedSobre by remember { mutableStateOf<Sobre?>(null) }
 
+    // Recargar al abrir (refleja cambios hechos fuera de la app).
+    LaunchedEffect(Unit) { viewModel.recargar() }
+
     LaunchedEffect(uiState) {
         when (uiState) {
             is SobreUiState.Error -> {

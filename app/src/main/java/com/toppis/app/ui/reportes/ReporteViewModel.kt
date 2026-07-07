@@ -90,6 +90,9 @@ class ReporteViewModel(
         recargar()
     }
 
+    /** Recarga manual (al abrir la pantalla). */
+    fun recargarManual() = recargar()
+
     fun seleccionarLocal(localId: Int?) {
         _localFiltro.value = localId
         recargar()

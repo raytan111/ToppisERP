@@ -46,6 +46,9 @@ fun ReportesScreen(
     val locales by viewModel.locales.collectAsState()
     val localFiltro by viewModel.localFiltro.collectAsState()
 
+    // Recargar al abrir (refleja cambios hechos fuera de la app).
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.recargarManual() }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
