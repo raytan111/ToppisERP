@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,18 +25,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 fun LoginScreen(
@@ -230,111 +238,125 @@ private fun LogoGiratorio() {
         ),
         label = "angulo"
     )
-    // Cara frontal cuando el coseno del ángulo es positivo (0–90° y 270–360°).
-    val deFrente = cos(angulo * PI.toFloat() / 180f) >= 0f
+    val logo = ImageBitmap.imageResource(id = com.toppis.erp.R.drawable.toppis_logo)
 
     Box(
-        modifier = Modifier.size(150.dp),
+        modifier = Modifier.size(156.dp),
         contentAlignment = Alignment.Center
     ) {
         // ── Sombra proyectada (estática, no gira) ────────────────────────────
         Canvas(
             modifier = Modifier
-                .size(122.dp)
-                .offset(y = 14.dp)
+                .size(124.dp)
+                .offset(y = 16.dp)
         ) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color.Black.copy(alpha = 0.38f), Color.Transparent),
+                    colors = listOf(Color.Black.copy(alpha = 0.40f), Color.Transparent),
                     center = center,
                     radius = size.minDimension / 2f
                 )
             )
         }
 
-        // ── Moneda (gira en 3D) ──────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .size(116.dp)
-                .graphicsLayer {
-                    rotationY = angulo
-                    cameraDistance = 16f * density
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            // Cuerpo de la moneda: canto + cara con degradado dorado.
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val d = size.minDimension
-                val r = d / 2f
-                val rim = d * 0.11f // grosor del canto
+        // ── Moneda 3D: proyección manual con rebanadas en profundidad ────────
+        Canvas(modifier = Modifier.size(132.dp)) {
+            val cx0 = size.width / 2f
+            val cy = size.height / 2f
+            val theta = angulo * PI.toFloat() / 180f
+            val c = cos(theta)              // foreshortening horizontal de la cara
+            val s = sin(theta)              // desplazamiento del canto al girar
+            val cAbs = abs(c)
+            val r = size.minDimension * 0.40f
+            val grosor = size.minDimension * 0.17f   // espesor real de la moneda
+            val rxFace = r * cAbs                     // radio horizontal (elipse)
 
-                // Canto (borde grueso) con iluminación vertical: da sensación de espesor.
-                drawCircle(color = OroProfundo, radius = r, center = center)
-                drawCircle(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(OroClaro, OroSombra)
-                    ),
-                    radius = r - rim / 2f,
-                    center = center,
-                    style = Stroke(width = rim)
-                )
-
-                // Cara: degradado radial con brillo arriba-izquierda.
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(OroBrillo, OroClaro, OroMedio, OroProfundo),
-                        center = Offset(center.x - r * 0.28f, center.y - r * 0.28f),
-                        radius = r * 1.15f
-                    ),
-                    radius = r - rim,
-                    center = center
-                )
-
-                // Bisel interior brillante (borde de la cara).
-                drawCircle(
-                    color = OroBrillo.copy(alpha = 0.55f),
-                    radius = r - rim,
-                    center = center,
-                    style = Stroke(width = d * 0.02f)
+            // Cuerpo/canto: apilo rebanadas desde el fondo (-grosor/2) al frente.
+            val n = 22
+            val edgeBrush = Brush.verticalGradient(
+                colors = listOf(OroBrillo, OroClaro, OroMedio, OroSombra),
+                startY = cy - r,
+                endY = cy + r
+            )
+            for (i in 0..n) {
+                val t = i / n.toFloat()
+                val z = (t - 0.5f) * grosor          // profundidad de la rebanada
+                val cx = cx0 + z * s                 // posición en pantalla al rotar
+                drawOval(
+                    brush = edgeBrush,
+                    topLeft = Offset(cx - rxFace, cy - r),
+                    size = Size(2f * rxFace, 2f * r)
                 )
             }
 
-            if (deFrente) {
-                // Cara frontal: el logo.
-                Image(
-                    painter = painterResource(id = com.toppis.erp.R.drawable.toppis_logo),
-                    contentDescription = "Logo Toppis",
-                    modifier = Modifier
-                        .size(74.dp)
-                        .clip(CircleShape)
-                )
-            } else {
-                // Cara trasera: emblema dorado simétrico (rings + rombo).
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val d = size.minDimension
-                    val r = d / 2f
-                    drawCircle(
+            // Cara frontal (la rebanada más cercana al observador).
+            val zFront = 0.5f * grosor
+            val cxFront = cx0 + zFront * s
+            val faceCenter = Offset(cxFront, cy)
+
+            // Degradado dorado de la cara.
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(OroBrillo, OroClaro, OroMedio, OroProfundo),
+                    center = Offset(faceCenter.x - rxFace * 0.3f, cy - r * 0.3f),
+                    radius = r * 1.15f
+                ),
+                topLeft = Offset(faceCenter.x - rxFace, cy - r),
+                size = Size(2f * rxFace, 2f * r)
+            )
+            // Bisel interior brillante.
+            drawOval(
+                color = OroBrillo.copy(alpha = 0.55f),
+                topLeft = Offset(faceCenter.x - rxFace, cy - r),
+                size = Size(2f * rxFace, 2f * r),
+                style = Stroke(width = size.minDimension * 0.02f)
+            )
+
+            val deFrente = c >= 0f
+            // Solo dibujar contenido de la cara si no está casi de canto.
+            if (cAbs > 0.12f) {
+                if (deFrente) {
+                    // Logo recortado en la cara, con foreshortening horizontal.
+                    val fw = 2f * rxFace * 0.66f
+                    val fh = 2f * r * 0.66f
+                    val clip = Path().apply {
+                        addOval(
+                            Rect(
+                                Offset(faceCenter.x - rxFace, cy - r),
+                                Size(2f * rxFace, 2f * r)
+                            )
+                        )
+                    }
+                    clipPath(clip) {
+                        drawImage(
+                            image = logo,
+                            srcOffset = IntOffset.Zero,
+                            srcSize = IntSize(logo.width, logo.height),
+                            dstOffset = IntOffset(
+                                (faceCenter.x - fw / 2f).roundToInt(),
+                                (cy - fh / 2f).roundToInt()
+                            ),
+                            dstSize = IntSize(fw.roundToInt().coerceAtLeast(1), fh.roundToInt().coerceAtLeast(1))
+                        )
+                    }
+                } else {
+                    // Cara trasera: emblema dorado simétrico.
+                    drawOval(
                         color = OroSombra.copy(alpha = 0.5f),
-                        radius = r * 0.55f,
-                        center = center,
-                        style = Stroke(width = d * 0.03f)
+                        topLeft = Offset(faceCenter.x - rxFace * 0.55f, cy - r * 0.55f),
+                        size = Size(2f * rxFace * 0.55f, 2f * r * 0.55f),
+                        style = Stroke(width = size.minDimension * 0.03f)
                     )
-                    drawCircle(
-                        color = OroSombra.copy(alpha = 0.5f),
-                        radius = r * 0.40f,
-                        center = center,
-                        style = Stroke(width = d * 0.02f)
-                    )
-                    // Rombo central
                     val k = r * 0.20f
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(center.x, center.y - k)
-                        lineTo(center.x + k, center.y)
-                        lineTo(center.x, center.y + k)
-                        lineTo(center.x - k, center.y)
+                    val kx = rxFace * 0.20f
+                    val rombo = Path().apply {
+                        moveTo(faceCenter.x, cy - k)
+                        lineTo(faceCenter.x + kx, cy)
+                        lineTo(faceCenter.x, cy + k)
+                        lineTo(faceCenter.x - kx, cy)
                         close()
                     }
-                    drawPath(path, color = OroSombra.copy(alpha = 0.55f))
+                    drawPath(rombo, color = OroSombra.copy(alpha = 0.55f))
                 }
             }
         }
