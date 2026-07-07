@@ -1,5 +1,11 @@
 package com.toppis.app.ui.auth
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,8 +24,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,47 +62,37 @@ fun LoginScreen(
 
     val cs = MaterialTheme.colorScheme
     val isLoading = authState is AuthState.Loading
+    val habilitado = email.isNotBlank() && password.isNotBlank() && !isLoading
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = cs.surface
-    ) { padding ->
+        containerColor = cs.surface,
+        // Sin insets: el header rojo se dibuja detrás de la barra de estado.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ── Cabecera de marca con gradiente ──────────────────────────────
+            // ── Cabecera de marca con gradiente (edge-to-edge hasta arriba) ──
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp)
-                    .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
+                    .height(300.dp)
+                    .clip(RoundedCornerShape(bottomStart = 44.dp, bottomEnd = 44.dp))
                     .background(
                         Brush.linearGradient(colors = listOf(cs.primary, cs.tertiary))
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Logo en tarjeta circular blanca con sombra
-                    Surface(
-                        shape = CircleShape,
-                        color = cs.surface,
-                        shadowElevation = 12.dp,
-                        modifier = Modifier.size(112.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Image(
-                                painter = painterResource(id = com.toppis.erp.R.drawable.toppis_logo),
-                                contentDescription = "Logo Toppis",
-                                modifier = Modifier
-                                    .size(88.dp)
-                                    .clip(CircleShape)
-                            )
-                        }
-                    }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.statusBarsPadding()
+                ) {
+                    LogoGiratorio()
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text = "ToppisERP",
@@ -174,10 +170,15 @@ fun LoginScreen(
                         onClick = { viewModel.login(email, password) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
-                            .shadow(6.dp, RoundedCornerShape(16.dp), spotColor = cs.primary),
+                            .height(54.dp),
                         shape = RoundedCornerShape(16.dp),
-                        enabled = email.isNotBlank() && password.isNotBlank() && !isLoading
+                        enabled = habilitado,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = cs.primary,
+                            contentColor = cs.onPrimary,
+                            disabledContainerColor = cs.primary.copy(alpha = 0.35f),
+                            disabledContentColor = cs.onPrimary.copy(alpha = 0.7f)
+                        )
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -192,42 +193,49 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
-
-            // ── Ayuda primera vez ────────────────────────────────────────────
-            Surface(
-                modifier = Modifier.padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = cs.surfaceContainerHigh
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = null,
-                        tint = cs.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            "Primera vez",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = cs.onSurfaceVariant
-                        )
-                        Text(
-                            "admin  /  admin123",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = cs.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+/**
+ * Logo dentro de una tarjeta circular blanca que gira sobre su eje vertical:
+ * lento cuando está de frente (para verlo más tiempo) y rápido al pasar por
+ * detrás, volviendo a quedar de frente. Se logra con un easing simétrico.
+ */
+@Composable
+private fun LogoGiratorio() {
+    val transition = rememberInfiniteTransition(label = "logo")
+    val angulo by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            // Ease-in-out simétrico: lento en 0°/360° (frente), rápido en 180° (detrás).
+            animation = tween(3400, easing = CubicBezierEasing(0.45f, 0f, 0.55f, 1f)),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "angulo"
+    )
+
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 12.dp,
+        modifier = Modifier
+            .size(116.dp)
+            .graphicsLayer {
+                rotationY = angulo
+                cameraDistance = 14f * density
+            }
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(id = com.toppis.erp.R.drawable.toppis_logo),
+                contentDescription = "Logo Toppis",
+                modifier = Modifier
+                    .size(92.dp)
+                    .clip(CircleShape)
+            )
         }
     }
 }

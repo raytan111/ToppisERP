@@ -6,8 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -137,8 +135,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ToppisERPTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    NavGraph(
+                NavGraph(
                         sobreViewModelFactory = sobreFactory,
                         posViewModelFactory = posFactory,
                         inventarioViewModelFactory = inventarioFactory,
@@ -164,9 +161,8 @@ class MainActivity : ComponentActivity() {
                         manoObraViewModelFactory = manoObraFactory,
                         localViewModelFactory = localFactory,
                         authViewModel = authViewModel,
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.fillMaxSize()
                     )
-                }
             }
         }
     }
