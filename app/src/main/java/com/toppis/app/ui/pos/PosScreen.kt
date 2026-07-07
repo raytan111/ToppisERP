@@ -695,7 +695,7 @@ private fun CheckoutDialog(
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Sobre Destino") },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                         )
                         ExposedDropdownMenu(
                             expanded = expanded,

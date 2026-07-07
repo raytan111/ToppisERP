@@ -313,7 +313,7 @@ fun AddGastoDialog(
                         label = { Text("Categoría") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriaExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -345,7 +345,7 @@ fun AddGastoDialog(
                         label = { Text("Sobre origen") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sobreExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(

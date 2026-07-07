@@ -50,7 +50,7 @@ object ComprobantePdfUtil {
         y += 24f
         canvas.drawText("Comprobante interno #${comprobante.folio}", left, y, pBold)
         y += 18f
-        val fecha = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("es", "CL")).format(Date())
+        val fecha = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es-CL")).format(Date())
         canvas.drawText(fecha, left, y, pSmall)
         y += 24f
         canvas.drawLine(left, y, right, y, pSmall)

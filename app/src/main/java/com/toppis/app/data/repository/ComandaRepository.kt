@@ -53,7 +53,7 @@ class ComandaRepository {
         total: Double
     ): String {
         val fmt = DecimalFormat("$#,##0")
-        val dateFmt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("es", "CL"))
+        val dateFmt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es-CL"))
         val sb = StringBuilder()
 
         sb.appendLine("COMANDA #$ventaId — ${dateFmt.format(Date())}")

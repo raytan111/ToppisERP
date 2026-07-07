@@ -68,7 +68,7 @@ fun ContabilidadScreen(
                         readOnly = true,
                         label = { Text("Período") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = mesExpanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                     )
                     ExposedDropdownMenu(expanded = mesExpanded, onDismissRequest = { mesExpanded = false }) {
                         MESES.forEachIndexed { idx, nombre ->

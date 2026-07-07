@@ -2,6 +2,7 @@ package com.toppis.app.ui.home
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -71,7 +72,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("sobres", "Sobres", Icons.Filled.AccountBalance),
             MenuOpcion("gastos", "Gastos", Icons.Filled.AttachMoney),
             MenuOpcion("arqueo", "Arqueo de Caja", Icons.Filled.PointOfSale),
-            MenuOpcion("flujo_caja", "Flujo de Caja", Icons.Filled.ShowChart),
+            MenuOpcion("flujo_caja", "Flujo de Caja", Icons.AutoMirrored.Filled.ShowChart),
             MenuOpcion("contabilidad", "Contabilidad", Icons.Filled.Calculate),
             MenuOpcion("reportes", "Reportes", Icons.Filled.BarChart)
         )

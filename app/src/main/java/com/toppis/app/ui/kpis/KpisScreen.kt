@@ -108,7 +108,7 @@ private fun DeliverySection(
     onPrev: () -> Unit,
     onNext: () -> Unit
 ) {
-    val mesLabel = "${mes.month.getDisplayName(TextStyle.FULL, Locale("es")).replaceFirstChar { it.uppercase() }} ${mes.year}"
+    val mesLabel = "${mes.month.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("es")).replaceFirstChar { it.uppercase() }} ${mes.year}"
 
     // Selector de mes
     Row(

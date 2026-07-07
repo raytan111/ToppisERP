@@ -317,7 +317,7 @@ fun TransferDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Destino") },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
