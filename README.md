@@ -18,6 +18,7 @@ Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube). Espa�
 - 📈 **KPIs Ejecutivos** — ventas, ticket, food/labor/prime cost %, merma, alertas y **delivery por mes/día**.
 - 👤 **Usuarios y roles** — ADMIN, ADMIN_LOCAL, SUPERVISOR, CAJERO con permisos y alcance por local. Login por **nombre de usuario**.
 - 🎨 **Tema de marca configurable** — color de la empresa por código hex; modo claro/oscuro.
+- ✨ **Diseño de alto impacto** — splash con logo, ícono de app propio, Login con **moneda 3D dorada giratoria**, Home con hero POS en gradiente y tarjetas con acento por categoría, transiciones de navegación, **buscadores**, **skeletons de carga** y **estados vacíos** en las listas, y **diálogos unificados**.
 - 📤 **Exportación** — Excel / CSV / ZIP.
 - ⚡ **Tiempo real** + 🔒 **Row Level Security (RLS)**.
 
@@ -34,6 +35,8 @@ Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube). Espa�
 | Backend | Supabase (PostgreSQL, Auth, Realtime, Edge Functions) |
 | Cliente | supabase-kt + Ktor (OkHttp) |
 | Tema | MaterialKolor (esquema dinámico desde un color semilla) |
+| Imágenes | Coil (fotos de productos/promos) |
+| Splash | androidx.core:core-splashscreen |
 | Exportación | Apache POI |
 
 **Operaciones críticas atómicas** (ventas, gastos, compras, arqueo, mermas, transferencias) se ejecutan vía **funciones RPC en PostgreSQL**. Operaciones admin que requieren `service_role` (borrar cuenta de auth, reset de contraseña) van por una **Edge Function** (`admin-usuarios`).
@@ -109,7 +112,8 @@ app/src/main/java/com/toppis/app/
     ├── arqueo/ · empleados/ · manoobra/ · locales/ · kpis/
     ├── reportes/ · flujo/ · contabilidad/ · exportacion/ · ventas/
     ├── ajustes/       # Configurar Colores
-    ├── components/    # BackScaffold, DatePickerField, TopBar
+    ├── components/    # BackScaffold, DatePickerField, TopBar, SearchField,
+    │                  # StateComponents (EmptyState/Skeleton), ToppisDialogs, ImagePickerField
     └── navigation/    # NavGraph
 
 com/toppis/erp/ui/theme/   # Theme + ThemeManager (color de marca)
@@ -124,9 +128,12 @@ supabase/functions/        # Edge Functions (admin-usuarios)
 - [x] Migración a la nube (Supabase)
 - [x] ERP de operación: food cost, inventario, compras, dinero, mano de obra, multi-local, KPIs
 - [x] Roles + permisos + login por usuario + tema de marca
+- [x] Imágenes de productos/promos (Coil + Supabase Storage)
+- [x] Sistema de diseño (splash, ícono, Login moneda 3D, Home, tipografía, modo oscuro, transiciones, buscadores, skeletons/estados vacíos, diálogos unificados)
+- [ ] Rediseño del POS con nuevas funcionalidades
 - [ ] Boletas electrónicas (SII Chile)
 - [ ] Contabilidad/tributario completo
-- [ ] Pulido de diseño (splash, tipografía, animaciones) e IA
+- [ ] IA (predicción de demanda, optimización de inventario)
 
 ---
 

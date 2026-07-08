@@ -1,7 +1,7 @@
 # ToppisERP - Contexto del Proyecto
 
-**Última Actualización**: 2026-06-20
-**Versión Actual**: 3.2 (Supabase Cloud + ERP Franquicia)
+**Última Actualización**: 2026-07-08
+**Versión Actual**: 3.3 (Supabase Cloud + ERP Franquicia + Sistema de Diseño)
 **Ubicación**: Chile (CLP, español chileno, integración SII futura)
 
 ---
@@ -26,7 +26,8 @@ ToppisERP es una app Android para gestionar una hamburguesería / dark kitchen. 
 - **Patrón**: MVVM (StateFlow + ViewModel + Factory + Screen)
 - **Navegación**: Jetpack Navigation Compose (un solo NavHost, sin bottom bar)
 - **DI**: Manual (sin Hilt) — cableado en `MainActivity.onCreate`
-- **Backend**: Supabase (`supabase-kt` 3.1.4) — Postgrest, Auth, Realtime, **Functions** (Edge Functions)
+- **Backend**: Supabase (`supabase-kt` 3.1.4) — Postgrest, Auth, Realtime, **Functions** (Edge Functions), Storage
+- **Tema**: MaterialKolor 2.0.0 (esquema dinámico) · **Imágenes**: Coil 2.7.0 · **Splash**: androidx.core:core-splashscreen 1.0.1
 - **Exportación**: Apache POI (Excel/XLSX)
 
 ### Build / pruebas
@@ -71,7 +72,7 @@ Tablas principales en Postgres:
 ```kotlin
 enum class Rol { ADMIN, ADMIN_LOCAL, SUPERVISOR, CAJERO }
 enum class TipoMovimiento { INGRESO, EGRESO, TRANSFERENCIA }
-enum class MetodoPago { EFECTIVO, DEBITO }
+enum class MetodoPago { EFECTIVO, TARJETA, TRANSFERENCIA }
 enum class EstadoVenta { COMPLETADA, ANULADA }
 enum class TipoComponente { ARTICULO, PREPARACION }
 enum class DimensionUnidad { MASA, VOLUMEN, UNIDAD }   // con unidadBase
@@ -108,19 +109,59 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 
 **Performance/cache**: los ViewModels se scopean al **Activity** (`viewModelStoreOwner = activityOwner` en `NavGraph`), así sobreviven a la navegación y no reconsultan la DB cada vez; Realtime los mantiene frescos.
 
-## 5b. Tema / Diseño
+## 5b. Tema / Diseño (Sistema de Diseño v3.3)
 
 - **Tema de marca dinámico**: `com.toppis.erp.ui.theme.ThemeManager` guarda el
   color semilla (hex) y el modo (sistema/claro/oscuro) en SharedPreferences.
   `ToppisERPTheme` genera todo el `ColorScheme` Material 3 desde ese seed con
-  **MaterialKolor** (`rememberDynamicColorScheme`, estilo Vibrant). Shapes
-  redondeadas en `AppShapes`. Default seed `#E63946`.
+  **MaterialKolor** (`rememberDynamicColorScheme`, estilo Vibrant). En **modo
+  oscuro** se aplica `contrastLevel = 0.4` para superficies más profundas y texto
+  legible. Shapes redondeadas en `AppShapes`. Default seed `#E63946`.
+- **Tipografía** (`ui/theme/Type.kt`): jerarquía completa sin fuentes externas
+  (familia del sistema) con pesos marcados (displays en Black/ExtraBold,
+  letter-spacing negativo en titulares) para "alto impacto".
+- **Splash screen** (`androidx.core:core-splashscreen`): tema `Theme.ToppisERP.Splash`
+  en `res/values/themes.xml` (fondo rojo de marca + logo con inset para que la
+  máscara circular de Android 12+ no lo recorte; `windowSplashScreenIconBackgroundColor`
+  igual al fondo). `MainActivity.onCreate` llama `installSplashScreen()` antes de
+  `super.onCreate`.
+- **Ícono de app**: adaptativo (`mipmap-anydpi-v26`), fondo blanco + logo real
+  (`drawable/ic_launcher_fg.xml` con inset). Como minSdk 26, todos los equipos
+  usan el adaptativo.
+- **Login** (`ui/auth/LoginScreen.kt`): header de marca con gradiente edge-to-edge
+  (dibuja detrás de la barra de estado), formulario en tarjeta elevada, y una
+  **moneda de oro 3D giratoria** hecha a mano en `Canvas` (proyección por
+  rebanadas en profundidad → canto/espesor real al girar; cara frontal con el
+  logo y foreshortening; cara trasera con emblema; giro lento de frente y rápido
+  por detrás con easing simétrico; sombra proyectada).
+- **Home** (`ui/home/HomeScreen.kt`): hero POS con gradiente + sombra, tarjetas de
+  categoría con ícono en contenedor de color de acento (`accentDeCategoria` en
+  `HomeMenu.kt`). `CategoriaMenuScreen` usa el mismo lenguaje.
+- **Navegación**: transiciones globales en el `NavHost` (slide + fade). `MainActivity`
+  ya NO envuelve en un Scaffold con padding global; cada pantalla maneja sus
+  propios insets con su TopBar (evita doble inset y permite el header edge-to-edge).
+- **Componentes compartidos** (`ui/components/`):
+  - `SearchField` — campo de búsqueda reutilizable (lupa, limpiar, redondeado).
+  - `StateComponents` — `EmptyState` (ícono en círculo tenue + título/subtítulo),
+    `Modifier.shimmer()`, `SkeletonList`/`SkeletonCard` (placeholders de carga).
+  - `ToppisDialogs` — `ToppisErrorDialog`, `ToppisConfirmDialog`, `ToppisDeleteDialog`
+    (estilo/íconos/botones unificados; el de borrado en color de error).
+  - `ImagePickerField` — subir foto desde galería a Supabase Storage (bucket `menu`).
+- **Patrón de listas**: cada ViewModel de lista expone `cargandoInicial: StateFlow<Boolean>`
+  (true hasta la primera carga). La pantalla muestra: **skeleton** si carga inicial,
+  **EmptyState** si vacío de verdad, o la **lista** (con buscador donde aplica y
+  estado "sin resultados").
+  - **Con buscador**: Inventario, Proveedores, Compras, Comprobantes, Historial de
+    Ventas, Menú.
+  - **Con skeleton + EmptyState**: Inventario, Gastos, Sobres, Proveedores, Compras,
+    Comprobantes, Historial, Menú, Mermas, Modificadores, Preparaciones, Conteos,
+    Empleados, Locales.
+- **Imágenes de productos/promos**: Coil + Supabase Storage; columnas `imagen_url`
+  en `items_menu` y `promociones` (`supabase-imagenes.sql`). Se ven en POS/menú/promos.
 - **Configurar Colores** (Administración, solo ADMIN): `ui/ajustes/ConfiguracionColorScreen`
-  — input hex `#`, presets, vista previa en vivo, modo claro/oscuro. Aplica y
-  persiste al instante.
-- **Logo**: `res/drawable/toppis_logo.xml` (placeholder) usado en Login y Home.
-  Reemplazo de assets documentado en `.kiro/ASSETS-DISENO.md`.
-- Librería de diseño: **MaterialKolor** `com.materialkolor:material-kolor:2.0.0`.
+  — input hex `#`, presets, vista previa en vivo, modo claro/oscuro.
+- **Logo real**: `res/drawable/toppis_logo.png` (usado en Login, Home, ícono y splash).
+- Librerías de diseño: **MaterialKolor** 2.0.0, **Coil** 2.7.0, **core-splashscreen** 1.0.1.
 
 ---
 
@@ -173,6 +214,19 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.3 — Sistema de Diseño / Glow-up (2026-07-08)
+- **Splash screen** con logo (core-splashscreen) e **ícono de app** propio (fondo blanco + logo, adaptativo).
+- **Login** rediseñado: header con gradiente edge-to-edge + **moneda de oro 3D giratoria** dibujada en Canvas (espesor real por rebanadas, cara con logo, giro lento-de-frente/rápido-por-detrás).
+- **Home** con hero POS en gradiente y tarjetas de categoría con acento de color; `CategoriaMenuScreen` a juego.
+- **Tipografía** de alto impacto (pesos/letter-spacing) sin fuentes externas.
+- **Modo oscuro** con mayor contraste (`contrastLevel = 0.4`).
+- **Transiciones** de navegación (slide + fade). `MainActivity` sin Scaffold/padding global (cada pantalla maneja insets).
+- **Componentes reutilizables**: `SearchField`, `StateComponents` (EmptyState + shimmer + SkeletonList), `ToppisDialogs` (Error/Confirm/Delete unificados).
+- **Buscador** en Inventario, Proveedores, Compras, Comprobantes, Historial de Ventas y Menú.
+- **Skeleton de carga + estados vacíos** en 14 pantallas de lista (patrón `cargandoInicial` en cada ViewModel).
+- **Diálogos unificados** aplicados en Inventario, Proveedores, Sobres, Mermas, Modificadores, Preparaciones, Conteos, Empleados, Locales y Usuarios.
+- Pendiente explícito: **rediseño del POS con nuevas funcionalidades** (se dejó para el final).
 
 ### v3.2 — Ajustes operativos (2026-06-20)
 - Método de pago: **EFECTIVO / TARJETA / TRANSFERENCIA** (`supabase-metodo-pago-v2.sql`).
