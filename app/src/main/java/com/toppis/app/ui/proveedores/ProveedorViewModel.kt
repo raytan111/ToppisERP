@@ -25,11 +25,21 @@ class ProveedorViewModel(
     private val _proveedores = MutableStateFlow<List<Proveedor>>(emptyList())
     val proveedores: StateFlow<List<Proveedor>> = _proveedores.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init { refrescar() }
 
     private fun refrescar() {
-        viewModelScope.launch { _proveedores.value = repository.getProveedores() }
+        viewModelScope.launch {
+            _proveedores.value = repository.getProveedores()
+            _cargandoInicial.value = false
+        }
     }
+
+    /** Recarga manual (al abrir la pantalla). */
+    fun recargar() = refrescar()
 
     fun crear(nombre: String, contacto: String, telefono: String, email: String, nota: String) {
         viewModelScope.launch {

@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,11 +24,22 @@ fun ProveedoresScreen(
 ) {
     val proveedores by viewModel.proveedores.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrear by remember { mutableStateOf(false) }
     var enEdicion by remember { mutableStateOf<Proveedor?>(null) }
     var aEliminar by remember { mutableStateOf<Proveedor?>(null) }
+    var query by remember { mutableStateOf("") }
+    val filtrados = remember(proveedores, query) {
+        if (query.isBlank()) proveedores
+        else proveedores.filter {
+            it.nombre.contains(query.trim(), ignoreCase = true) ||
+                it.contacto.contains(query.trim(), ignoreCase = true)
+        }
+    }
+
+    LaunchedEffect(Unit) { viewModel.recargar() }
 
     LaunchedEffect(uiState) {
         if (uiState is ProveedorUiState.Error) {
@@ -44,30 +57,54 @@ fun ProveedoresScreen(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (proveedores.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin proveedores. Usá + para agregar.", color = MaterialTheme.colorScheme.outline)
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when {
+                cargandoInicial && proveedores.isEmpty() -> {
+                    com.toppis.app.ui.components.SkeletonList()
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
-                ) {
-                    items(proveedores) { p ->
-                        Card(modifier = Modifier.fillMaxWidth(), onClick = { enEdicion = p }) {
-                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(p.nombre, style = MaterialTheme.typography.titleMedium)
-                                    if (p.contacto.isNotBlank() || p.telefono.isNotBlank()) {
-                                        Text(listOf(p.contacto, p.telefono).filter { it.isNotBlank() }.joinToString(" · "),
-                                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                proveedores.isEmpty() -> {
+                    com.toppis.app.ui.components.EmptyState(
+                        icon = Icons.Filled.LocalShipping,
+                        titulo = "Sin proveedores",
+                        subtitulo = "Usá el botón + para agregar tu primer proveedor."
+                    )
+                }
+                else -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        com.toppis.app.ui.components.SearchField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = "Buscar proveedor…",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                        if (filtrados.isEmpty()) {
+                            com.toppis.app.ui.components.EmptyState(
+                                icon = Icons.Filled.SearchOff,
+                                titulo = "Sin resultados",
+                                subtitulo = "No hay proveedores que coincidan con \"$query\"."
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(bottom = 88.dp)
+                            ) {
+                                items(filtrados) { p ->
+                                    Card(modifier = Modifier.fillMaxWidth(), onClick = { enEdicion = p }) {
+                                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(p.nombre, style = MaterialTheme.typography.titleMedium)
+                                                if (p.contacto.isNotBlank() || p.telefono.isNotBlank()) {
+                                                    Text(listOf(p.contacto, p.telefono).filter { it.isNotBlank() }.joinToString(" · "),
+                                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                                                }
+                                                if (p.email.isNotBlank()) Text(p.email, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                                            }
+                                            IconButton(onClick = { aEliminar = p }) {
+                                                Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                                            }
+                                        }
                                     }
-                                    if (p.email.isNotBlank()) Text(p.email, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                                }
-                                IconButton(onClick = { aEliminar = p }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
                         }
@@ -96,12 +133,11 @@ fun ProveedoresScreen(
     }
 
     aEliminar?.let { p ->
-        AlertDialog(
-            onDismissRequest = { aEliminar = null },
-            title = { Text("Eliminar proveedor") },
-            text = { Text("¿Eliminar a \"${p.nombre}\"?") },
-            confirmButton = { TextButton(onClick = { viewModel.eliminar(p.id); aEliminar = null }) { Text("Eliminar") } },
-            dismissButton = { TextButton(onClick = { aEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = p.nombre,
+            titulo = "Eliminar proveedor",
+            onConfirm = { viewModel.eliminar(p.id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }

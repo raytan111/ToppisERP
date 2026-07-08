@@ -54,13 +54,7 @@ fun InventarioScreen(
     }
 
     errorMsg?.let { msg ->
-        AlertDialog(
-            onDismissRequest = { errorMsg = null },
-            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("No se pudo completar") },
-            text = { Text(msg) },
-            confirmButton = { TextButton(onClick = { errorMsg = null }) { Text("Entendido") } }
-        )
+        com.toppis.app.ui.components.ToppisErrorDialog(mensaje = msg, onDismiss = { errorMsg = null })
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -147,14 +141,11 @@ fun InventarioScreen(
     }
 
     aEliminar?.let { art ->
-        AlertDialog(
-            onDismissRequest = { aEliminar = null },
-            title = { Text("Eliminar artículo") },
-            text = { Text("¿Eliminar \"${art.nombre}\"?") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.eliminarArticulo(art.id); aEliminar = null }) { Text("Eliminar") }
-            },
-            dismissButton = { TextButton(onClick = { aEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = art.nombre,
+            titulo = "Eliminar artículo",
+            onConfirm = { viewModel.eliminarArticulo(art.id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }
