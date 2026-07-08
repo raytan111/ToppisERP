@@ -212,26 +212,6 @@ fun LoginScreen(
     }
 }
 
-/** Construye el path de una estrella de 5 puntas (con radios elípticos para el foreshortening). */
-private fun estrellaPath(
-    cx: Float, cy: Float,
-    rxOut: Float, ryOut: Float,
-    rxIn: Float, ryIn: Float,
-    puntas: Int = 5
-): Path = Path().apply {
-    val paso = PI.toFloat() / puntas
-    var a = -PI.toFloat() / 2f // arranca en la punta de arriba
-    for (i in 0 until puntas * 2) {
-        val rx = if (i % 2 == 0) rxOut else rxIn
-        val ry = if (i % 2 == 0) ryOut else ryIn
-        val x = cx + rx * cos(a)
-        val y = cy + ry * sin(a)
-        if (i == 0) moveTo(x, y) else lineTo(x, y)
-        a += paso
-    }
-    close()
-}
-
 /** Paleta dorada de la moneda (oro viejo, más oscuro; combina con rojo/crema). */
 private val OroBrillo = Color(0xFFE8CC7A)
 private val OroClaro = Color(0xFFC9A24A)
@@ -261,14 +241,14 @@ private fun LogoGiratorio() {
     val logo = ImageBitmap.imageResource(id = com.toppis.erp.R.drawable.toppis_logo)
 
     Box(
-        modifier = Modifier.size(156.dp),
+        modifier = Modifier.size(176.dp),
         contentAlignment = Alignment.Center
     ) {
         // ── Sombra proyectada (estática, no gira) ────────────────────────────
         Canvas(
             modifier = Modifier
-                .size(124.dp)
-                .offset(y = 16.dp)
+                .size(142.dp)
+                .offset(y = 18.dp)
         ) {
             drawCircle(
                 brush = Brush.radialGradient(
@@ -280,14 +260,14 @@ private fun LogoGiratorio() {
         }
 
         // ── Moneda 3D: proyección manual con rebanadas en profundidad ────────
-        Canvas(modifier = Modifier.size(132.dp)) {
+        Canvas(modifier = Modifier.size(152.dp)) {
             val cx0 = size.width / 2f
             val cy = size.height / 2f
             val theta = angulo * PI.toFloat() / 180f
             val c = cos(theta)              // foreshortening horizontal de la cara
             val s = sin(theta)              // desplazamiento del canto al girar
             val cAbs = abs(c)
-            val r = size.minDimension * 0.40f
+            val r = size.minDimension * 0.44f
             val grosor = size.minDimension * 0.10f   // espesor real de la moneda
             val rxFace = r * cAbs                     // radio horizontal (elipse)
 
@@ -380,23 +360,6 @@ private fun LogoGiratorio() {
                             center = Offset(px, py)
                         )
                     }
-                    // Estrella de 5 puntas (relieve): sombra + cara + brillo.
-                    val estrella = estrellaPath(
-                        cx = faceCenter.x, cy = cy,
-                        rxOut = rxFace * 0.5f, ryOut = r * 0.5f,
-                        rxIn = rxFace * 0.22f, ryIn = r * 0.22f
-                    )
-                    // Sombra (desplazada abajo-derecha) para dar volumen.
-                    drawPath(
-                        estrellaPath(
-                            cx = faceCenter.x + rxFace * 0.02f, cy = cy + r * 0.02f,
-                            rxOut = rxFace * 0.5f, ryOut = r * 0.5f,
-                            rxIn = rxFace * 0.22f, ryIn = r * 0.22f
-                        ),
-                        color = OroSombra.copy(alpha = 0.5f)
-                    )
-                    drawPath(estrella, color = OroProfundo)
-                    drawPath(estrella, color = OroBrillo.copy(alpha = 0.6f), style = Stroke(width = size.minDimension * 0.012f))
                 }
             }
         }

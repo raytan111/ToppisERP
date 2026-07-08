@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Warning
@@ -44,6 +45,7 @@ fun GastosScreen(
     val totalGastos by viewModel.totalGastos.collectAsState()
     val sobres by viewModel.sobres.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -64,43 +66,44 @@ fun GastosScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Card de total
-            item {
-                TotalGastosCard(total = totalGastos)
+        when {
+            cargandoInicial && gastos.isEmpty() -> {
+                com.toppis.app.ui.components.SkeletonList()
             }
-
-            // Advertencia si no hay sobres con saldo
-            if (sobresConSaldo.isEmpty() && sobres.isNotEmpty()) {
-                item {
-                    SinSaldoWarningCard()
-                }
-            }
-
-            // Lista de gastos
-            if (gastos.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No hay gastos registrados",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            gastos.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TotalGastosCard(total = totalGastos)
+                    if (sobresConSaldo.isEmpty() && sobres.isNotEmpty()) {
+                        SinSaldoWarningCard()
                     }
+                    com.toppis.app.ui.components.EmptyState(
+                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                        titulo = "Sin gastos registrados",
+                        subtitulo = "Usá el botón + para registrar tu primer gasto."
+                    )
                 }
-            } else {
-                items(gastos) { gasto ->
-                    GastoCard(gasto = gasto, sobres = sobres)
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item { TotalGastosCard(total = totalGastos) }
+
+                    if (sobresConSaldo.isEmpty() && sobres.isNotEmpty()) {
+                        item { SinSaldoWarningCard() }
+                    }
+
+                    items(gastos) { gasto ->
+                        GastoCard(gasto = gasto, sobres = sobres)
+                    }
                 }
             }
         }

@@ -35,6 +35,10 @@ class GastoViewModel(
     private val _sobres = MutableStateFlow<List<Sobre>>(emptyList())
     val sobres: StateFlow<List<Sobre>> = _sobres.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescarGastos()
         refrescarSobres()
@@ -48,6 +52,7 @@ class GastoViewModel(
             val lista = gastoRepository.getGastos()
             _gastos.value = lista
             _totalGastos.value = lista.sumOf { it.monto }
+            _cargandoInicial.value = false
         }
     }
 

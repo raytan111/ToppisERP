@@ -34,6 +34,7 @@ fun SobresScreen(
 ) {
     val sobres by viewModel.sobres.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -57,6 +58,15 @@ fun SobresScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
+        if (cargandoInicial && sobres.isEmpty()) {
+            com.toppis.app.ui.components.SkeletonList()
+        } else if (sobres.isEmpty()) {
+            com.toppis.app.ui.components.EmptyState(
+                icon = Icons.Filled.AccountBalance,
+                titulo = "Sin sobres",
+                subtitulo = "Creá tu primer sobre con el botón + para organizar el dinero."
+            )
+        } else {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -99,6 +109,7 @@ fun SobresScreen(
                     }
                 )
             }
+        }
         }
 
         FloatingActionButton(

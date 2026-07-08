@@ -23,6 +23,10 @@ class SobreViewModel(private val repository: SobreRepository) : ViewModel() {
     private val _sobres = MutableStateFlow<List<Sobre>>(emptyList())
     val sobres: StateFlow<List<Sobre>> = _sobres.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         // Carga inicial
         refrescar()
@@ -38,6 +42,7 @@ class SobreViewModel(private val repository: SobreRepository) : ViewModel() {
     private fun refrescar() {
         viewModelScope.launch {
             _sobres.value = repository.getSobres()
+            _cargandoInicial.value = false
         }
     }
 
