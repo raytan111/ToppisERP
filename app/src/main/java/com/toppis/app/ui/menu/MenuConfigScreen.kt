@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.*
@@ -43,6 +44,7 @@ fun MenuConfigScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearItemDialog by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<ItemMenu?>(null) }
+    var itemEnEdicion by remember { mutableStateOf<ItemMenu?>(null) }
     var fotoDe by remember { mutableStateOf<ItemMenu?>(null) }
     var componentesReceta by remember { mutableStateOf<List<ComponenteReceta>>(emptyList()) }
     var query by remember { mutableStateOf("") }
@@ -95,6 +97,7 @@ fun MenuConfigScreen(
                         componentesReceta = emptyList()
                         viewModel.loadComponentesReceta(item.id) { componentesReceta = it }
                     },
+                    onEditar = { itemEnEdicion = it },
                     onFoto = { fotoDe = it },
                     onEliminar = { viewModel.eliminarItemMenu(it) }
                 )
@@ -108,6 +111,19 @@ fun MenuConfigScreen(
             onConfirm = { nombre, desc, precio, categoria, imagenUrl ->
                 viewModel.crearItemMenu(nombre, desc, precio, categoria, imagenUrl)
                 showCrearItemDialog = false
+            }
+        )
+    }
+
+    itemEnEdicion?.let { item ->
+        EditarItemMenuDialog(
+            item = item,
+            onDismiss = { itemEnEdicion = null },
+            onConfirm = { nombre, desc, precio, categoria ->
+                viewModel.actualizarItemMenu(
+                    item.copy(nombre = nombre, descripcion = desc, precio = precio, categoria = categoria)
+                )
+                itemEnEdicion = null
             }
         )
     }
@@ -160,6 +176,7 @@ fun MenuConfigScreen(
 private fun ItemsMenuTab(
     items: List<ItemMenu>,
     onVerReceta: (ItemMenu) -> Unit,
+    onEditar: (ItemMenu) -> Unit,
     onFoto: (ItemMenu) -> Unit,
     onEliminar: (ItemMenu) -> Unit
 ) {
@@ -207,7 +224,9 @@ private fun ItemsMenuTab(
                         }
                     }
                     OutlinedButton(onClick = { onVerReceta(item) }) { Text("Receta") }
-                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { onEditar(item) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                    }
                     IconButton(onClick = { onEliminar(item) }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                     }
@@ -288,6 +307,60 @@ private fun CrearItemMenuDialog(
                 onClick = { onConfirm(nombre, descripcion, precioText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria, imagenUrl) },
                 enabled = nombre.isNotBlank() && precioValido
             ) { Text("Crear") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditarItemMenuDialog(
+    item: ItemMenu,
+    onDismiss: () -> Unit,
+    onConfirm: (nombre: String, descripcion: String, precio: Double, categoria: String) -> Unit
+) {
+    var nombre by remember { mutableStateOf(item.nombre) }
+    var descripcion by remember { mutableStateOf(item.descripcion) }
+    var categoria by remember { mutableStateOf(item.categoria) }
+    var precioText by remember { mutableStateOf(if (item.precio == 0.0) "" else item.precio.toLong().toString()) }
+
+    val precioValido = precioText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Item del Menú") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = nombre, onValueChange = { nombre = it },
+                    label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = categoria, onValueChange = { categoria = it },
+                    label = { Text("Categoría (ej: Hamburguesas)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = descripcion, onValueChange = { descripcion = it },
+                    label = { Text("Descripción (opcional)") }, modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = precioText, onValueChange = { precioText = it },
+                    label = { Text("Precio (CLP)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "La foto se cambia desde la miniatura del ítem.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(nombre, descripcion, precioText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria) },
+                enabled = nombre.isNotBlank() && precioValido
+            ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
