@@ -17,6 +17,10 @@ class ComprobantesViewModel(
     private val _comprobantes = MutableStateFlow<List<Comprobante>>(emptyList())
     val comprobantes: StateFlow<List<Comprobante>> = _comprobantes.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescar()
         viewModelScope.launch {
@@ -25,7 +29,10 @@ class ComprobantesViewModel(
     }
 
     private fun refrescar() {
-        viewModelScope.launch { _comprobantes.value = repository.getComprobantes() }
+        viewModelScope.launch {
+            _comprobantes.value = repository.getComprobantes()
+            _cargandoInicial.value = false
+        }
     }
 
     /** Recarga manual (al abrir la pantalla). */

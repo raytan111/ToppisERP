@@ -3,6 +3,9 @@ package com.toppis.app.ui.comprobantes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +25,16 @@ fun ComprobantesScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val comprobantes by viewModel.comprobantes.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
     val money = DecimalFormat("$#,##0")
+    var query by remember { mutableStateOf("") }
+    val filtrados = remember(comprobantes, query) {
+        if (query.isBlank()) comprobantes
+        else comprobantes.filter {
+            "#${it.folio}".contains(query.trim()) ||
+                (it.ventaId?.let { v -> "#$v".contains(query.trim()) } ?: false)
+        }
+    }
 
     // Recargar al abrir (refleja cambios hechos fuera de la app).
     LaunchedEffect(Unit) { viewModel.recargar() }
@@ -32,26 +44,45 @@ fun ComprobantesScreen(
             ToppisTopBar(titulo = "Comprobantes", onBack = onNavigateBack)
         }
     ) { padding ->
-        if (comprobantes.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Aún no hay comprobantes emitidos.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            return@Scaffold
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 12.dp)
-        ) {
-            items(comprobantes) { c ->
-                ComprobanteCard(c, money)
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when {
+                cargandoInicial && comprobantes.isEmpty() -> {
+                    com.toppis.app.ui.components.SkeletonList()
+                }
+                comprobantes.isEmpty() -> {
+                    com.toppis.app.ui.components.EmptyState(
+                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                        titulo = "Sin comprobantes",
+                        subtitulo = "Los comprobantes emitidos aparecerán acá."
+                    )
+                }
+                else -> {
+                    Column(Modifier.fillMaxSize()) {
+                        com.toppis.app.ui.components.SearchField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = "Buscar por folio o #venta…",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                        if (filtrados.isEmpty()) {
+                            com.toppis.app.ui.components.EmptyState(
+                                icon = Icons.Filled.SearchOff,
+                                titulo = "Sin resultados",
+                                subtitulo = "No hay comprobantes que coincidan con \"$query\"."
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(bottom = 24.dp)
+                            ) {
+                                items(filtrados) { c ->
+                                    ComprobanteCard(c, money)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

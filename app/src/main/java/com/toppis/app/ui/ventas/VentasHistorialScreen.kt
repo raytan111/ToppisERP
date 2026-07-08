@@ -3,6 +3,9 @@ package com.toppis.app.ui.ventas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +28,8 @@ fun VentasHistorialScreen(
     var ventas by remember { mutableStateOf<List<Venta>>(emptyList()) }
     var detalle by remember { mutableStateOf<List<ItemVentaMenu>>(emptyList()) }
     var ventaSel by remember { mutableStateOf<Venta?>(null) }
+    var cargando by remember { mutableStateOf(true) }
+    var query by remember { mutableStateOf("") }
     val money = DecimalFormat("$#,##0")
 
     LaunchedEffect(Unit) {
@@ -32,22 +37,50 @@ fun VentasHistorialScreen(
             SupabaseClient.client.postgrest.from("ventas").select()
                 .decodeList<Venta>().sortedByDescending { it.fecha }
         } catch (_: Exception) { emptyList() }
+        cargando = false
+    }
+
+    val ventasFiltradas = remember(ventas, query) {
+        if (query.isBlank()) ventas
+        else ventas.filter {
+            (it.descripcion?.contains(query.trim(), ignoreCase = true) ?: false) ||
+                "#${it.id}".contains(query.trim())
+        }
     }
 
     Scaffold(
         topBar = { ToppisTopBar(titulo = "Historial de Ventas", onBack = onNavigateBack) }
     ) { padding ->
-        if (ventas.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Sin ventas registradas.", color = MaterialTheme.colorScheme.outline)
-            }
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        if (cargando && ventas.isEmpty()) {
+            com.toppis.app.ui.components.SkeletonList()
+        } else if (ventas.isEmpty()) {
+            com.toppis.app.ui.components.EmptyState(
+                icon = Icons.Filled.History,
+                titulo = "Sin ventas registradas",
+                subtitulo = "Las ventas realizadas aparecerán en este historial."
+            )
         } else {
+            Column(Modifier.fillMaxSize()) {
+                com.toppis.app.ui.components.SearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = "Buscar por descripción o #venta…",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+                if (ventasFiltradas.isEmpty()) {
+                    com.toppis.app.ui.components.EmptyState(
+                        icon = Icons.Filled.SearchOff,
+                        titulo = "Sin resultados",
+                        subtitulo = "No hay ventas que coincidan con \"$query\"."
+                    )
+                } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
-                items(ventas) { v ->
+                items(ventasFiltradas) { v ->
                     Card(modifier = Modifier.fillMaxWidth(), onClick = {
                         ventaSel = v
                         scope.launch {
@@ -76,6 +109,9 @@ fun VentasHistorialScreen(
                     }
                 }
             }
+                }
+            }
+        }
         }
     }
 
