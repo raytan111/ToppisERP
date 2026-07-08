@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,6 +37,11 @@ fun InventarioScreen(
     var enEdicion by remember { mutableStateOf<Articulo?>(null) }
     var aEliminar by remember { mutableStateOf<Articulo?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    var query by remember { mutableStateOf("") }
+    val filtrados = remember(articulos, query) {
+        if (query.isBlank()) articulos
+        else articulos.filter { it.nombre.contains(query.trim(), ignoreCase = true) }
+    }
 
     // Recargar al abrir (refleja cambios hechos fuera de la app).
     LaunchedEffect(Unit) { viewModel.recargar() }
@@ -67,18 +73,34 @@ fun InventarioScreen(
                 subtitulo = "Usá el botón + para agregar tu primer artículo al inventario."
             )
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                items(articulos) { art ->
-                    ArticuloCard(
-                        articulo = art,
-                        puedeBorrar = puedeBorrar,
-                        onEditar = { enEdicion = art },
-                        onEliminar = { aEliminar = art }
+            Column(modifier = Modifier.fillMaxSize()) {
+                com.toppis.app.ui.components.SearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = "Buscar artículo…",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+                if (filtrados.isEmpty()) {
+                    com.toppis.app.ui.components.EmptyState(
+                        icon = Icons.Filled.SearchOff,
+                        titulo = "Sin resultados",
+                        subtitulo = "No hay artículos que coincidan con \"$query\"."
                     )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 88.dp)
+                    ) {
+                        items(filtrados) { art ->
+                            ArticuloCard(
+                                articulo = art,
+                                puedeBorrar = puedeBorrar,
+                                onEditar = { enEdicion = art },
+                                onEliminar = { aEliminar = art }
+                            )
+                        }
+                    }
                 }
             }
         }
