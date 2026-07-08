@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,6 +45,14 @@ fun MenuConfigScreen(
     var selectedItem by remember { mutableStateOf<ItemMenu?>(null) }
     var fotoDe by remember { mutableStateOf<ItemMenu?>(null) }
     var componentesReceta by remember { mutableStateOf<List<ComponenteReceta>>(emptyList()) }
+    var query by remember { mutableStateOf("") }
+    val itemsFiltrados = remember(itemsMenu, query) {
+        if (query.isBlank()) itemsMenu
+        else itemsMenu.filter {
+            it.nombre.contains(query.trim(), ignoreCase = true) ||
+                it.categoria.contains(query.trim(), ignoreCase = true)
+        }
+    }
 
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -65,16 +75,30 @@ fun MenuConfigScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            ItemsMenuTab(
-                items = itemsMenu,
-                onVerReceta = { item ->
-                    selectedItem = item
-                    componentesReceta = emptyList()
-                    viewModel.loadComponentesReceta(item.id) { componentesReceta = it }
-                },
-                onFoto = { fotoDe = it },
-                onEliminar = { viewModel.eliminarItemMenu(it) }
-            )
+            if (itemsMenu.isEmpty()) {
+                com.toppis.app.ui.components.EmptyState(
+                    icon = Icons.Filled.RestaurantMenu,
+                    titulo = "Menú vacío",
+                    subtitulo = "Usá el botón + para agregar tu primer ítem al menú."
+                )
+            } else {
+                com.toppis.app.ui.components.SearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = "Buscar ítem del menú…",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+                ItemsMenuTab(
+                    items = itemsFiltrados,
+                    onVerReceta = { item ->
+                        selectedItem = item
+                        componentesReceta = emptyList()
+                        viewModel.loadComponentesReceta(item.id) { componentesReceta = it }
+                    },
+                    onFoto = { fotoDe = it },
+                    onEliminar = { viewModel.eliminarItemMenu(it) }
+                )
+            }
         }
     }
 
@@ -140,9 +164,11 @@ private fun ItemsMenuTab(
     onEliminar: (ItemMenu) -> Unit
 ) {
     if (items.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Sin items en el menú.\nUsá el botón + para agregar.", color = MaterialTheme.colorScheme.outline)
-        }
+        com.toppis.app.ui.components.EmptyState(
+            icon = Icons.Filled.SearchOff,
+            titulo = "Sin resultados",
+            subtitulo = "No hay ítems que coincidan con la búsqueda."
+        )
         return
     }
     val money = DecimalFormat("$#,##0")

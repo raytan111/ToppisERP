@@ -170,28 +170,20 @@ fun SobresScreen(
     }
 
     if (showDeleteConfirmDialog && selectedSobre != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text("Eliminar sobre") },
-            text = {
-                if (selectedSobre!!.saldo > 0) {
-                    Text("No se puede eliminar un sobre con saldo (${DecimalFormat("$#,##0 CLP").format(selectedSobre!!.saldo)})")
-                } else {
-                    Text("¿Estás seguro de que deseas eliminar el sobre \"${selectedSobre!!.nombre}\"?")
-                }
+        val conSaldo = selectedSobre!!.saldo > 0
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = selectedSobre!!.nombre,
+            titulo = "Eliminar sobre",
+            mensaje = if (conSaldo)
+                "No se puede eliminar un sobre con saldo (${DecimalFormat("$#,##0 CLP").format(selectedSobre!!.saldo)})."
+            else
+                "¿Eliminar el sobre \"${selectedSobre!!.nombre}\"? Esta acción no se puede deshacer.",
+            confirmarHabilitado = !conSaldo,
+            onConfirm = {
+                viewModel.eliminarSobre(selectedSobre!!)
+                showDeleteConfirmDialog = false
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.eliminarSobre(selectedSobre!!)
-                        showDeleteConfirmDialog = false
-                    },
-                    enabled = selectedSobre!!.saldo == 0.0
-                ) { Text("Eliminar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("Cancelar") }
-            }
+            onDismiss = { showDeleteConfirmDialog = false }
         )
     }
 }
