@@ -30,13 +30,20 @@ class ConteoViewModel(
     private val _articulos = MutableStateFlow<List<Articulo>>(emptyList())
     val articulos: StateFlow<List<Articulo>> = _articulos.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescar()
         refrescarArticulos()
     }
 
     private fun refrescar() {
-        viewModelScope.launch { _conteos.value = repository.getConteos() }
+        viewModelScope.launch {
+            _conteos.value = repository.getConteos()
+            _cargandoInicial.value = false
+        }
     }
 
     fun refrescarArticulos() {

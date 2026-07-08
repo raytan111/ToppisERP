@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +35,7 @@ fun ModificadoresScreen(
     val articulos by viewModel.articulos.collectAsState()
     val preparaciones by viewModel.preparaciones.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
@@ -62,10 +64,14 @@ fun ModificadoresScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (modificadores.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin modificadores.\nUsá el botón + para agregar.", color = MaterialTheme.colorScheme.outline)
-                }
+            if (cargandoInicial && modificadores.isEmpty()) {
+                com.toppis.app.ui.components.SkeletonList()
+            } else if (modificadores.isEmpty()) {
+                com.toppis.app.ui.components.EmptyState(
+                    icon = Icons.Filled.Tune,
+                    titulo = "Sin modificadores",
+                    subtitulo = "Usá el botón + para crear tu primer modificador."
+                )
             } else {
                 val money = DecimalFormat("$#,##0")
                 LazyColumn(
@@ -134,14 +140,11 @@ fun ModificadoresScreen(
     }
 
     modAEliminar?.let { mod ->
-        AlertDialog(
-            onDismissRequest = { modAEliminar = null },
-            title = { Text("Eliminar modificador") },
-            text = { Text("¿Seguro que querés eliminar \"${mod.nombre}\"?") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.eliminarModificador(mod.id); modAEliminar = null }) { Text("Eliminar") }
-            },
-            dismissButton = { TextButton(onClick = { modAEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = mod.nombre,
+            titulo = "Eliminar modificador",
+            onConfirm = { viewModel.eliminarModificador(mod.id); modAEliminar = null },
+            onDismiss = { modAEliminar = null }
         )
     }
 }

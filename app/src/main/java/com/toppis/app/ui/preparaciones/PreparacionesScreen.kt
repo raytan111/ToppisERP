@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Blender
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,6 +32,7 @@ fun PreparacionesScreen(
     val preparaciones by viewModel.preparaciones.collectAsState()
     val articulos by viewModel.articulos.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
@@ -66,6 +68,9 @@ fun PreparacionesScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (cargandoInicial && preparaciones.isEmpty()) {
+                com.toppis.app.ui.components.SkeletonList()
+            } else
             PreparacionesList(
                 preparaciones = preparaciones,
                 puedeBorrar = puedeBorrar,
@@ -112,17 +117,11 @@ fun PreparacionesScreen(
     }
 
     prepAEliminar?.let { prep ->
-        AlertDialog(
-            onDismissRequest = { prepAEliminar = null },
-            title = { Text("Eliminar preparación") },
-            text = { Text("¿Seguro que querés eliminar \"${prep.nombre}\"? Esta acción no se puede deshacer.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.eliminarPreparacion(prep.id)
-                    prepAEliminar = null
-                }) { Text("Eliminar") }
-            },
-            dismissButton = { TextButton(onClick = { prepAEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = prep.nombre,
+            titulo = "Eliminar preparación",
+            onConfirm = { viewModel.eliminarPreparacion(prep.id); prepAEliminar = null },
+            onDismiss = { prepAEliminar = null }
         )
     }
 }
@@ -138,12 +137,11 @@ private fun PreparacionesList(
     onEliminar: (Preparacion) -> Unit
 ) {
     if (preparaciones.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "Sin preparaciones.\nUsá el botón + para agregar.",
-                color = MaterialTheme.colorScheme.outline
-            )
-        }
+        com.toppis.app.ui.components.EmptyState(
+            icon = Icons.Filled.Blender,
+            titulo = "Sin preparaciones",
+            subtitulo = "Usá el botón + para crear tu primera preparación."
+        )
         return
     }
     LazyColumn(

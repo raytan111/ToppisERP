@@ -35,6 +35,10 @@ class MermaViewModel(
     private val _preparaciones = MutableStateFlow<List<Preparacion>>(emptyList())
     val preparaciones: StateFlow<List<Preparacion>> = _preparaciones.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescar()
         viewModelScope.launch { _articulos.value = repository.getArticulos() }
@@ -43,7 +47,10 @@ class MermaViewModel(
     }
 
     private fun refrescar() {
-        viewModelScope.launch { _mermas.value = repository.getMermasConNombre() }
+        viewModelScope.launch {
+            _mermas.value = repository.getMermasConNombre()
+            _cargandoInicial.value = false
+        }
     }
 
     fun registrarMerma(

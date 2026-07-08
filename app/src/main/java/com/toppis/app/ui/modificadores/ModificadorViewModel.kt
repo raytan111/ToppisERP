@@ -37,6 +37,10 @@ class ModificadorViewModel(
     private val _preparaciones = MutableStateFlow<List<Preparacion>>(emptyList())
     val preparaciones: StateFlow<List<Preparacion>> = _preparaciones.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescar()
         viewModelScope.launch { _articulos.value = modificadorRepository.getArticulos() }
@@ -49,6 +53,8 @@ class ModificadorViewModel(
                 _modificadores.value = modificadorRepository.getModificadores()
             } catch (e: Exception) {
                 _uiState.value = ModificadorUiState.Error(e.message ?: "Error al cargar modificadores")
+            } finally {
+                _cargandoInicial.value = false
             }
         }
     }

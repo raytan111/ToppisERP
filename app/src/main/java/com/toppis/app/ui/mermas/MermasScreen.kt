@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ fun MermasScreen(
     val articulos by viewModel.articulos.collectAsState()
     val preparaciones by viewModel.preparaciones.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrear by remember { mutableStateOf(false) }
@@ -71,10 +73,14 @@ fun MermasScreen(
                 }
             }
 
-            if (mermas.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin mermas registradas.", color = MaterialTheme.colorScheme.outline)
-                }
+            if (cargandoInicial && mermas.isEmpty()) {
+                com.toppis.app.ui.components.SkeletonList()
+            } else if (mermas.isEmpty()) {
+                com.toppis.app.ui.components.EmptyState(
+                    icon = Icons.Filled.DeleteSweep,
+                    titulo = "Sin mermas registradas",
+                    subtitulo = "Usá el botón + para registrar una merma."
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -118,12 +124,12 @@ fun MermasScreen(
     }
 
     aEliminar?.let { id ->
-        AlertDialog(
-            onDismissRequest = { aEliminar = null },
-            title = { Text("Eliminar merma") },
-            text = { Text("¿Eliminar este registro? (no devuelve el stock)") },
-            confirmButton = { TextButton(onClick = { viewModel.eliminarMerma(id); aEliminar = null }) { Text("Eliminar") } },
-            dismissButton = { TextButton(onClick = { aEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = "",
+            titulo = "Eliminar merma",
+            mensaje = "¿Eliminar este registro? No devuelve el stock.",
+            onConfirm = { viewModel.eliminarMerma(id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }

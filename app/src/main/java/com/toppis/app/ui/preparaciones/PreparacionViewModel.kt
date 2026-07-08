@@ -33,6 +33,10 @@ class PreparacionViewModel(
     private val _articulos = MutableStateFlow<List<Articulo>>(emptyList())
     val articulos: StateFlow<List<Articulo>> = _articulos.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init {
         refrescarPreparaciones()
         refrescarArticulos()
@@ -42,7 +46,10 @@ class PreparacionViewModel(
     }
 
     private fun refrescarPreparaciones() {
-        viewModelScope.launch { _preparaciones.value = preparacionRepository.getPreparaciones() }
+        viewModelScope.launch {
+            _preparaciones.value = preparacionRepository.getPreparaciones()
+            _cargandoInicial.value = false
+        }
     }
 
     private fun refrescarArticulos() {
