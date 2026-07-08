@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Blender
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ fun PreparacionesScreen(
     var showCrearDialog by remember { mutableStateOf(false) }
     var selectedPrep by remember { mutableStateOf<Preparacion?>(null) }
     var prepAEliminar by remember { mutableStateOf<Preparacion?>(null) }
+    var prepAEditar by remember { mutableStateOf<Preparacion?>(null) }
     var componentes by remember { mutableStateOf<List<ComponentePreparacion>>(emptyList()) }
 
     LaunchedEffect(uiState) {
@@ -79,6 +81,7 @@ fun PreparacionesScreen(
                     componentes = emptyList()
                     viewModel.loadComponentes(prep.id) { componentes = it }
                 },
+                onEditar = { prepAEditar = it },
                 onEliminar = { prepAEliminar = it }
             )
         }
@@ -124,6 +127,94 @@ fun PreparacionesScreen(
             onDismiss = { prepAEliminar = null }
         )
     }
+
+    prepAEditar?.let { prep ->
+        EditarPreparacionDialog(
+            preparacion = prep,
+            onDismiss = { prepAEditar = null },
+            onConfirm = { nombre, dimension, rendimiento, seleccionable ->
+                viewModel.actualizarPreparacion(
+                    prep.copy(
+                        nombre = nombre,
+                        dimension = dimension,
+                        unidadBase = dimension.unidadBase,
+                        rendimientoLote = rendimiento,
+                        seleccionableEnPos = seleccionable
+                    )
+                )
+                prepAEditar = null
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditarPreparacionDialog(
+    preparacion: Preparacion,
+    onDismiss: () -> Unit,
+    onConfirm: (nombre: String, dimension: DimensionUnidad, rendimientoLote: Double, seleccionableEnPos: Boolean) -> Unit
+) {
+    var nombre by remember { mutableStateOf(preparacion.nombre) }
+    var dimension by remember { mutableStateOf(preparacion.dimension) }
+    var rendimientoText by remember { mutableStateOf(if (preparacion.rendimientoLote == 0.0) "" else cantidadFormat.format(preparacion.rendimientoLote)) }
+    var seleccionable by remember { mutableStateOf(preparacion.seleccionableEnPos) }
+    var expandedDimension by remember { mutableStateOf(false) }
+
+    val rendimientoValido = rendimientoText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Preparación") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = nombre, onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                ExposedDropdownMenuBox(
+                    expanded = expandedDimension,
+                    onExpandedChange = { expandedDimension = !expandedDimension }
+                ) {
+                    OutlinedTextField(
+                        value = dimension.label, onValueChange = {}, readOnly = true,
+                        label = { Text("Dimensión") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDimension) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = expandedDimension, onDismissRequest = { expandedDimension = false }) {
+                        DimensionUnidad.entries.forEach { d ->
+                            DropdownMenuItem(text = { Text(d.label) }, onClick = {
+                                dimension = d; expandedDimension = false
+                            })
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = rendimientoText, onValueChange = { rendimientoText = it },
+                    label = { Text("Rendimiento del lote (${dimension.unidadBase})") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = seleccionable, onCheckedChange = { seleccionable = it })
+                    Text("Seleccionable en POS", style = MaterialTheme.typography.bodyMedium)
+                }
+                Text("Los ingredientes de la receta se editan con el botón \"Receta\".",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(nombre, dimension, rendimientoText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, seleccionable)
+                },
+                enabled = nombre.isNotBlank() && rendimientoValido
+            ) { Text("Guardar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
 }
 
 private val costoFormat = DecimalFormat("$#,##0.######")
@@ -134,6 +225,7 @@ private fun PreparacionesList(
     preparaciones: List<Preparacion>,
     puedeBorrar: Boolean = true,
     onVerReceta: (Preparacion) -> Unit,
+    onEditar: (Preparacion) -> Unit,
     onEliminar: (Preparacion) -> Unit
 ) {
     if (preparaciones.isEmpty()) {
@@ -170,7 +262,9 @@ private fun PreparacionesList(
                         }
                     }
                     OutlinedButton(onClick = { onVerReceta(prep) }) { Text("Receta") }
-                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { onEditar(prep) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                    }
                     if (puedeBorrar) {
                         IconButton(onClick = { onEliminar(prep) }) {
                             Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)

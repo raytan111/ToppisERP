@@ -46,6 +46,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("menu_config", "Configurar Menú", Icons.Filled.Restaurant),
             MenuOpcion("preparaciones", "Preparaciones", Icons.Filled.Blender),
             MenuOpcion("modificadores", "Modificadores", Icons.Filled.Tune),
+            MenuOpcion("promociones", "Promociones", Icons.Filled.LocalOffer, soloAdmin = true),
             MenuOpcion("food_cost", "Food Cost & Menú", Icons.Filled.PieChart)
         )
     ),
@@ -101,7 +102,6 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("kpis", "KPIs Ejecutivos", Icons.Filled.Dashboard, soloAdmin = true),
             MenuOpcion("ventas_historial", "Historial de Ventas", Icons.Filled.History),
             MenuOpcion("comprobantes", "Comprobantes", Icons.Filled.Receipt),
-            MenuOpcion("promociones", "Promociones", Icons.Filled.LocalOffer, soloAdmin = true),
             MenuOpcion("config_color", "Configurar Colores", Icons.Filled.Palette, soloAdmin = true),
             MenuOpcion("exportacion", "Exportación", Icons.Filled.FileDownload, soloAdmin = true)
         )

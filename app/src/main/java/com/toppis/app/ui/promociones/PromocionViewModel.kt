@@ -74,6 +74,19 @@ class PromocionViewModel(
         }
     }
 
+    /** Actualiza nombre/tipo/precio/descuento de una promoción. */
+    fun actualizarPromocion(promo: Promocion) {
+        viewModelScope.launch {
+            try {
+                promocionRepository.actualizarPromocion(promo)
+                refrescarPromociones()
+                _uiState.value = PromocionUiState.Success
+            } catch (e: Exception) {
+                _uiState.value = PromocionUiState.Error(e.message ?: "Error al actualizar promoción")
+            }
+        }
+    }
+
     /** Actualiza la imagen de una promoción. */
     fun actualizarImagen(id: Int, url: String) {
         viewModelScope.launch {

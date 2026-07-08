@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,6 +41,7 @@ fun ModificadoresScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
     var modAEliminar by remember { mutableStateOf<Modificador?>(null) }
+    var modAEditar by remember { mutableStateOf<Modificador?>(null) }
     var modSeleccionado by remember { mutableStateOf<Modificador?>(null) }
     var componentes by remember { mutableStateOf<List<ModificadorComponente>>(emptyList()) }
 
@@ -94,7 +96,9 @@ fun ModificadoresScreen(
                                     componentes = emptyList()
                                     viewModel.loadComponentes(mod.id) { componentes = it }
                                 }) { Text("Receta") }
-                                Spacer(Modifier.width(8.dp))
+                                IconButton(onClick = { modAEditar = mod }) {
+                                    Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                                }
                                 if (puedeBorrar) {
                                     IconButton(onClick = { modAEliminar = mod }) {
                                         Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
@@ -114,6 +118,17 @@ fun ModificadoresScreen(
             onConfirm = { nombre, tipo, delta ->
                 viewModel.crearModificador(nombre, tipo, delta)
                 showCrearDialog = false
+            }
+        )
+    }
+
+    modAEditar?.let { mod ->
+        EditarModificadorDialog(
+            modificador = mod,
+            onDismiss = { modAEditar = null },
+            onConfirm = { nombre, tipo, delta ->
+                viewModel.actualizarModificador(mod.copy(nombre = nombre, tipo = tipo, deltaPrecio = delta))
+                modAEditar = null
             }
         )
     }
@@ -209,6 +224,63 @@ private fun CrearModificadorDialog(
                 onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton) },
                 enabled = nombre.isNotBlank() && deltaValido
             ) { Text("Crear") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditarModificadorDialog(
+    modificador: Modificador,
+    onDismiss: () -> Unit,
+    onConfirm: (nombre: String, tipo: TipoModificador, deltaPrecio: Double) -> Unit
+) {
+    var nombre by remember { mutableStateOf(modificador.nombre) }
+    var tipoSeleccionado by remember { mutableStateOf(modificador.tipo) }
+    var expandedTipo by remember { mutableStateOf(false) }
+    var deltaText by remember { mutableStateOf(if (modificador.deltaPrecio == 0.0) "" else modificador.deltaPrecio.toLong().toString()) }
+
+    val deltaValido = deltaText.replace(",", ".").toDoubleOrNull() != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Modificador") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = nombre, onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                ExposedDropdownMenuBox(expanded = expandedTipo, onExpandedChange = { expandedTipo = !expandedTipo }) {
+                    OutlinedTextField(
+                        value = tipoSeleccionado.label, onValueChange = {}, readOnly = true,
+                        label = { Text("Tipo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = expandedTipo, onDismissRequest = { expandedTipo = false }) {
+                        TipoModificador.entries.forEach { tipo ->
+                            DropdownMenuItem(text = { Text(tipo.label) }, onClick = { tipoSeleccionado = tipo; expandedTipo = false })
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = deltaText, onValueChange = { deltaText = it },
+                    label = { Text("Cambio de precio (CLP)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Text("La receta (ingredientes que agrega/quita) se edita con el botón \"Receta\".",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton) },
+                enabled = nombre.isNotBlank() && deltaValido
+            ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

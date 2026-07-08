@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -67,6 +68,7 @@ fun PromocionesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrearDialog by remember { mutableStateOf(false) }
     var promoAEliminar by remember { mutableStateOf<Promocion?>(null) }
+    var promoAEditar by remember { mutableStateOf<Promocion?>(null) }
     var fotoDe by remember { mutableStateOf<Promocion?>(null) }
 
     var promoSeleccionada by remember { mutableStateOf<Promocion?>(null) }
@@ -146,6 +148,13 @@ fun PromocionesScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
+                                IconButton(onClick = { promoAEditar = promo }) {
+                                    Icon(
+                                        Icons.Filled.Edit,
+                                        contentDescription = "Editar",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                                 if (puedeBorrar) {
                                     IconButton(onClick = { promoAEliminar = promo }) {
                                         Icon(
@@ -193,17 +202,24 @@ fun PromocionesScreen(
     }
 
     promoAEliminar?.let { promo ->
-        AlertDialog(
-            onDismissRequest = { promoAEliminar = null },
-            title = { Text("Eliminar promoción") },
-            text = { Text("¿Seguro que querés eliminar \"${promo.nombre}\"?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.eliminarPromocion(promo.id)
-                    promoAEliminar = null
-                }) { Text("Eliminar") }
-            },
-            dismissButton = { TextButton(onClick = { promoAEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = promo.nombre,
+            titulo = "Eliminar promoción",
+            onConfirm = { viewModel.eliminarPromocion(promo.id); promoAEliminar = null },
+            onDismiss = { promoAEliminar = null }
+        )
+    }
+
+    promoAEditar?.let { promo ->
+        EditarPromocionDialog(
+            promocion = promo,
+            onDismiss = { promoAEditar = null },
+            onConfirm = { nombre, tipo, precio, descuento ->
+                viewModel.actualizarPromocion(
+                    promo.copy(nombre = nombre, tipo = tipo, precio = precio, descuentoPct = descuento)
+                )
+                promoAEditar = null
+            }
         )
     }
 
@@ -313,6 +329,96 @@ private fun CrearPromocionDialog(
                 },
                 enabled = datosValidos
             ) { Text("Crear") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditarPromocionDialog(
+    promocion: Promocion,
+    onDismiss: () -> Unit,
+    onConfirm: (nombre: String, tipo: TipoPromocion, precio: Double, descuentoPct: Double) -> Unit
+) {
+    var nombre by remember { mutableStateOf(promocion.nombre) }
+    var tipoSeleccionado by remember { mutableStateOf(promocion.tipo) }
+    var expandedTipo by remember { mutableStateOf(false) }
+    var precioText by remember { mutableStateOf(if (promocion.precio == 0.0) "" else promocion.precio.toLong().toString()) }
+    var descuentoText by remember { mutableStateOf(if (promocion.descuentoPct == 0.0) "" else pct.format(promocion.descuentoPct)) }
+
+    val precioValido = precioText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
+    val descuentoValido = descuentoText.replace(",", ".").toDoubleOrNull()?.let { it > 0 && it <= 100 } ?: false
+    val datosValidos = nombre.isNotBlank() && when (tipoSeleccionado) {
+        TipoPromocion.COMBO -> precioValido
+        TipoPromocion.DESCUENTO_PORCENTAJE -> descuentoValido
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Promoción") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = nombre, onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                ExposedDropdownMenuBox(
+                    expanded = expandedTipo,
+                    onExpandedChange = { expandedTipo = !expandedTipo }
+                ) {
+                    OutlinedTextField(
+                        value = tipoSeleccionado.label,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Tipo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedTipo,
+                        onDismissRequest = { expandedTipo = false }
+                    ) {
+                        TipoPromocion.entries.forEach { tipo ->
+                            DropdownMenuItem(
+                                text = { Text(tipo.label) },
+                                onClick = { tipoSeleccionado = tipo; expandedTipo = false }
+                            )
+                        }
+                    }
+                }
+                when (tipoSeleccionado) {
+                    TipoPromocion.COMBO -> {
+                        OutlinedTextField(
+                            value = precioText, onValueChange = { precioText = it },
+                            label = { Text("Precio combo (CLP)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    TipoPromocion.DESCUENTO_PORCENTAJE -> {
+                        OutlinedTextField(
+                            value = descuentoText, onValueChange = { descuentoText = it },
+                            label = { Text("Descuento (%)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                Text("Los items del combo se editan tocando la promoción.",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val precio = precioText.replace(",", ".").toDoubleOrNull() ?: 0.0
+                    val descuento = descuentoText.replace(",", ".").toDoubleOrNull() ?: 0.0
+                    onConfirm(nombre, tipoSeleccionado, precio, descuento)
+                },
+                enabled = datosValidos
+            ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

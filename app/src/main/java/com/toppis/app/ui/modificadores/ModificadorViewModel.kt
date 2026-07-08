@@ -76,6 +76,18 @@ class ModificadorViewModel(
         }
     }
 
+    fun actualizarModificador(mod: Modificador) {
+        viewModelScope.launch {
+            try {
+                modificadorRepository.actualizarModificador(mod)
+                refrescar()
+                _uiState.value = ModificadorUiState.Success
+            } catch (e: Exception) {
+                _uiState.value = ModificadorUiState.Error(e.message ?: "Error al actualizar modificador")
+            }
+        }
+    }
+
     fun eliminarModificador(id: Int) {
         viewModelScope.launch {
             try {
