@@ -42,10 +42,17 @@ class CompraViewModel(
     private val _porVencer = MutableStateFlow<List<LoteVencimiento>>(emptyList())
     val porVencer: StateFlow<List<LoteVencimiento>> = _porVencer.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init { refrescar() }
 
     fun refrescar() {
-        viewModelScope.launch { _compras.value = repository.getCompras() }
+        viewModelScope.launch {
+            _compras.value = repository.getCompras()
+            _cargandoInicial.value = false
+        }
         viewModelScope.launch { _articulos.value = repository.getArticulos() }
         viewModelScope.launch { _proveedores.value = repository.getProveedores() }
         viewModelScope.launch { _sobres.value = repository.getSobres() }

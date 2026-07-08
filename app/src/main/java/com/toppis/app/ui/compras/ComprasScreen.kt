@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,9 +40,17 @@ fun ComprasScreen(
     val sobres by viewModel.sobres.collectAsState()
     val porVencer by viewModel.porVencer.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var modoNuevo by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    val comprasFiltradas = remember(compras, query) {
+        if (query.isBlank()) compras
+        else compras.filter {
+            it.nota.contains(query.trim(), ignoreCase = true) || "#${it.id}".contains(query.trim())
+        }
+    }
 
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -81,28 +90,58 @@ fun ComprasScreen(
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 12.dp)
-        ) {
-            if (porVencer.isNotEmpty()) {
-                item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text("Lotes por vencer", style = MaterialTheme.typography.titleSmall)
-                            porVencer.take(5).forEach { lv ->
-                                Text("${lv.nombreArticulo} — vence ${lv.detalle.vencimiento}",
-                                    style = MaterialTheme.typography.bodySmall)
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when {
+                cargandoInicial && compras.isEmpty() -> {
+                    com.toppis.app.ui.components.SkeletonList()
+                }
+                compras.isEmpty() -> {
+                    com.toppis.app.ui.components.EmptyState(
+                        icon = Icons.Filled.AddShoppingCart,
+                        titulo = "Sin compras registradas",
+                        subtitulo = "Usá el botón + para registrar tu primera compra."
+                    )
+                }
+                else -> {
+                    Column(Modifier.fillMaxSize()) {
+                        com.toppis.app.ui.components.SearchField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = "Buscar por nota o #número…",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(bottom = 88.dp)
+                        ) {
+                            if (porVencer.isNotEmpty()) {
+                                item {
+                                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                                        Column(Modifier.padding(12.dp)) {
+                                            Text("Lotes por vencer", style = MaterialTheme.typography.titleSmall)
+                                            porVencer.take(5).forEach { lv ->
+                                                Text("${lv.nombreArticulo} — vence ${lv.detalle.vencimiento}",
+                                                    style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (comprasFiltradas.isEmpty()) {
+                                item {
+                                    Text(
+                                        "No hay compras que coincidan con \"$query\".",
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.padding(vertical = 24.dp)
+                                    )
+                                }
+                            } else {
+                                items(comprasFiltradas) { c -> CompraCard(c) }
                             }
                         }
                     }
                 }
-            }
-            if (compras.isEmpty()) {
-                item { Text("Sin compras registradas. Usá + para registrar una.", color = MaterialTheme.colorScheme.outline) }
-            } else {
-                items(compras) { c -> CompraCard(c) }
             }
         }
     }
