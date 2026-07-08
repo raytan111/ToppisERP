@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,7 @@ fun EmpleadosScreen(
 ) {
     val empleados by viewModel.empleados.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
     val money = DecimalFormat("$#,##0")
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,10 +52,14 @@ fun EmpleadosScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (empleados.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin empleados. Usá + para agregar.", color = MaterialTheme.colorScheme.outline)
-                }
+            if (cargandoInicial && empleados.isEmpty()) {
+                com.toppis.app.ui.components.SkeletonList()
+            } else if (empleados.isEmpty()) {
+                com.toppis.app.ui.components.EmptyState(
+                    icon = Icons.Filled.Badge,
+                    titulo = "Sin empleados",
+                    subtitulo = "Usá el botón + para agregar tu primer empleado."
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -95,12 +101,11 @@ fun EmpleadosScreen(
         })
     }
     aEliminar?.let { e ->
-        AlertDialog(
-            onDismissRequest = { aEliminar = null },
-            title = { Text("Eliminar empleado") },
-            text = { Text("¿Eliminar a \"${e.nombre}\"?") },
-            confirmButton = { TextButton(onClick = { viewModel.eliminar(e.id); aEliminar = null }) { Text("Eliminar") } },
-            dismissButton = { TextButton(onClick = { aEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = e.nombre,
+            titulo = "Eliminar empleado",
+            onConfirm = { viewModel.eliminar(e.id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }

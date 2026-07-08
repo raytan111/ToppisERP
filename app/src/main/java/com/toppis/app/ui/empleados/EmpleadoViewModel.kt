@@ -26,10 +26,17 @@ class EmpleadoViewModel(
     private val _empleados = MutableStateFlow<List<Empleado>>(emptyList())
     val empleados: StateFlow<List<Empleado>> = _empleados.asStateFlow()
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init { refrescar() }
 
     private fun refrescar() {
-        viewModelScope.launch { _empleados.value = repository.getEmpleados() }
+        viewModelScope.launch {
+            _empleados.value = repository.getEmpleados()
+            _cargandoInicial.value = false
+        }
     }
 
     fun crear(nombre: String, cargo: String, tipoPago: TipoPago, monto: Double) {

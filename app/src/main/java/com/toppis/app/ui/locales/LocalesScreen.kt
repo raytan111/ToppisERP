@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ fun LocalesScreen(
     val locales by viewModel.locales.collectAsState()
     val activoId by viewModel.activoId.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showCrear by remember { mutableStateOf(false) }
@@ -53,10 +55,14 @@ fun LocalesScreen(
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(16.dp)
             )
-            if (locales.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Sin locales. Usá + para agregar.", color = MaterialTheme.colorScheme.outline)
-                }
+            if (cargandoInicial && locales.isEmpty()) {
+                com.toppis.app.ui.components.SkeletonList()
+            } else if (locales.isEmpty()) {
+                com.toppis.app.ui.components.EmptyState(
+                    icon = Icons.Filled.Store,
+                    titulo = "Sin locales",
+                    subtitulo = "Usá el botón + para agregar tu primer local."
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -105,12 +111,11 @@ fun LocalesScreen(
         })
     }
     aEliminar?.let { l ->
-        AlertDialog(
-            onDismissRequest = { aEliminar = null },
-            title = { Text("Eliminar local") },
-            text = { Text("¿Eliminar \"${l.nombre}\"?") },
-            confirmButton = { TextButton(onClick = { viewModel.eliminar(l.id); aEliminar = null }) { Text("Eliminar") } },
-            dismissButton = { TextButton(onClick = { aEliminar = null }) { Text("Cancelar") } }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = l.nombre,
+            titulo = "Eliminar local",
+            onConfirm = { viewModel.eliminar(l.id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }

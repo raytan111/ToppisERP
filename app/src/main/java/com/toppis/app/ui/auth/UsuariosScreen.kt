@@ -150,33 +150,21 @@ fun UsuariosScreen(
 
     // Popup de error de creación de usuario
     errorRegistro?.let { msg ->
-        AlertDialog(
-            onDismissRequest = { errorRegistro = null },
-            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Operación no completada") },
-            text = { Text(msg) },
-            confirmButton = {
-                TextButton(onClick = { errorRegistro = null }) { Text("Entendido") }
-            }
+        com.toppis.app.ui.components.ToppisErrorDialog(
+            mensaje = msg,
+            titulo = "Operación no completada",
+            onDismiss = { errorRegistro = null }
         )
     }
 
     // Confirmación de eliminación de usuario
     aEliminar?.let { u ->
-        AlertDialog(
-            onDismissRequest = { aEliminar = null },
-            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Eliminar usuario") },
-            text = { Text("¿Seguro que querés eliminar a \"${u.nombre}\"? Perderá el acceso a la app. Esta acción no se puede deshacer.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.eliminarUsuario(u.id)
-                    aEliminar = null
-                }) { Text("Eliminar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { aEliminar = null }) { Text("Cancelar") }
-            }
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = u.nombre,
+            titulo = "Eliminar usuario",
+            mensaje = "¿Seguro que querés eliminar a \"${u.nombre}\"? Perderá el acceso a la app. Esta acción no se puede deshacer.",
+            onConfirm = { viewModel.eliminarUsuario(u.id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }

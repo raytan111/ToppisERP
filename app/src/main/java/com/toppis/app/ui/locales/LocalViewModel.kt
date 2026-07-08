@@ -28,10 +28,17 @@ class LocalViewModel(
 
     val activoId: StateFlow<Int?> = LocalSession.activoId
 
+    /** true mientras se hace la primera carga (para mostrar skeleton). */
+    private val _cargandoInicial = MutableStateFlow(true)
+    val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
+
     init { refrescar() }
 
     private fun refrescar() {
-        viewModelScope.launch { _locales.value = repository.getLocales() }
+        viewModelScope.launch {
+            _locales.value = repository.getLocales()
+            _cargandoInicial.value = false
+        }
     }
 
     fun crear(nombre: String, direccion: String) {
