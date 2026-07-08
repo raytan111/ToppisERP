@@ -212,12 +212,32 @@ fun LoginScreen(
     }
 }
 
-/** Paleta dorada de la moneda (combina con el rojo/crema del logo). */
-private val OroBrillo = Color(0xFFFFF3C4)
-private val OroClaro = Color(0xFFF4D160)
-private val OroMedio = Color(0xFFD4AF37)
-private val OroProfundo = Color(0xFFB8860B)
-private val OroSombra = Color(0xFF7A5210)
+/** Construye el path de una estrella de 5 puntas (con radios elípticos para el foreshortening). */
+private fun estrellaPath(
+    cx: Float, cy: Float,
+    rxOut: Float, ryOut: Float,
+    rxIn: Float, ryIn: Float,
+    puntas: Int = 5
+): Path = Path().apply {
+    val paso = PI.toFloat() / puntas
+    var a = -PI.toFloat() / 2f // arranca en la punta de arriba
+    for (i in 0 until puntas * 2) {
+        val rx = if (i % 2 == 0) rxOut else rxIn
+        val ry = if (i % 2 == 0) ryOut else ryIn
+        val x = cx + rx * cos(a)
+        val y = cy + ry * sin(a)
+        if (i == 0) moveTo(x, y) else lineTo(x, y)
+        a += paso
+    }
+    close()
+}
+
+/** Paleta dorada de la moneda (oro viejo, más oscuro; combina con rojo/crema). */
+private val OroBrillo = Color(0xFFE8CC7A)
+private val OroClaro = Color(0xFFC9A24A)
+private val OroMedio = Color(0xFFA67C2E)
+private val OroProfundo = Color(0xFF6E4E14)
+private val OroSombra = Color(0xFF3E2B0A)
 
 /**
  * Moneda de oro que gira sobre su eje vertical: lento de frente (para verla más
@@ -268,7 +288,7 @@ private fun LogoGiratorio() {
             val s = sin(theta)              // desplazamiento del canto al girar
             val cAbs = abs(c)
             val r = size.minDimension * 0.40f
-            val grosor = size.minDimension * 0.17f   // espesor real de la moneda
+            val grosor = size.minDimension * 0.10f   // espesor real de la moneda
             val rxFace = r * cAbs                     // radio horizontal (elipse)
 
             // Cuerpo/canto: apilo rebanadas desde el fondo (-grosor/2) al frente.
@@ -340,23 +360,43 @@ private fun LogoGiratorio() {
                         )
                     }
                 } else {
-                    // Cara trasera: emblema dorado simétrico.
+                    // Cara trasera terminada: estrella de 5 puntas acuñada + aro de perlas.
+                    // Aro interior (borde grabado).
                     drawOval(
-                        color = OroSombra.copy(alpha = 0.5f),
-                        topLeft = Offset(faceCenter.x - rxFace * 0.55f, cy - r * 0.55f),
-                        size = Size(2f * rxFace * 0.55f, 2f * r * 0.55f),
-                        style = Stroke(width = size.minDimension * 0.03f)
+                        color = OroSombra.copy(alpha = 0.45f),
+                        topLeft = Offset(faceCenter.x - rxFace * 0.82f, cy - r * 0.82f),
+                        size = Size(2f * rxFace * 0.82f, 2f * r * 0.82f),
+                        style = Stroke(width = size.minDimension * 0.015f)
                     )
-                    val k = r * 0.20f
-                    val kx = rxFace * 0.20f
-                    val rombo = Path().apply {
-                        moveTo(faceCenter.x, cy - k)
-                        lineTo(faceCenter.x + kx, cy)
-                        lineTo(faceCenter.x, cy + k)
-                        lineTo(faceCenter.x - kx, cy)
-                        close()
+                    // Perlas alrededor (beading), foreshortened con la cara.
+                    val perlas = 24
+                    for (p in 0 until perlas) {
+                        val a = p * (2f * PI.toFloat() / perlas)
+                        val px = faceCenter.x + rxFace * 0.9f * cos(a)
+                        val py = cy + r * 0.9f * sin(a)
+                        drawCircle(
+                            color = OroSombra.copy(alpha = 0.35f),
+                            radius = size.minDimension * 0.008f,
+                            center = Offset(px, py)
+                        )
                     }
-                    drawPath(rombo, color = OroSombra.copy(alpha = 0.55f))
+                    // Estrella de 5 puntas (relieve): sombra + cara + brillo.
+                    val estrella = estrellaPath(
+                        cx = faceCenter.x, cy = cy,
+                        rxOut = rxFace * 0.5f, ryOut = r * 0.5f,
+                        rxIn = rxFace * 0.22f, ryIn = r * 0.22f
+                    )
+                    // Sombra (desplazada abajo-derecha) para dar volumen.
+                    drawPath(
+                        estrellaPath(
+                            cx = faceCenter.x + rxFace * 0.02f, cy = cy + r * 0.02f,
+                            rxOut = rxFace * 0.5f, ryOut = r * 0.5f,
+                            rxIn = rxFace * 0.22f, ryIn = r * 0.22f
+                        ),
+                        color = OroSombra.copy(alpha = 0.5f)
+                    )
+                    drawPath(estrella, color = OroProfundo)
+                    drawPath(estrella, color = OroBrillo.copy(alpha = 0.6f), style = Stroke(width = size.minDimension * 0.012f))
                 }
             }
         }
