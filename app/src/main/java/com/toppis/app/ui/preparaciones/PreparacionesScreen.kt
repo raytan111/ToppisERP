@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Blender
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -261,7 +262,9 @@ private fun PreparacionesList(
                             AssistChip(onClick = {}, label = { Text("Seleccionable en POS") })
                         }
                     }
-                    OutlinedButton(onClick = { onVerReceta(prep) }) { Text("Receta") }
+                    IconButton(onClick = { onVerReceta(prep) }) {
+                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Receta", tint = MaterialTheme.colorScheme.secondary)
+                    }
                     IconButton(onClick = { onEditar(prep) }) {
                         Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }

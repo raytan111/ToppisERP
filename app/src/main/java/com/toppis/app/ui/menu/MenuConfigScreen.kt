@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.*
@@ -223,7 +224,9 @@ private fun ItemsMenuTab(
                             Text(item.categoria, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                         }
                     }
-                    OutlinedButton(onClick = { onVerReceta(item) }) { Text("Receta") }
+                    IconButton(onClick = { onVerReceta(item) }) {
+                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Receta", tint = MaterialTheme.colorScheme.secondary)
+                    }
                     IconButton(onClick = { onEditar(item) }) {
                         Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                     }
@@ -258,6 +261,30 @@ private fun MenuThumb(url: String?, onClick: () -> Unit) {
     }
 }
 
+/** Categorías fijas para los ítems del menú (elegibles, no texto libre). */
+private val CATEGORIAS_ITEM_MENU = listOf("Hamburguesas", "Papas fritas", "Bebidas", "Salsas", "Otro")
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoriaSelector(value: String, onValueChange: (String) -> Unit) {
+    var exp by remember { mutableStateOf(false) }
+    val seleccion = if (value.isBlank()) CATEGORIAS_ITEM_MENU.first() else value
+    ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+        OutlinedTextField(
+            value = seleccion, onValueChange = {}, readOnly = true,
+            label = { Text("Categoría") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+        )
+        ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+            CATEGORIAS_ITEM_MENU.forEach { c ->
+                DropdownMenuItem(text = { Text(c) }, onClick = { onValueChange(c); exp = false })
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CrearItemMenuDialog(
     onDismiss: () -> Unit,
@@ -265,7 +292,7 @@ private fun CrearItemMenuDialog(
 ) {
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
-    var categoria by remember { mutableStateOf("") }
+    var categoria by remember { mutableStateOf(CATEGORIAS_ITEM_MENU.first()) }
     var precioText by remember { mutableStateOf("") }
     var imagenUrl by remember { mutableStateOf<String?>(null) }
 
@@ -286,10 +313,7 @@ private fun CrearItemMenuDialog(
                     value = nombre, onValueChange = { nombre = it },
                     label = { Text("Nombre (ej: Hamburguesa)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = categoria, onValueChange = { categoria = it },
-                    label = { Text("Categoría (ej: Hamburguesas)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
-                )
+                CategoriaSelector(value = categoria, onValueChange = { categoria = it })
                 OutlinedTextField(
                     value = descripcion, onValueChange = { descripcion = it },
                     label = { Text("Descripción (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
@@ -335,10 +359,7 @@ private fun EditarItemMenuDialog(
                     value = nombre, onValueChange = { nombre = it },
                     label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = categoria, onValueChange = { categoria = it },
-                    label = { Text("Categoría (ej: Hamburguesas)") }, singleLine = true, modifier = Modifier.fillMaxWidth()
-                )
+                CategoriaSelector(value = categoria, onValueChange = { categoria = it })
                 OutlinedTextField(
                     value = descripcion, onValueChange = { descripcion = it },
                     label = { Text("Descripción (opcional)") }, modifier = Modifier.fillMaxWidth()

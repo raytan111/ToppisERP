@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -91,11 +92,13 @@ fun ModificadoresScreen(
                                     Text("Precio: $signo${money.format(kotlin.math.abs(mod.deltaPrecio))}",
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                 }
-                                OutlinedButton(onClick = {
+                                IconButton(onClick = {
                                     modSeleccionado = mod
                                     componentes = emptyList()
                                     viewModel.loadComponentes(mod.id) { componentes = it }
-                                }) { Text("Receta") }
+                                }) {
+                                    Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Receta", tint = MaterialTheme.colorScheme.secondary)
+                                }
                                 IconButton(onClick = { modAEditar = mod }) {
                                     Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                                 }
