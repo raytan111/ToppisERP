@@ -443,6 +443,10 @@ fun NavGraph(
             com.toppis.app.ui.costos.ObjetivosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
+        composable("ayuda_costos") {
+            com.toppis.app.ui.costos.AyudaCostosScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
         composable("rutina_semanal") {
             if (!permisos.puedeAbrir("rutina_semanal")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: com.toppis.app.ui.costos.RutinaSemanalViewModel =
