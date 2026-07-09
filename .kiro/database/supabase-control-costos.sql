@@ -116,10 +116,12 @@ BEGIN
                     WHEN 'ARTICULO' THEN (SELECT costo_base FROM articulos WHERE id = pc.componente_id)
                     ELSE (SELECT costo_base FROM preparaciones WHERE id = pc.componente_id)
                 END)
-            FROM preparacion_componentes pc WHERE pc.preparacion_id = p.id), 0);
+            FROM preparacion_componentes pc WHERE pc.preparacion_id = p.id), 0)
+        WHERE p.id > 0;
         UPDATE preparaciones p SET costo_base =
             CASE WHEN COALESCE(NULLIF(p.rendimiento_lote,0),1) > 0
-                 THEN p.costo_lote / COALESCE(NULLIF(p.rendimiento_lote,0),1) ELSE 0 END;
+                 THEN p.costo_lote / COALESCE(NULLIF(p.rendimiento_lote,0),1) ELSE 0 END
+        WHERE p.id > 0;
     END LOOP;
 
     UPDATE items_menu i SET costo_teorico = COALESCE((
@@ -128,7 +130,8 @@ BEGIN
                 WHEN 'ARTICULO' THEN (SELECT costo_base FROM articulos WHERE id = rm.componente_id)
                 ELSE (SELECT costo_base FROM preparaciones WHERE id = rm.componente_id)
             END)
-        FROM recetas_menu rm WHERE rm.item_menu_id = i.id), 0);
+        FROM recetas_menu rm WHERE rm.item_menu_id = i.id), 0)
+    WHERE i.id > 0;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
