@@ -186,8 +186,12 @@ BEGIN
             -- ÚLTIMO precio: costo_base = costo_por_base / rendimiento
             v_nuevo_costo_base := v_costo_base / COALESCE(NULLIF(v_art.rendimiento,0), 1);
             IF v_nuevo_costo_base IS DISTINCT FROM v_art.costo_base THEN
+                -- costo_base = costo por unidad base (ej: $9/g). costo_compra se
+                -- guarda como precio del "pack" completo para que el formulario
+                -- de edición lo muestre coherente: costo_compra = $/base × factor.
                 UPDATE articulos SET stock_base = stock_base + v_cant,
-                       costo_base = v_nuevo_costo_base, costo_compra = v_costo_base
+                       costo_base = v_nuevo_costo_base,
+                       costo_compra = v_costo_base * COALESCE(NULLIF(v_art.factor_compra, 0), 1)
                  WHERE id = v_art.id;
                 PERFORM recalcular_recetas_articulo(v_art.id);   -- recalcula solo si cambió
             ELSE
