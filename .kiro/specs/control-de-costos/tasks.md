@@ -50,14 +50,14 @@ Plan de implementación de "control-de-costos" para ToppisERP. Sigue las 7 fases
 
 ### Fase C — Compras último precio + Inventario solo stock + categoría de artículo
 
-- [ ] 9. Actualizar la RPC `registrar_compra` a "último precio" en el script SQL
+- [x] 9. Actualizar la RPC `registrar_compra` a "último precio" en el script SQL
   - Crear `recalcular_recetas_articulo(p_articulo_id)`; en el loop: si cambió el costo → UPDATE + recalcular recetas; si es igual → solo stock. Mantener la firma actual de la RPC.
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 10. Ajustar `Articulo` y su formulario para incluir `categoria` (selector fijo, default INGREDIENTES)
+- [x] 10. Ajustar `Articulo` y su formulario para incluir `categoria` (selector fijo, default INGREDIENTES)
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 11. Dejar `InventarioScreen` solo con stock (quitar costo/costeo; EmptyState sin stock)
+- [x] 11. Dejar `InventarioScreen` solo con stock (quitar costo/costeo; EmptyState sin stock)
   - _Requirements: 4.1, 4.2, 4.3_
 
 ### Fase D — Resultado / Cierre semanal

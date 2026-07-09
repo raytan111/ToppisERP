@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.toppis.app.data.db.entities.CategoriaArticulo
 import com.toppis.app.data.db.entities.DimensionUnidad
 import com.toppis.app.data.db.entities.UnidadMedida
 import com.toppis.app.data.models.Articulo
@@ -44,13 +45,16 @@ fun ArticuloDialog(
         vidaUtilDias: Int,
         esVendible: Boolean,
         seleccionableEnPos: Boolean,
-        cantidadPos: Double
+        cantidadPos: Double,
+        categoria: CategoriaArticulo
     ) -> Unit
 ) {
     val esEdicion = inicial != null
 
     var nombre by remember { mutableStateOf(inicial?.nombre ?: "") }
     var dimension by remember { mutableStateOf(inicial?.dimension ?: DimensionUnidad.MASA) }
+    var categoria by remember { mutableStateOf(inicial?.categoria ?: CategoriaArticulo.INGREDIENTES) }
+    var expandedCat by remember { mutableStateOf(false) }
 
     // Unidad de compra seleccionada (se deriva de la abreviatura guardada al editar)
     val unidadInicial = inicial?.let { UnidadMedida.porAbreviatura(it.unidadCompra) }
@@ -106,6 +110,23 @@ fun ArticuloDialog(
                         supportingText = { Text("Ej: Carne molida, Lechuga, Coca-Cola lata") },
                         singleLine = true, modifier = Modifier.fillMaxWidth()
                     )
+                }
+                // Categoría
+                item {
+                    ExposedDropdownMenuBox(expanded = expandedCat, onExpandedChange = { expandedCat = !expandedCat }) {
+                        OutlinedTextField(
+                            value = categoria.label, onValueChange = {}, readOnly = true,
+                            label = { Text("Categoría") },
+                            supportingText = { Text("Ingredientes, Packaging o Insumos") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCat) },
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(expanded = expandedCat, onDismissRequest = { expandedCat = false }) {
+                            CategoriaArticulo.entries.forEach { c ->
+                                DropdownMenuItem(text = { Text(c.label) }, onClick = { categoria = c; expandedCat = false })
+                            }
+                        }
+                    }
                 }
                 // Dimensión
                 item {
@@ -258,7 +279,8 @@ fun ArticuloDialog(
                         (stockText.replace(",", ".").toDoubleOrNull() ?: 0.0) * factorBase,
                         (parText.replace(",", ".").toDoubleOrNull() ?: 0.0) * factorBase,
                         perecible, vidaText.toIntOrNull() ?: 0, esVendible, seleccionablePos,
-                        cantidadPosText.replace(",", ".").toDoubleOrNull() ?: 0.0
+                        cantidadPosText.replace(",", ".").toDoubleOrNull() ?: 0.0,
+                        categoria
                     )
                 },
                 enabled = valido

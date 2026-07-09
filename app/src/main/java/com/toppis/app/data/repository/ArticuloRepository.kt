@@ -1,6 +1,7 @@
 package com.toppis.app.data.repository
 
 import android.util.Log
+import com.toppis.app.data.db.entities.CategoriaArticulo
 import com.toppis.app.data.db.entities.DimensionUnidad
 import com.toppis.app.data.models.Articulo
 import com.toppis.app.data.supabase.SupabaseClient
@@ -58,7 +59,8 @@ class ArticuloRepository {
         vidaUtilDias: Int = 0,
         esVendible: Boolean = false,
         seleccionableEnPos: Boolean = false,
-        cantidadPos: Double = 0.0
+        cantidadPos: Double = 0.0,
+        categoria: CategoriaArticulo = CategoriaArticulo.INGREDIENTES
     ) {
         val costoBase = Articulo.calcularCostoBase(costoCompra, factorCompra, rendimiento)
         client.postgrest.from("articulos").insert(
@@ -66,6 +68,7 @@ class ArticuloRepository {
                 put("nombre", nombre)
                 put("dimension", dimension.name)
                 put("unidad_base", dimension.unidadBase)
+                put("categoria", categoria.name)
                 put("unidad_compra", unidadCompra)
                 put("factor_compra", factorCompra)
                 put("costo_compra", costoCompra)
@@ -92,6 +95,7 @@ class ArticuloRepository {
                 put("nombre", articulo.nombre)
                 put("dimension", articulo.dimension.name)
                 put("unidad_base", articulo.dimension.unidadBase)
+                put("categoria", articulo.categoria.name)
                 put("unidad_compra", articulo.unidadCompra)
                 put("factor_compra", articulo.factorCompra)
                 put("costo_compra", articulo.costoCompra)

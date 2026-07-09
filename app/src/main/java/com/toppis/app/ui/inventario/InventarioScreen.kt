@@ -114,8 +114,8 @@ fun InventarioScreen(
     if (showCrear) {
         ArticuloDialog(
             onDismiss = { showCrear = false },
-            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos ->
-                viewModel.crearArticulo(nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos)
+            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos, categoria ->
+                viewModel.crearArticulo(nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos, categoria)
                 showCrear = false
             }
         )
@@ -125,10 +125,11 @@ fun InventarioScreen(
         ArticuloDialog(
             inicial = art,
             onDismiss = { enEdicion = null },
-            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos ->
+            onConfirm = { nombre, dim, uCompra, factor, costo, rend, stock, par, perecible, vida, vendible, posSel, cantPos, categoria ->
                 viewModel.editarArticulo(
                     art.copy(
                         nombre = nombre, dimension = dim, unidadBase = dim.unidadBase,
+                        categoria = categoria,
                         unidadCompra = uCompra, factorCompra = factor, costoCompra = costo,
                         rendimiento = rend, stockBase = stock, parLevel = par,
                         perecible = perecible, vidaUtilDias = vida, esVendible = vendible,
@@ -160,7 +161,6 @@ private fun ArticuloCard(
 ) {
     val enAlerta = articulo.parLevel > 0 && articulo.stockBase < articulo.parLevel
     val stockColor = if (enAlerta) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val money = DecimalFormat("$#,##0.######")
     val num = DecimalFormat("#,##0.##")
 
     // Mostrar el stock en la unidad de compra (ej: kg) para legibilidad
@@ -187,17 +187,10 @@ private fun ArticuloCard(
                     color = stockColor
                 )
                 Text(
-                    text = "Costo: ${money.format(articulo.costoBase)}/${articulo.unidadBase}",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = articulo.categoria.label,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
-                if (articulo.rendimiento < 1.0) {
-                    Text(
-                        text = "Rendimiento: ${(articulo.rendimiento * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
                 if (enAlerta) {
                     Text("⚠ Bajo el stock mínimo", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }

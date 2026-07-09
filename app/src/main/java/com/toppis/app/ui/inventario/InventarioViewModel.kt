@@ -61,7 +61,8 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
         vidaUtilDias: Int,
         esVendible: Boolean,
         seleccionableEnPos: Boolean,
-        cantidadPos: Double
+        cantidadPos: Double,
+        categoria: com.toppis.app.data.db.entities.CategoriaArticulo
     ) {
         viewModelScope.launch {
             _uiState.value = InventarioUiState.Loading
@@ -69,7 +70,7 @@ class InventarioViewModel(private val repository: ArticuloRepository) : ViewMode
                 repository.crearArticulo(
                     nombre, dimension, unidadCompra, factorCompra, costoCompra,
                     rendimiento, stockBase, parLevel, perecible, vidaUtilDias,
-                    esVendible, seleccionableEnPos, cantidadPos
+                    esVendible, seleccionableEnPos, cantidadPos, categoria
                 )
                 refrescar()
                 _uiState.value = InventarioUiState.Success
