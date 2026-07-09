@@ -72,7 +72,6 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
         icono = Icons.Filled.AccountBalance,
         opciones = listOf(
             MenuOpcion("sobres", "Sobres", Icons.Filled.AccountBalance),
-            MenuOpcion("gastos", "Gastos", Icons.Filled.AttachMoney),
             MenuOpcion("arqueo", "Arqueo de Caja", Icons.Filled.PointOfSale),
             MenuOpcion("flujo_caja", "Flujo de Caja", Icons.AutoMirrored.Filled.ShowChart),
             MenuOpcion("contabilidad", "Contabilidad", Icons.Filled.Calculate),
