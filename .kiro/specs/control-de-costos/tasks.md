@@ -88,11 +88,11 @@ Plan de implementación de "control-de-costos" para ToppisERP. Sigue las 7 fases
 
 ### Fase F — Provisión en sobres + rutina semanal
 
-- [ ] 18. Crear `ProvisionSobresDialog` (reutiliza `SobreRepository.transferir`)
+- [x] 18. Provisión en sobres (integrada como `ProvisionCard` inline en `RutinaSemanalScreen`, reutiliza `SobreRepository.transferir`)
   - Sugerir monto = prorrateo semanal (solo > 0); selector Sobre_Cuenta origen; sugerir/crear Sobre_Fondo por categoría; advertir saldo insuficiente solo si hay fijos por provisionar; confirmar transferencia
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6_
 
-- [ ] 19. Crear `RutinaSemanalScreen` + `RutinaSemanalViewModel` + `RutinaSemanalRepository`
+- [x] 19. Crear `RutinaSemanalScreen` + `RutinaSemanalViewModel` + `RutinaSemanalRepository`
   - Checklist 4 pasos que navega a módulos existentes sin duplicar; marcar pasos por semana; habilitar Confirmar cierre solo con pasos + validaciones OK; listar faltantes
   - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
 

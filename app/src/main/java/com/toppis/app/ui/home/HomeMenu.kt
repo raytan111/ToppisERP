@@ -96,6 +96,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
         icono = Icons.Filled.Savings,
         soloAdmin = true,
         opciones = listOf(
+            MenuOpcion("rutina_semanal", "Rutina de cierre", Icons.Filled.Checklist, soloAdmin = true),
             MenuOpcion("cierre_semanal", "Resultado semanal", Icons.Filled.CalendarMonth, soloAdmin = true),
             MenuOpcion("costos_fijos", "Costos fijos", Icons.Filled.Receipt, soloAdmin = true),
             MenuOpcion("objetivos_costos", "Objetivos y semáforos", Icons.Filled.Flag, soloAdmin = true),

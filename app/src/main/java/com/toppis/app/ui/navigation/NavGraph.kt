@@ -133,6 +133,7 @@ fun NavGraph(
     costoFijoViewModelFactory: com.toppis.app.ui.costos.CostoFijoViewModelFactory,
     cierreSemanalViewModelFactory: com.toppis.app.ui.costos.CierreSemanalViewModelFactory,
     objetivosViewModelFactory: com.toppis.app.ui.costos.ObjetivosViewModelFactory,
+    rutinaSemanalViewModelFactory: com.toppis.app.ui.costos.RutinaSemanalViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -440,6 +441,20 @@ fun NavGraph(
             val vm: com.toppis.app.ui.costos.ObjetivosViewModel =
                 viewModel(viewModelStoreOwner = activityOwner, factory = objetivosViewModelFactory)
             com.toppis.app.ui.costos.ObjetivosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("rutina_semanal") {
+            if (!permisos.puedeAbrir("rutina_semanal")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.costos.RutinaSemanalViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = rutinaSemanalViewModelFactory)
+            com.toppis.app.ui.costos.RutinaSemanalScreen(
+                viewModel = vm,
+                usuarioId = usuarioActual?.id,
+                onIrAConteo = { navController.navigate("conteos") },
+                onIrAMermas = { navController.navigate("mermas") },
+                onIrAResultado = { navController.navigate("cierre_semanal") },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

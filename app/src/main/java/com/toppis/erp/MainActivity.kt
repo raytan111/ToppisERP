@@ -129,6 +129,10 @@ class MainActivity : ComponentActivity() {
             resultadoSemanalRepo, cierreSemanalRepo
         )
         val objetivosFactory = com.toppis.app.ui.costos.ObjetivosViewModelFactory(configCostosRepo)
+        val rutinaSemanalRepo = com.toppis.app.data.repository.RutinaSemanalRepository()
+        val rutinaSemanalFactory = com.toppis.app.ui.costos.RutinaSemanalViewModelFactory(
+            rutinaSemanalRepo, costoFijoRepo, sobreRepo
+        )
 
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
@@ -176,6 +180,7 @@ class MainActivity : ComponentActivity() {
                         costoFijoViewModelFactory = costoFijoFactory,
                         cierreSemanalViewModelFactory = cierreSemanalFactory,
                         objetivosViewModelFactory = objetivosFactory,
+                        rutinaSemanalViewModelFactory = rutinaSemanalFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.fillMaxSize()
                     )
