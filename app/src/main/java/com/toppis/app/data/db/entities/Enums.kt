@@ -128,3 +128,41 @@ enum class CategoriaGasto(val label: String) {
     OTROS("Otros")
 }
 
+// ── Control de Costos ──────────────────────────────────────────────────────
+
+/** Periodicidad de un costo fijo recurrente, con su divisor a semana. */
+@Serializable
+enum class Periodicidad(val label: String, val divisorSemanal: Double) {
+    SEMANAL("Semanal", 1.0),
+    MENSUAL("Mensual", 4.33),
+    ANUAL("Anual", 52.0)
+}
+
+/** Categoría de un artículo para agrupar costos variables. */
+@Serializable
+enum class CategoriaArticulo(val label: String) {
+    INGREDIENTES("Ingredientes"),
+    PACKAGING("Packaging"),
+    INSUMOS("Insumos")
+}
+
+/** Estado de un cierre semanal. */
+@Serializable
+enum class EstadoCierre { ABIERTO, CERRADO }
+
+/** Grupo de costo: cambia con las ventas (variable) o no (fijo). */
+@Serializable
+enum class GrupoCosto(val label: String) { VARIABLE("Variable"), FIJO("Fijo") }
+
+/** Estado visual de un semáforo de objetivo. */
+enum class EstadoSemaforo { FAVORABLE, ALERTA }
+
+/** Paso de la rutina semanal de cierre. */
+@Serializable
+enum class PasoRutina(val label: String) {
+    CONTEO("Conteo de inventario"),
+    MERMAS("Registro de mermas"),
+    PROVISION("Provisión de fijos"),
+    RESULTADO("Resultado semanal")
+}
+

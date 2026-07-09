@@ -1,5 +1,6 @@
 package com.toppis.app.data.models
 
+import com.toppis.app.data.db.entities.CategoriaArticulo
 import com.toppis.app.data.db.entities.DimensionUnidad
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,6 +18,7 @@ data class Articulo(
     val dimension: DimensionUnidad,
     @SerialName("unidad_base")
     val unidadBase: String,
+    val categoria: CategoriaArticulo = CategoriaArticulo.INGREDIENTES,
     @SerialName("unidad_compra")
     val unidadCompra: String = "",
     @SerialName("factor_compra")
