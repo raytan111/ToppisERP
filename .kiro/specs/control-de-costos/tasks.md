@@ -36,15 +36,15 @@ Plan de implementación de "control-de-costos" para ToppisERP. Sigue las 7 fases
 
 ### Fase B — Dominio puro + tests de propiedad
 
-- [ ] 6. Crear capa de cálculo pura `domain/costos/CostosCalculos.kt`
+- [x] 6. Crear capa de cálculo pura `domain/costos/CostosCalculos.kt`
   - prorrateoSemanal, totalFijosSemanales, resultadoSemanal, margenContribucion, breakEven (null si margen<=0), manoObraDisponible, manoObraPorPersona, alcanzaParaContratar, semaforo, porcentajeSobreVentas
   - `grupoDe(CategoriaGasto): GrupoCosto?` (INSUMOS/PACKAGING/ENVIOS/TRANSPORTE→VARIABLE; ARRIENDO/SERVICIOS/SUELDOS→FIJO; OTROS→null=manual); modelo "último precio" y snapshot en memoria
   - _Requirements: 2.4, 5.1, 5.2, 5.3, 7.1, 7.2, 7.3, 7.4, 7.5, 8.2, 9.3, 10.2, 10.3, 10.4, 10.5, 10.6, 12.1, 12.2, 12.3, 12.4, 12.5_
 
-- [ ] 7. Agregar `SemanaOperativa` y utilidades a `data/util/FechaUtil.kt` (lunes→domingo, incluye sábado)
+- [x] 7. Agregar `SemanaOperativa` y utilidades a `data/util/FechaUtil.kt` (lunes→domingo, incluye sábado)
   - _Requirements: 9.1_
 
-- [ ] 8. Configurar kotest-property y escribir los 22 tests de propiedad en `app/src/test`
+- [x] 8. Configurar kotest-property y escribir los 22 tests de propiedad en `app/src/test`
   - Mínimo 100 iteraciones por test; un test por propiedad; comentario "// Feature: control-de-costos, Property N: ..."; generadores con edge cases (monto 0, ventas 0, empleados 0, margen ≤ 0)
   - _Properties: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22_
 

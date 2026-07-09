@@ -116,6 +116,8 @@ dependencies {
     }
 
     testImplementation(libs.junit)
+    // Property-based testing (control de costos)
+    testImplementation("io.kotest:kotest-property:5.9.1")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
