@@ -62,28 +62,28 @@ Plan de implementación de "control-de-costos" para ToppisERP. Sigue las 7 fases
 
 ### Fase D — Resultado / Cierre semanal
 
-- [ ] 12. Crear `CierreSemanalRepository` + RPC `confirmar_cierre_semanal` (INSERT ON CONFLICT DO NOTHING)
+- [x] 12. Crear `CierreSemanalRepository` + RPC `confirmar_cierre_semanal` (INSERT ON CONFLICT DO NOTHING)
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 13. Crear `ResultadoSemanalRepository` (agregador)
+- [x] 13. Crear `ResultadoSemanalRepository` (agregador)
   - Si semana CERRADA → snapshot; si abierta → cálculo en vivo. Reúne ventas, compras, gastos variables no vinculados a compras, sueldos (jornadas + gastos SUELDOS), fijos prorrateados, food teórico (solo %)
   - _Requirements: 8.1, 8.2, 8.3, 9.2, 9.3, 9.4_
 
-- [ ] 14. Crear `CierreSemanalScreen` + `CierreSemanalViewModel` + Factory
+- [x] 14. Crear `CierreSemanalScreen` + `CierreSemanalViewModel` + Factory
   - Selector de semana; tarjetas ventas/variables/mano de obra/fijos; "lo que queda"; %food/%labor; estado; botón Confirmar cierre; cargandoInicial; errores en ToppisErrorDialog; sin utilidad/reparto
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6, 6.1, 17.1, 17.2_
 
 ### Fase E — Mano de obra, break-even, semáforos, objetivos
 
-- [ ] 15. Integrar mano de obra disponible y break-even en la pantalla de resultado
+- [x] 15. Integrar mano de obra disponible y break-even en la pantalla de resultado
   - MOD (pct × ventas), por persona (÷ empleados activos), indicador contratar, casos 0 empleados / 0 disponible; break-even + "cuánto falta"; margen ≤ 0 no calculable
   - _Requirements: 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 12.3, 12.4, 12.5, 9.5_
 
-- [ ] 16. Agregar semáforos y alerta de arriendo en la pantalla de resultado
+- [x] 16. Agregar semáforos y alerta de arriendo en la pantalla de resultado
   - Semáforos food/labor/arriendo; alerta bajo break-even; alerta arriendo prorrateado > techo × ventas
   - _Requirements: 11.2, 15.2, 15.3, 15.4, 15.5, 15.6_
 
-- [ ] 17. Crear `ObjetivosScreen` + `ObjetivosViewModel` + Factory (guardar en config_costos)
+- [x] 17. Crear `ObjetivosScreen` + `ObjetivosViewModel` + Factory (guardar en config_costos)
   - _Requirements: 10.1, 11.1, 15.1_
 
 ### Fase F — Provisión en sobres + rutina semanal
@@ -98,7 +98,7 @@ Plan de implementación de "control-de-costos" para ToppisERP. Sigue las 7 fases
 
 ### Fase G — Sección de menú "Costos" y terminología
 
-- [ ] 20. Agregar la sección `cat_costos` en `HomeMenu.kt` + rutas en `NavGraph.kt` + DI en `MainActivity`
+- [x] 20. Agregar la sección `cat_costos` en `HomeMenu.kt` + rutas en `NavGraph.kt` + DI en `MainActivity`
   - "Costos" (soloAdmin): Resultado semanal, Rutina de cierre, Costos fijos, Objetivos y semáforos + referencias a Costos puntuales (gastos), Sobres, Flujo de caja; color de acento propio
   - _Requirements: 16.1_
 

@@ -198,6 +198,27 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- ════════════════════════════════════════════════════════════════════════
--- NOTA: la RPC confirmar_cierre_semanal se agrega en la tarea 12 (Fase D).
--- ════════════════════════════════════════════════════════════════════════
+-- ── 9) confirmar_cierre_semanal — snapshot congelado (Req 6) ────────────────
+-- Inserta el snapshot de la semana. Si ya existe (mismo local + semana_inicio),
+-- no lo re-cierra (ON CONFLICT DO NOTHING).
+CREATE OR REPLACE FUNCTION confirmar_cierre_semanal(
+    p_semana_inicio DATE, p_semana_fin DATE,
+    p_ventas NUMERIC, p_variable NUMERIC, p_food_teorico NUMERIC,
+    p_mano_obra NUMERIC, p_fijos NUMERIC, p_resultado NUMERIC,
+    p_food_pct NUMERIC, p_labor_pct NUMERIC, p_break_even NUMERIC,
+    p_margen NUMERIC, p_usuario UUID, p_local_id INTEGER DEFAULT NULL
+) RETURNS INTEGER AS $$
+DECLARE v_id INTEGER;
+BEGIN
+    INSERT INTO cierres_semanales(
+        semana_inicio, semana_fin, ventas_cobradas, costo_variable, food_teorico,
+        mano_obra_pagada, fijos_prorrateados, resultado, food_pct, labor_pct,
+        break_even, margen_contribucion, estado, local_id, closed_at, created_by)
+    VALUES (p_semana_inicio, p_semana_fin, p_ventas, p_variable, p_food_teorico,
+        p_mano_obra, p_fijos, p_resultado, p_food_pct, p_labor_pct,
+        p_break_even, p_margen, 'CERRADO', p_local_id, now(), p_usuario)
+    ON CONFLICT (local_id, semana_inicio) DO NOTHING
+    RETURNING id INTO v_id;
+    RETURN v_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

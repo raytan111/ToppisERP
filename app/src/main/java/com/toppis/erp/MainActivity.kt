@@ -117,6 +117,19 @@ class MainActivity : ComponentActivity() {
             com.toppis.app.data.repository.LocalRepository()
         )
 
+        // ── Control de Costos ──
+        val configCostosRepo = com.toppis.app.data.repository.ConfigCostosRepository()
+        val costoFijoRepo = com.toppis.app.data.repository.CostoFijoRepository()
+        val cierreSemanalRepo = com.toppis.app.data.repository.CierreSemanalRepository()
+        val resultadoSemanalRepo = com.toppis.app.data.repository.ResultadoSemanalRepository(
+            configCostosRepo, costoFijoRepo, cierreSemanalRepo
+        )
+        val costoFijoFactory = com.toppis.app.ui.costos.CostoFijoViewModelFactory(costoFijoRepo)
+        val cierreSemanalFactory = com.toppis.app.ui.costos.CierreSemanalViewModelFactory(
+            resultadoSemanalRepo, cierreSemanalRepo
+        )
+        val objetivosFactory = com.toppis.app.ui.costos.ObjetivosViewModelFactory(configCostosRepo)
+
         // ── Auth (Supabase) ───────────────────────────────────────────────────
         val authRepo = AuthRepository()
         val authFactory = AuthViewModelFactory(authRepo)
@@ -160,6 +173,9 @@ class MainActivity : ComponentActivity() {
                         empleadoViewModelFactory = empleadoFactory,
                         manoObraViewModelFactory = manoObraFactory,
                         localViewModelFactory = localFactory,
+                        costoFijoViewModelFactory = costoFijoFactory,
+                        cierreSemanalViewModelFactory = cierreSemanalFactory,
+                        objetivosViewModelFactory = objetivosFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.fillMaxSize()
                     )

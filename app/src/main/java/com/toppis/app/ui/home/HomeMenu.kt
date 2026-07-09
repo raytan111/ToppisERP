@@ -90,6 +90,21 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
         )
     ),
     MenuCategoria(
+        id = "cat_costos",
+        titulo = "Costos",
+        emoji = "📊",
+        icono = Icons.Filled.Savings,
+        soloAdmin = true,
+        opciones = listOf(
+            MenuOpcion("cierre_semanal", "Resultado semanal", Icons.Filled.CalendarMonth, soloAdmin = true),
+            MenuOpcion("costos_fijos", "Costos fijos", Icons.Filled.Receipt, soloAdmin = true),
+            MenuOpcion("objetivos_costos", "Objetivos y semáforos", Icons.Filled.Flag, soloAdmin = true),
+            MenuOpcion("gastos", "Costos puntuales", Icons.Filled.AttachMoney, soloAdmin = true),
+            MenuOpcion("sobres", "Sobres", Icons.Filled.AccountBalance, soloAdmin = true),
+            MenuOpcion("flujo_caja", "Flujo de caja", Icons.AutoMirrored.Filled.ShowChart, soloAdmin = true)
+        )
+    ),
+    MenuCategoria(
         id = "cat_admin",
         titulo = "Administración",
         emoji = "⚙️",
@@ -117,6 +132,7 @@ fun accentDeCategoria(id: String): Color = when (id) {
     "cat_inventario" -> Color(0xFF00897B)  // teal
     "cat_fondos" -> Color(0xFF2E7D32)      // verde dinero
     "cat_personal" -> Color(0xFF5E35B1)    // violeta
+    "cat_costos" -> Color(0xFF1565C0)      // azul control
     "cat_admin" -> Color(0xFF455A64)       // slate
     else -> Color(0xFFE63946)              // rojo marca
 }

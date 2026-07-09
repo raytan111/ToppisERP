@@ -130,6 +130,9 @@ fun NavGraph(
     empleadoViewModelFactory: EmpleadoViewModelFactory,
     manoObraViewModelFactory: ManoObraViewModelFactory,
     localViewModelFactory: LocalViewModelFactory,
+    costoFijoViewModelFactory: com.toppis.app.ui.costos.CostoFijoViewModelFactory,
+    cierreSemanalViewModelFactory: com.toppis.app.ui.costos.CierreSemanalViewModelFactory,
+    objetivosViewModelFactory: com.toppis.app.ui.costos.ObjetivosViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -413,6 +416,30 @@ fun NavGraph(
         composable("config_color") {
             if (!permisos.puedeAbrir("config_color")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             com.toppis.app.ui.ajustes.ConfiguracionColorScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        // ── Control de Costos ────────────────────────────────────────────────
+        composable("costos_fijos") {
+            if (!permisos.puedeAbrir("costos_fijos")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.costos.CostoFijoViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = costoFijoViewModelFactory)
+            com.toppis.app.ui.costos.CostosFijosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("cierre_semanal") {
+            if (!permisos.puedeAbrir("cierre_semanal")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.costos.CierreSemanalViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = cierreSemanalViewModelFactory)
+            com.toppis.app.ui.costos.CierreSemanalScreen(
+                viewModel = vm, usuarioId = usuarioActual?.id, onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("objetivos_costos") {
+            if (!permisos.puedeAbrir("objetivos_costos")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.costos.ObjetivosViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = objetivosViewModelFactory)
+            com.toppis.app.ui.costos.ObjetivosScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
     }
 }
