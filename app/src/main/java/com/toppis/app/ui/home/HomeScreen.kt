@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,6 +39,7 @@ fun HomeScreen(
     permisos: com.toppis.app.ui.auth.Permisos,
     onAbrirPos: () -> Unit,
     onAbrirCategoria: (String) -> Unit,
+    onAbrirSobres: () -> Unit,
     onLogout: () -> Unit
 ) {
     val localNombre by com.toppis.app.data.repository.LocalSession.activoNombre.collectAsState()
@@ -95,6 +97,12 @@ fun HomeScreen(
 
             // ── Hero POS con gradiente ────────────────────────────────────
             HeroPos(onClick = onAbrirPos)
+
+            // ── Atajo a Sobres (dinero en caja) ───────────────────────────
+            if (permisos.puedeAbrir("sobres")) {
+                Spacer(Modifier.height(12.dp))
+                AtajoSobres(onClick = onAbrirSobres)
+            }
 
             Spacer(Modifier.height(24.dp))
 
@@ -185,6 +193,51 @@ private fun HeroPos(onClick: () -> Unit) {
                     tint = cs.onPrimary
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AtajoSobres(onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = cs.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF2E7D32).copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.AccountBalanceWallet,
+                    contentDescription = null,
+                    tint = Color(0xFF2E7D32),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Sobres", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Dinero en caja · acceso rápido",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cs.onSurfaceVariant
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = cs.onSurfaceVariant
+            )
         }
     }
 }

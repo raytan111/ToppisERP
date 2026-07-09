@@ -208,6 +208,7 @@ fun NavGraph(
                 permisos = permisos,
                 onAbrirPos = { navController.navigate("pos") },
                 onAbrirCategoria = { catId -> navController.navigate("categoria/$catId") },
+                onAbrirSobres = { navController.navigate("sobres") },
                 onLogout = { authViewModel.logout() }
             )
         }
