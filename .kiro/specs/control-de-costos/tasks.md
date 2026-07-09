@@ -102,10 +102,10 @@ Plan de implementación de "control-de-costos" para ToppisERP. Sigue las 7 fases
   - "Costos" (soloAdmin): Resultado semanal, Rutina de cierre, Costos fijos, Objetivos y semáforos + referencias a Costos puntuales (gastos), Sobres, Flujo de caja; color de acento propio
   - _Requirements: 16.1_
 
-- [ ] 21. Unificar terminología "gastos" → "costos" en las pantallas de esta sección
+- [x] 21. Unificar terminología "gastos" → "costos" en las pantallas de esta sección
   - _Requirements: 16.2, 16.3_
 
-- [ ] 22. Verificación final e integración
+- [x] 22. Verificación final e integración
   - Build verde; correr tests de propiedad; verificar navegación y flujo del cierre semanal; actualizar `README.md` y `.kiro/PROYECTO-CONTEXTO.md`
   - _Requirements: 9.6, 16.1, 17.1_
 

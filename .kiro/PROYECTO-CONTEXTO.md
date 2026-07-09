@@ -1,7 +1,7 @@
 # ToppisERP - Contexto del Proyecto
 
-**Última Actualización**: 2026-07-08
-**Versión Actual**: 3.3 (Supabase Cloud + ERP Franquicia + Sistema de Diseño)
+**Última Actualización**: 2026-07-09
+**Versión Actual**: 3.4 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos)
 **Ubicación**: Chile (CLP, español chileno, integración SII futura)
 
 ---
@@ -51,6 +51,7 @@ ToppisERP es una app Android para gestionar una hamburguesería / dark kitchen. 
 ### Scripts SQL clave (`.kiro/database/`)
 - `supabase-schema.sql`, `supabase-rls.sql`, `supabase-realtime.sql`
 - `supabase-fase4-*` (food cost / clean slate de cocina), `supabase-fase5-*` (mermas, conteos), `supabase-fase6-*` (proveedores, compras), `supabase-fase7-dinero.sql` (sobres/arqueo), `supabase-fase8-manoobra.sql`, `supabase-fase9-*` (locales, roles-local)
+- `supabase-control-costos.sql` (v3.4): categoría de artículo, costos fijos, config de objetivos, pasos de rutina semanal, cierres semanales con snapshot; RPCs `registrar_compra` (último precio) + `recalcular_recetas_articulo` + `confirmar_cierre_semanal`
 - `supabase-roles-v2.sql` — amplía enum `rol` a 4 valores
 - `supabase-clean-slate.sql` — borra transaccionales y resetea stocks/saldos (puesta en marcha)
 
@@ -187,7 +188,8 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 - **Food Cost & Menú**: food cost % por plato, menu engineering.
 - **Inventario**: artículos unificados, mermas (waste log), conteos (pantalla completa), compra sugerida, análisis/variance.
 - **Compras**: proveedores, recepción (pide "total pagado" por línea → costo unitario; costo promedio ponderado; caducidad por lote; gasto/sobre opcional).
-- **Fondos**: sobres CUENTA/FONDO, gastos, arqueo de caja, flujo de caja, contabilidad, reportes (filtrables por local).
+- **Fondos**: sobres CUENTA/FONDO, costos puntuales, arqueo de caja, flujo de caja, contabilidad, reportes (filtrables por local).
+- **Control de Costos** (v3.4, solo ADMIN): semana operativa lunes–sábado; costo de artículo por último precio (histórico congelado por snapshot); costos fijos prorrateados + variables; resultado semanal ("lo que queda") con semáforos vs objetivos, break-even y mano de obra disponible; objetivos configurables; rutina de cierre guiada (conteo → mermas → provisión de fijos en sobre FONDO → resultado). Capa pura `domain/costos/CostosCalculos.kt` con 22 tests de propiedad.
 - **Personal**: empleados (sueldo fijo/turno/hora), jornadas, propinas, Prime Cost.
 - **Multi-local**: locales, asignaciones usuario-local, reportes por local.
 - **Usuarios** (solo ADMIN): crear, editar (nombre/rol/activo), eliminar (borrado total vía Edge Function, con confirmación, no a sí mismo), resetear contraseña. Roles asignables limitados por `Permisos.rolesAsignables`.
@@ -214,6 +216,20 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.4 — Control de Costos y Resultado Semanal (2026-07-09)
+Spec: `.kiro/specs/control-de-costos/`. SQL: `.kiro/database/supabase-control-costos.sql`.
+- **Semana operativa lunes → sábado** (domingo cerrado); rango medio-abierto `[lunes, lunes siguiente)`. `SemanaOperativa` + `FechaUtil.semanaActual/semanaDe/semanaOffset`.
+- **Costo de artículo por último precio**: al registrar una compra el costo del artículo se reemplaza por el último precio (RPC `registrar_compra` + `recalcular_recetas_articulo`); solo recalcula recetas si el precio cambió. El histórico queda **congelado** vía snapshot al cerrar la semana. Inventario pasa a manejar **solo stock** (los costos ya no se editan ahí).
+- **Categoría de artículo**: Ingredientes / Packaging / Insumos (campo `categoria` en `Articulo`).
+- **Dos grupos de costo**: Variables y Fijos. **Costos fijos** con periodicidad (semanal/mensual/…) prorrateados a semana. CRUD en `CostosFijosScreen`.
+- **Resultado semanal** (`CierreSemanalScreen`): ventas − variables − mano de obra − fijos = "lo que queda"; semáforos vs objetivos (food ≤32%, mano de obra 30%, arriendo ≤10%), break-even semanal + cuánto falta vender, mano de obra disponible (30%×ventas ÷ empleados) para decidir contrataciones, alerta de arriendo. Cierre atómico con snapshot (RPC `confirmar_cierre_semanal`).
+- **Objetivos configurables** (`ObjetivosScreen`, `ConfigCostosRepository`).
+- **Rutina de cierre** (`RutinaSemanalScreen`): checklist guiado de 4 pasos (conteo → mermas → provisión de fijos en sobre FONDO → ver resultado) por semana, sin duplicar módulos. La **provisión** transfiere el prorrateo de fijos desde una cuenta a un sobre FONDO (reutiliza `SobreRepository.transferir`).
+- **Capa pura** `domain/costos/CostosCalculos.kt` con **22 tests de propiedad** (kotest-property, 100 iter, verdes).
+- **Sección de menú "Costos"** (`cat_costos`, azul `0xFF1565C0`, soloAdmin): Rutina de cierre, Resultado semanal, Costos fijos, Objetivos y semáforos, Costos puntuales (antes "gastos"), Sobres, Flujo de caja.
+- Terminología unificada **"gastos" → "costos"** en rótulos visibles de la sección.
+- Fuera de alcance por ahora: utilidad/reparto entre socios.
 
 ### v3.3 — Sistema de Diseño / Glow-up (2026-07-08)
 - **Splash screen** con logo (core-splashscreen) e **ícono de app** propio (fondo blanco + logo, adaptativo).

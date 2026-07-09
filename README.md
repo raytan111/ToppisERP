@@ -12,7 +12,8 @@ Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube). Espa�
 - 🍔 **Cocina / Food Cost** — artículos unificados, preparaciones (sub-recetas), recetas de menú, food cost % por plato y menu engineering.
 - 📦 **Inventario Pro** — stock en unidad base, mermas (waste log), conteos, compra sugerida y análisis de variación.
 - 🚚 **Compras** — proveedores y recepción con costo promedio ponderado y caducidad por lote.
-- 💰 **Fondos** — sobres (cuenta = dinero real / fondo = provisión), gastos, **arqueo de caja**, flujo de caja y contabilidad (IVA).
+- 💰 **Fondos** — sobres (cuenta = dinero real / fondo = provisión), costos puntuales, **arqueo de caja**, flujo de caja y contabilidad (IVA).
+- 📊 **Control de Costos** — semana operativa lunes–sábado, costo por **último precio** (histórico congelado), costos fijos prorrateados + variables, **resultado semanal** ("lo que queda") con semáforos, break-even y mano de obra disponible, objetivos configurables y **rutina de cierre** guiada (conteo → mermas → provisión de fijos → resultado).
 - 👥 **Personal** — empleados (sueldo fijo/turno/hora), jornadas, propinas y **Prime Cost**.
 - 🏪 **Multi-local** — locales, asignación de usuarios y reportes por local.
 - 📈 **KPIs Ejecutivos** — ventas, ticket, food/labor/prime cost %, merma, alertas y **delivery por mes/día**.
@@ -130,6 +131,7 @@ supabase/functions/        # Edge Functions (admin-usuarios)
 - [x] Roles + permisos + login por usuario + tema de marca
 - [x] Imágenes de productos/promos (Coil + Supabase Storage)
 - [x] Sistema de diseño (splash, ícono, Login moneda 3D, Home, tipografía, modo oscuro, transiciones, buscadores, skeletons/estados vacíos, diálogos unificados)
+- [x] Control de costos y resultado semanal (fijos/variables, semáforos, break-even, rutina de cierre)
 - [ ] Rediseño del POS con nuevas funcionalidades
 - [ ] Boletas electrónicas (SII Chile)
 - [ ] Contabilidad/tributario completo

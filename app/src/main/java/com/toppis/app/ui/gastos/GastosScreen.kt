@@ -83,8 +83,8 @@ fun GastosScreen(
                     }
                     com.toppis.app.ui.components.EmptyState(
                         icon = Icons.AutoMirrored.Filled.ReceiptLong,
-                        titulo = "Sin gastos registrados",
-                        subtitulo = "Usá el botón + para registrar tu primer gasto."
+                        titulo = "Sin costos registrados",
+                        subtitulo = "Usá el botón + para registrar tu primer costo."
                     )
                 }
             }
@@ -114,7 +114,7 @@ fun GastosScreen(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
-            Icon(Icons.Filled.Add, contentDescription = "Registrar Gasto")
+            Icon(Icons.Filled.Add, contentDescription = "Registrar costo")
         }
 
         SnackbarHost(
@@ -152,7 +152,7 @@ fun TotalGastosCard(total: Double) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Total gastos del período",
+                text = "Total costos del período",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -182,7 +182,7 @@ fun SinSaldoWarningCard() {
                 tint = MaterialTheme.colorScheme.onErrorContainer
             )
             Text(
-                text = "No hay sobres con saldo disponible para registrar gastos.",
+                text = "No hay sobres con saldo disponible para registrar costos.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -259,7 +259,7 @@ fun AddGastoDialog(
         AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("Sin saldo disponible") },
-            text = { Text("No hay sobres con saldo para registrar un gasto. Agregá fondos a un sobre primero.") },
+            text = { Text("No hay sobres con saldo para registrar un costo. Agregá fondos a un sobre primero.") },
             confirmButton = {
                 TextButton(onClick = onDismiss) { Text("Entendido") }
             }
@@ -280,7 +280,7 @@ fun AddGastoDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar Gasto") },
+        title = { Text("Registrar costo") },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),

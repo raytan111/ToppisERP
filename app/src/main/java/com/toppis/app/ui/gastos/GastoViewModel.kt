@@ -83,7 +83,7 @@ class GastoViewModel(
                 refrescarSobres()
                 _uiState.value = GastoUiState.Success
             } catch (e: Exception) {
-                _uiState.value = GastoUiState.Error(e.message ?: "Error al registrar gasto")
+                _uiState.value = GastoUiState.Error(e.message ?: "Error al registrar el costo")
             }
         }
     }
