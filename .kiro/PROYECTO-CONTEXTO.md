@@ -217,6 +217,15 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 
 ## 9. Historial de Cambios
 
+### Auditoría de base de datos (2026-07-09) — ✅ base sana
+Scripts: `.kiro/database/supabase-auditoria.sql` (solo lectura), `supabase-limpieza.sql`, `supabase-indices.sql` (todos corridos).
+- **Funciones**: 15 RPC, sin duplicados. Se eliminó el único overload: versión vieja de 6 args de `registrar_gasto` (quedó solo la de 8 args con `p_tiene_iva`/`p_local_id`).
+- **Seguridad**: 36/36 tablas con RLS activo + políticas (event trigger `rls_auto_enable` lo mantiene automático).
+- **Legacy**: sin tablas del modelo viejo (`ingredientes`/`insumos`/`salsas` ya eliminadas por Fase 4).
+- **Índices**: agregados en FKs de JOIN (compra_detalle, conteo_detalle, compras, promocion_items) y `local_id`; `ANALYZE` corrido. No se indexan `created_by` (auditoría, no se filtran).
+- Volúmenes reales: ventas 113, articulos 53, gastos 2, compras 1.
+- Pendiente opcional (no urgente): consolidar los ~40 scripts de `.kiro/database/` en un único `schema-completo.sql` para recrear la base desde cero sin depender del orden.
+
 ### v3.4 — Control de Costos y Resultado Semanal (2026-07-09)
 Spec: `.kiro/specs/control-de-costos/`. SQL: `.kiro/database/supabase-control-costos.sql`.
 - **Semana operativa lunes → sábado** (domingo cerrado); rango medio-abierto `[lunes, lunes siguiente)`. `SemanaOperativa` + `FechaUtil.semanaActual/semanaDe/semanaOffset`.
