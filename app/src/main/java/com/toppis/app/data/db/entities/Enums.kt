@@ -110,10 +110,11 @@ enum class EstadoComanda { PENDIENTE, ENTREGADA }
 
 enum class ZonaEnvio(val label: String, val precio: Double) {
     SIN_ENVIO("Sin envío", 0.0),
-    ZONA_1("Zona 1", 500.0),
-    ZONA_2("Zona 2", 1000.0),
-    ZONA_3("Zona 3", 1500.0),
-    ZONA_4("Zona 4", 2000.0)
+    ZONA_1("Zona 1", 1000.0),
+    ZONA_2("Zona 2", 1500.0),
+    ZONA_3("Zona 3", 2000.0),
+    ZONA_4("Zona 4", 2500.0),
+    ZONA_5("Zona 5", 3000.0)
 }
 
 @Serializable
@@ -143,6 +144,8 @@ enum class Periodicidad(val label: String, val divisorSemanal: Double) {
 enum class CategoriaArticulo(val label: String) {
     INGREDIENTES("Ingredientes"),
     PACKAGING("Packaging"),
+    BEBIDA_LATA("Bebida lata"),
+    BEBIDA_MEDIANA("Bebida mediana"),
     INSUMOS("Insumos")
 }
 
@@ -166,3 +169,33 @@ enum class PasoRutina(val label: String) {
     RESULTADO("Resultado semanal")
 }
 
+
+// ── Rediseño del POS ───────────────────────────────────────────────────────
+
+/** Estado operativo de un pedido/carrito. */
+@Serializable
+enum class EstadoPedido { ABIERTO, CERRADO }
+
+/** Tipo de línea de cobro en un pedido. */
+@Serializable
+enum class TipoLineaPedido { PRODUCTO, PROMO }
+
+/** Cómo se definen los elegibles de un espacio de promo. */
+@Serializable
+enum class ModoEspacioPromo { LISTA, CATEGORIA }
+
+/** Categorías fijas del menú (para el POS y la config del menú). */
+enum class CategoriaMenu(val label: String) {
+    HAMBURGUESAS("Hamburguesas"),
+    PAPAS("Papas fritas"),
+    BEBIDA_LATA("Bebida lata"),
+    BEBIDA_MEDIANA("Bebida mediana"),
+    SALSAS("Salsas"),
+    OTRO("Otro");
+
+    companion object {
+        /** Busca por label (como se guarda en items_menu.categoria); OTRO por defecto. */
+        fun porLabel(label: String?): CategoriaMenu =
+            entries.firstOrNull { it.label.equals(label?.trim(), ignoreCase = true) } ?: OTRO
+    }
+}

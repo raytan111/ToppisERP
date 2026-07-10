@@ -31,6 +31,36 @@ data class Promocion(
 )
 
 /**
+ * Espacio configurable de una promo (tabla "promocion_espacios"): un "slot" que el
+ * cajero completa eligiendo, por lista de opciones o por categoría del menú.
+ */
+@Serializable
+data class PromocionEspacio(
+    val id: Int = 0,
+    @SerialName("promocion_id")
+    val promocionId: Int,
+    val nombre: String,
+    val cantidad: Int = 1,
+    val modo: com.toppis.app.data.db.entities.ModoEspacioPromo,
+    val categoria: String? = null,
+    val orden: Int = 0,
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+/** Opción elegible de un espacio en modo LISTA (tabla "promocion_espacio_opciones"). */
+@Serializable
+data class PromocionEspacioOpcion(
+    val id: Int = 0,
+    @SerialName("espacio_id")
+    val espacioId: Int,
+    @SerialName("item_menu_id")
+    val itemMenuId: Int,
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+/**
  * Item incluido en una promoción (tabla "promocion_items").
  */
 @Serializable

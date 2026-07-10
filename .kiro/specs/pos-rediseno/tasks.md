@@ -14,23 +14,23 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ### Fase A — Modelo de datos y base
 
-- [ ] 1. Script SQL `.kiro/database/supabase-pos-rediseno.sql` (idempotente): tablas
+- [x] 1. Script SQL `.kiro/database/supabase-pos-rediseno.sql` (idempotente): tablas
   `clientes`, `pedidos`, `pedido_items`, `pedido_unidades`, `pedido_unidad_mods`,
   `promocion_espacios`, `promocion_espacio_opciones`; columna `modificadores.categoria`;
   ampliar `chk_articulo_categoria` con `BEBIDA_LATA`/`BEBIDA_MEDIANA`; RLS + realtime de
   `pedidos` y `comandas`.
   - _Requisitos: 1.7, 4.1, 5.1, 6.2, 7.1, 10.1_
 
-- [ ] 2. Enums en `Enums.kt`: `EstadoPedido`, `TipoLineaPedido`, `ModoEspacioPromo`,
+- [x] 2. Enums en `Enums.kt`: `EstadoPedido`, `TipoLineaPedido`, `ModoEspacioPromo`,
   `CategoriaMenu`; actualizar `ZonaEnvio` (1000–3000, mantener SIN_ENVIO) y
   `CategoriaArticulo` (+ BEBIDA_LATA, BEBIDA_MEDIANA).
   - _Requisitos: 6.1, 6.2, 12.1_
 
-- [ ] 3. Modelos `@Serializable`: `Cliente`, `Pedido`, `PedidoItem`, `PedidoUnidad`,
+- [x] 3. Modelos `@Serializable`: `Cliente`, `Pedido`, `PedidoItem`, `PedidoUnidad`,
   `PedidoUnidadMod`, `PromocionEspacio`, `PromocionEspacioOpcion`; campo `categoria` en `Modificador`.
   - _Requisitos: 1.1, 4.1, 5.1, 10.1_
 
-- [ ] 4. Repos base: `PedidoRepository` (CRUD + Realtime), `ClienteRepository`
+- [x] 4. Repos base: `PedidoRepository` (CRUD + Realtime), `ClienteRepository`
   (get-or-create, editar, sellos); extender `PromocionRepository` (espacios/opciones) y
   `ModificadorRepository` (categoría).
   - _Requisitos: 1.7, 4.1, 5.1, 10.1, 10.2_

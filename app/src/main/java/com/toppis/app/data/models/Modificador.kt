@@ -17,6 +17,8 @@ data class Modificador(
     val tipo: TipoModificador,
     @SerialName("item_menu_id")
     val itemMenuId: Int? = null,
+    /** Categoría del menú a la que aplica (ej "Hamburguesas"); null = solo por item. */
+    val categoria: String? = null,
     @SerialName("delta_precio")
     val deltaPrecio: Double = 0.0,
     val activo: Boolean = true,
