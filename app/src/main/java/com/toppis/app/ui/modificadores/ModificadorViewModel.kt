@@ -63,11 +63,12 @@ class ModificadorViewModel(
         nombre: String,
         tipo: TipoModificador,
         deltaPrecio: Double,
+        categoria: String? = null,
         itemMenuId: Int? = null
     ) {
         viewModelScope.launch {
             try {
-                modificadorRepository.crearModificador(nombre, tipo, itemMenuId, deltaPrecio)
+                modificadorRepository.crearModificador(nombre, tipo, itemMenuId, deltaPrecio, categoria)
                 refrescar()
                 _uiState.value = ModificadorUiState.Success
             } catch (e: Exception) {

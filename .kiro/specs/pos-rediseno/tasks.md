@@ -48,15 +48,15 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase C — Configuración (menú, modificadores, promos)
 
-- [ ] 7. Categorías fijas de menú (incl. Bebida lata/mediana) en `MenuConfigScreen`;
+- [x] 7. Categorías fijas de menú (incl. Bebida lata/mediana) en `MenuConfigScreen`;
   categorías de bebida en el formulario de artículo (Inventario).
   - _Requisitos: 6.1, 6.2_
 
-- [ ] 8. Modificadores por categoría en `ModificadoresScreen` (selector de categoría del
+- [x] 8. Modificadores por categoría en `ModificadoresScreen` (selector de categoría del
   menú, opcional item puntual).
   - _Requisitos: 4.1, 4.2, 4.3_
 
-- [ ] 9. Armado de promos con espacios en `PromocionesScreen`: agregar/editar espacios
+- [x] 9. Armado de promos con espacios en `PromocionesScreen`: agregar/editar espacios
   (modo LISTA con opciones, o CATEGORIA), precio fijo.
   - _Requisitos: 5.1, 5.2_
 

@@ -9,8 +9,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import com.toppis.app.data.db.entities.CategoriaMenu
+import com.toppis.app.data.db.entities.ModoEspacioPromo
+import com.toppis.app.data.models.PromocionEspacio
+import com.toppis.app.data.models.PromocionEspacioOpcion
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,11 +80,19 @@ fun PromocionesScreen(
     var detalleItems by remember { mutableStateOf<List<PromocionItemDetalle>>(emptyList()) }
     var analisis by remember { mutableStateOf<AnalisisPromocion?>(null) }
 
+    var espaciosDe by remember { mutableStateOf<Promocion?>(null) }
+    var espacios by remember { mutableStateOf<List<PromocionEspacio>>(emptyList()) }
+    var opcionesPorEspacio by remember { mutableStateOf<Map<Int, List<PromocionEspacioOpcion>>>(emptyMap()) }
+
     fun recargarDetalle(promo: Promocion) {
         viewModel.cargarDetalle(promo) { items, an ->
             detalleItems = items
             analisis = an
         }
+    }
+
+    fun recargarEspacios(promo: Promocion) {
+        viewModel.cargarEspacios(promo.id) { esp, ops -> espacios = esp; opcionesPorEspacio = ops }
     }
 
     LaunchedEffect(uiState) {
@@ -146,6 +159,13 @@ fun PromocionesScreen(
                                         detalle,
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                IconButton(onClick = { espaciosDe = promo; recargarEspacios(promo) }) {
+                                    Icon(
+                                        Icons.Filled.Category,
+                                        contentDescription = "Espacios a elegir",
+                                        tint = MaterialTheme.colorScheme.secondary
                                     )
                                 }
                                 IconButton(onClick = { promoAEditar = promo }) {
@@ -240,6 +260,22 @@ fun PromocionesScreen(
             onEliminarItem = { detalle ->
                 viewModel.eliminarItem(detalle.promocionItem.id) { recargarDetalle(promo) }
             }
+        )
+    }
+
+    espaciosDe?.let { promo ->
+        EspaciosPromoDialog(
+            promocion = promo,
+            espacios = espacios,
+            opcionesPorEspacio = opcionesPorEspacio,
+            itemsMenu = itemsMenu,
+            onDismiss = { espaciosDe = null; espacios = emptyList(); opcionesPorEspacio = emptyMap() },
+            onCrearEspacio = { nombre, cantidad, modo, categoria ->
+                viewModel.crearEspacio(promo.id, nombre, cantidad, modo, categoria, espacios.size) { recargarEspacios(promo) }
+            },
+            onEliminarEspacio = { id -> viewModel.eliminarEspacio(id) { recargarEspacios(promo) } },
+            onAgregarOpcion = { espacioId, itemMenuId -> viewModel.agregarOpcion(espacioId, itemMenuId) { recargarEspacios(promo) } },
+            onEliminarOpcion = { id -> viewModel.eliminarOpcion(id) { recargarEspacios(promo) } }
         )
     }
 }
@@ -595,5 +631,184 @@ private fun AnalisisFila(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(etiqueta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         Text(valor, style = MaterialTheme.typography.bodyMedium, color = color)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EspaciosPromoDialog(
+    promocion: Promocion,
+    espacios: List<PromocionEspacio>,
+    opcionesPorEspacio: Map<Int, List<PromocionEspacioOpcion>>,
+    itemsMenu: List<ItemMenu>,
+    onDismiss: () -> Unit,
+    onCrearEspacio: (nombre: String, cantidad: Int, modo: ModoEspacioPromo, categoria: String?) -> Unit,
+    onEliminarEspacio: (id: Int) -> Unit,
+    onAgregarOpcion: (espacioId: Int, itemMenuId: Int) -> Unit,
+    onEliminarOpcion: (id: Int) -> Unit
+) {
+    var nombre by remember { mutableStateOf("") }
+    var cantidadText by remember { mutableStateOf("1") }
+    var modo by remember { mutableStateOf(ModoEspacioPromo.CATEGORIA) }
+    var categoria by remember { mutableStateOf(CategoriaMenu.HAMBURGUESAS.label) }
+    var expCat by remember { mutableStateOf(false) }
+
+    val nombreById = remember(itemsMenu) { itemsMenu.associate { it.id to it.nombre } }
+    val cantidadValida = cantidadText.toIntOrNull()?.let { it > 0 } ?: false
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Espacios: ${promocion.nombre}") },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    Text("Cada espacio es algo que el cliente elige en el POS (ej: 1 hamburguesa a elección).",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                }
+
+                if (espacios.isEmpty()) {
+                    item { Text("Sin espacios todavía.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline) }
+                } else {
+                    items(espacios) { esp ->
+                        EspacioCard(
+                            espacio = esp,
+                            opciones = opcionesPorEspacio[esp.id].orEmpty(),
+                            itemsMenu = itemsMenu,
+                            nombreById = nombreById,
+                            onEliminar = { onEliminarEspacio(esp.id) },
+                            onAgregarOpcion = { itemId -> onAgregarOpcion(esp.id, itemId) },
+                            onEliminarOpcion = { id -> onEliminarOpcion(id) }
+                        )
+                    }
+                }
+
+                item { HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp)) }
+                item { Text("Nuevo espacio:", style = MaterialTheme.typography.labelLarge) }
+                item {
+                    OutlinedTextField(
+                        value = nombre, onValueChange = { nombre = it },
+                        label = { Text("Nombre (ej: Hamburguesa)") },
+                        singleLine = true, modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = cantidadText, onValueChange = { cantidadText = it },
+                        label = { Text("Cantidad a elegir") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true, modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = modo == ModoEspacioPromo.CATEGORIA, onClick = { modo = ModoEspacioPromo.CATEGORIA })
+                        Text("Por categoría", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.width(8.dp))
+                        RadioButton(selected = modo == ModoEspacioPromo.LISTA, onClick = { modo = ModoEspacioPromo.LISTA })
+                        Text("Lista específica", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (modo == ModoEspacioPromo.CATEGORIA) {
+                    item {
+                        ExposedDropdownMenuBox(expanded = expCat, onExpandedChange = { expCat = !expCat }) {
+                            OutlinedTextField(
+                                value = categoria, onValueChange = {}, readOnly = true,
+                                label = { Text("Categoría elegible") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expCat) },
+                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(expanded = expCat, onDismissRequest = { expCat = false }) {
+                                CategoriaMenu.entries.forEach { c ->
+                                    DropdownMenuItem(text = { Text(c.label) }, onClick = { categoria = c.label; expCat = false })
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    item {
+                        Text("Después de crear el espacio, agregá las opciones específicas desde su tarjeta.",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    }
+                }
+                item {
+                    Button(
+                        onClick = {
+                            onCrearEspacio(
+                                nombre.ifBlank { "Espacio" },
+                                cantidadText.toIntOrNull() ?: 1,
+                                modo,
+                                if (modo == ModoEspacioPromo.CATEGORIA) categoria else null
+                            )
+                            nombre = ""; cantidadText = "1"
+                        },
+                        enabled = cantidadValida,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("+ Agregar espacio") }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EspacioCard(
+    espacio: PromocionEspacio,
+    opciones: List<PromocionEspacioOpcion>,
+    itemsMenu: List<ItemMenu>,
+    nombreById: Map<Int, String>,
+    onEliminar: () -> Unit,
+    onAgregarOpcion: (itemMenuId: Int) -> Unit,
+    onEliminarOpcion: (id: Int) -> Unit
+) {
+    var selectedItem by remember { mutableStateOf(itemsMenu.firstOrNull()) }
+    var exp by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("${espacio.cantidad}x ${espacio.nombre}", style = MaterialTheme.typography.titleSmall)
+                    val det = when (espacio.modo) {
+                        ModoEspacioPromo.CATEGORIA -> "Categoría: ${espacio.categoria ?: "-"}"
+                        ModoEspacioPromo.LISTA -> "Lista específica (${opciones.size})"
+                    }
+                    Text(det, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                }
+                IconButton(onClick = onEliminar) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Quitar espacio", tint = MaterialTheme.colorScheme.error)
+                }
+            }
+            if (espacio.modo == ModoEspacioPromo.LISTA) {
+                opciones.forEach { op ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("• ${nombreById[op.itemMenuId] ?: "Item #${op.itemMenuId}"}",
+                            modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                        IconButton(onClick = { onEliminarOpcion(op.id) }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Quitar opción", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                if (itemsMenu.isNotEmpty()) {
+                    ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+                        OutlinedTextField(
+                            value = selectedItem?.nombre ?: "", onValueChange = {}, readOnly = true,
+                            label = { Text("Agregar opción") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+                            itemsMenu.forEach { it2 ->
+                                DropdownMenuItem(text = { Text(it2.nombre) }, onClick = { selectedItem = it2; exp = false })
+                            }
+                        }
+                    }
+                    TextButton(onClick = { selectedItem?.let { onAgregarOpcion(it.id) } }, enabled = selectedItem != null) {
+                        Text("+ Agregar opción")
+                    }
+                }
+            }
+        }
     }
 }

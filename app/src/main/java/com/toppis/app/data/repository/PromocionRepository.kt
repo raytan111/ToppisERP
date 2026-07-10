@@ -113,6 +113,64 @@ class PromocionRepository {
         client.postgrest.from("promocion_items").delete { filter { eq("id", id) } }
     }
 
+    // ── Espacios configurables (promos donde el cliente elige) ──────────────────
+
+    suspend fun getEspacios(promocionId: Int): List<com.toppis.app.data.models.PromocionEspacio> = try {
+        client.postgrest.from("promocion_espacios").select {
+            filter { eq("promocion_id", promocionId) }
+        }.decodeList<com.toppis.app.data.models.PromocionEspacio>().sortedBy { it.orden }
+    } catch (e: Exception) {
+        Log.e("PromocionRepository", "Error getEspacios: ${e.message}", e)
+        emptyList()
+    }
+
+    suspend fun crearEspacio(
+        promocionId: Int,
+        nombre: String,
+        cantidad: Int,
+        modo: com.toppis.app.data.db.entities.ModoEspacioPromo,
+        categoria: String?,
+        orden: Int
+    ): Int = client.postgrest.from("promocion_espacios").insert(
+        buildJsonObject {
+            put("promocion_id", promocionId)
+            put("nombre", nombre)
+            put("cantidad", cantidad)
+            put("modo", modo.name)
+            if (categoria.isNullOrBlank()) put("categoria", JsonNull) else put("categoria", categoria)
+            put("orden", orden)
+        }
+    ) { select() }.decodeSingle<com.toppis.app.data.models.PromocionEspacio>().id
+
+    suspend fun eliminarEspacio(id: Int) {
+        client.postgrest.from("promocion_espacios").delete { filter { eq("id", id) } }
+    }
+
+    suspend fun getOpciones(espacioId: Int): List<com.toppis.app.data.models.PromocionEspacioOpcion> = try {
+        client.postgrest.from("promocion_espacio_opciones").select {
+            filter { eq("espacio_id", espacioId) }
+        }.decodeList<com.toppis.app.data.models.PromocionEspacioOpcion>()
+    } catch (e: Exception) { emptyList() }
+
+    /** Todas las opciones de los espacios de una promo (para armar la UI del POS). */
+    suspend fun getOpcionesDePromo(promocionId: Int): List<com.toppis.app.data.models.PromocionEspacioOpcion> {
+        val espacios = getEspacios(promocionId)
+        return espacios.flatMap { getOpciones(it.id) }
+    }
+
+    suspend fun agregarOpcion(espacioId: Int, itemMenuId: Int) {
+        client.postgrest.from("promocion_espacio_opciones").insert(
+            buildJsonObject {
+                put("espacio_id", espacioId)
+                put("item_menu_id", itemMenuId)
+            }
+        )
+    }
+
+    suspend fun eliminarOpcion(id: Int) {
+        client.postgrest.from("promocion_espacio_opciones").delete { filter { eq("id", id) } }
+    }
+
     // ── Análisis ───────────────────────────────────────────────────────────────
 
     /** Calcula el análisis de una promoción a partir de sus items y los precios/costos del menú. */

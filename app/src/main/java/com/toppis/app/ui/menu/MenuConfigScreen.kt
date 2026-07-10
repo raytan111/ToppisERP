@@ -262,7 +262,7 @@ private fun MenuThumb(url: String?, onClick: () -> Unit) {
 }
 
 /** Categorías fijas para los ítems del menú (elegibles, no texto libre). */
-private val CATEGORIAS_ITEM_MENU = listOf("Hamburguesas", "Papas fritas", "Bebidas", "Salsas", "Otro")
+private val CATEGORIAS_ITEM_MENU = com.toppis.app.data.db.entities.CategoriaMenu.entries.map { it.label }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

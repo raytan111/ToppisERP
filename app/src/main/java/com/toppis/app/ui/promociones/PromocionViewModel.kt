@@ -154,6 +154,74 @@ class PromocionViewModel(
         }
     }
 
+    // ── Espacios configurables ──────────────────────────────────────────────────
+
+    /** Carga los espacios de una promo y, por cada uno, sus opciones (para modo LISTA). */
+    fun cargarEspacios(
+        promocionId: Int,
+        callback: (espacios: List<com.toppis.app.data.models.PromocionEspacio>,
+                   opcionesPorEspacio: Map<Int, List<com.toppis.app.data.models.PromocionEspacioOpcion>>) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val espacios = promocionRepository.getEspacios(promocionId)
+                val opciones = espacios.associate { it.id to promocionRepository.getOpciones(it.id) }
+                callback(espacios, opciones)
+            } catch (e: Exception) {
+                _uiState.value = PromocionUiState.Error(e.message ?: "Error al cargar espacios")
+            }
+        }
+    }
+
+    fun crearEspacio(
+        promocionId: Int,
+        nombre: String,
+        cantidad: Int,
+        modo: com.toppis.app.data.db.entities.ModoEspacioPromo,
+        categoria: String?,
+        orden: Int,
+        onDone: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                promocionRepository.crearEspacio(promocionId, nombre, cantidad, modo, categoria, orden)
+                onDone()
+            } catch (e: Exception) {
+                _uiState.value = PromocionUiState.Error(e.message ?: "Error al crear espacio")
+            }
+        }
+    }
+
+    fun eliminarEspacio(id: Int, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                promocionRepository.eliminarEspacio(id); onDone()
+            } catch (e: Exception) {
+                _uiState.value = PromocionUiState.Error(e.message ?: "Error al eliminar espacio")
+            }
+        }
+    }
+
+    fun agregarOpcion(espacioId: Int, itemMenuId: Int, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                promocionRepository.agregarOpcion(espacioId, itemMenuId); onDone()
+            } catch (e: Exception) {
+                _uiState.value = PromocionUiState.Error(e.message ?: "Error al agregar opción")
+            }
+        }
+    }
+
+    fun eliminarOpcion(id: Int, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                promocionRepository.eliminarOpcion(id); onDone()
+            } catch (e: Exception) {
+                _uiState.value = PromocionUiState.Error(e.message ?: "Error al eliminar opción")
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = PromocionUiState.Idle
     }

@@ -34,13 +34,15 @@ class ModificadorRepository {
         nombre: String,
         tipo: TipoModificador,
         itemMenuId: Int?,
-        deltaPrecio: Double
+        deltaPrecio: Double,
+        categoria: String? = null
     ): Int? = try {
         client.postgrest.from("modificadores").insert(
             buildJsonObject {
                 put("nombre", nombre)
                 put("tipo", tipo.name)
                 if (itemMenuId == null) put("item_menu_id", JsonNull) else put("item_menu_id", itemMenuId)
+                if (categoria.isNullOrBlank()) put("categoria", JsonNull) else put("categoria", categoria)
                 put("delta_precio", deltaPrecio)
                 put("activo", true)
             }
@@ -56,6 +58,7 @@ class ModificadorRepository {
                 put("nombre", mod.nombre)
                 put("tipo", mod.tipo.name)
                 if (mod.itemMenuId == null) put("item_menu_id", JsonNull) else put("item_menu_id", mod.itemMenuId)
+                if (mod.categoria.isNullOrBlank()) put("categoria", JsonNull) else put("categoria", mod.categoria)
                 put("delta_precio", mod.deltaPrecio)
                 put("activo", mod.activo)
             }
@@ -63,6 +66,10 @@ class ModificadorRepository {
             filter { eq("id", mod.id) }
         }
     }
+
+    /** Modificadores aplicables a un producto: su categoría del menú + los puntuales del item. */
+    suspend fun getModificadoresParaItemYCategoria(itemMenuId: Int, categoria: String?): List<Modificador> =
+        com.toppis.app.domain.pos.PosCalculos.modificadoresAplicables(itemMenuId, categoria, getModificadores())
 
     suspend fun eliminarModificador(id: Int) {
         client.postgrest.from("modificadores").delete { filter { eq("id", id) } }

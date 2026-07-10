@@ -87,7 +87,10 @@ fun ModificadoresScreen(
                             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(mod.nombre, style = MaterialTheme.typography.titleMedium)
-                                    Text(mod.tipo.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                                    Text(
+                                        mod.tipo.label + (mod.categoria?.let { " · $it" } ?: " · Todas"),
+                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline
+                                    )
                                     val signo = if (mod.deltaPrecio >= 0) "+" else "-"
                                     Text("Precio: $signo${money.format(kotlin.math.abs(mod.deltaPrecio))}",
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -118,8 +121,8 @@ fun ModificadoresScreen(
     if (showCrearDialog) {
         CrearModificadorDialog(
             onDismiss = { showCrearDialog = false },
-            onConfirm = { nombre, tipo, delta ->
-                viewModel.crearModificador(nombre, tipo, delta)
+            onConfirm = { nombre, tipo, delta, categoria ->
+                viewModel.crearModificador(nombre, tipo, delta, categoria)
                 showCrearDialog = false
             }
         )
@@ -129,8 +132,8 @@ fun ModificadoresScreen(
         EditarModificadorDialog(
             modificador = mod,
             onDismiss = { modAEditar = null },
-            onConfirm = { nombre, tipo, delta ->
-                viewModel.actualizarModificador(mod.copy(nombre = nombre, tipo = tipo, deltaPrecio = delta))
+            onConfirm = { nombre, tipo, delta, categoria ->
+                viewModel.actualizarModificador(mod.copy(nombre = nombre, tipo = tipo, deltaPrecio = delta, categoria = categoria))
                 modAEditar = null
             }
         )
@@ -171,12 +174,13 @@ fun ModificadoresScreen(
 @Composable
 private fun CrearModificadorDialog(
     onDismiss: () -> Unit,
-    onConfirm: (nombre: String, tipo: TipoModificador, deltaPrecio: Double) -> Unit
+    onConfirm: (nombre: String, tipo: TipoModificador, deltaPrecio: Double, categoria: String?) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var tipoSeleccionado by remember { mutableStateOf(TipoModificador.EXTRA) }
     var expandedTipo by remember { mutableStateOf(false) }
     var deltaText by remember { mutableStateOf("") }
+    var categoria by remember { mutableStateOf<String?>(null) }
 
     val deltaValido = deltaText.replace(",", ".").toDoubleOrNull() != null
 
@@ -197,6 +201,7 @@ private fun CrearModificadorDialog(
                     label = { Text("Nombre (ej: Doble carne)") },
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
+                CategoriaMenuSelector(value = categoria, onValueChange = { categoria = it })
                 ExposedDropdownMenuBox(expanded = expandedTipo, onExpandedChange = { expandedTipo = !expandedTipo }) {
                     OutlinedTextField(
                         value = tipoSeleccionado.label, onValueChange = {}, readOnly = true,
@@ -224,7 +229,7 @@ private fun CrearModificadorDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton) },
+                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria) },
                 enabled = nombre.isNotBlank() && deltaValido
             ) { Text("Crear") }
         },
@@ -232,17 +237,41 @@ private fun CrearModificadorDialog(
     )
 }
 
+/** Selector de categoría del menú a la que aplica el modificador; null = "Todas". */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoriaMenuSelector(value: String?, onValueChange: (String?) -> Unit) {
+    var exp by remember { mutableStateOf(false) }
+    val opciones = com.toppis.app.data.db.entities.CategoriaMenu.entries.map { it.label }
+    ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+        OutlinedTextField(
+            value = value ?: "Todas las categorías", onValueChange = {}, readOnly = true,
+            label = { Text("Aplica a categoría") },
+            supportingText = { Text("Se mostrará en todos los productos de esa categoría.") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+        )
+        ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+            DropdownMenuItem(text = { Text("Todas las categorías") }, onClick = { onValueChange(null); exp = false })
+            opciones.forEach { c ->
+                DropdownMenuItem(text = { Text(c) }, onClick = { onValueChange(c); exp = false })
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditarModificadorDialog(
     modificador: Modificador,
     onDismiss: () -> Unit,
-    onConfirm: (nombre: String, tipo: TipoModificador, deltaPrecio: Double) -> Unit
+    onConfirm: (nombre: String, tipo: TipoModificador, deltaPrecio: Double, categoria: String?) -> Unit
 ) {
     var nombre by remember { mutableStateOf(modificador.nombre) }
     var tipoSeleccionado by remember { mutableStateOf(modificador.tipo) }
     var expandedTipo by remember { mutableStateOf(false) }
     var deltaText by remember { mutableStateOf(if (modificador.deltaPrecio == 0.0) "" else modificador.deltaPrecio.toLong().toString()) }
+    var categoria by remember { mutableStateOf(modificador.categoria) }
 
     val deltaValido = deltaText.replace(",", ".").toDoubleOrNull() != null
 
@@ -256,6 +285,7 @@ private fun EditarModificadorDialog(
                     label = { Text("Nombre") },
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
+                CategoriaMenuSelector(value = categoria, onValueChange = { categoria = it })
                 ExposedDropdownMenuBox(expanded = expandedTipo, onExpandedChange = { expandedTipo = !expandedTipo }) {
                     OutlinedTextField(
                         value = tipoSeleccionado.label, onValueChange = {}, readOnly = true,
@@ -281,7 +311,7 @@ private fun EditarModificadorDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton) },
+                onClick = { onConfirm(nombre, tipoSeleccionado, deltaText.replace(",", ".").toDoubleOrNull() ?: return@TextButton, categoria) },
                 enabled = nombre.isNotBlank() && deltaValido
             ) { Text("Guardar") }
         },
