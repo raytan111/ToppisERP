@@ -37,12 +37,12 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase B — Dominio puro + tests
 
-- [ ] 5. `domain/pos/PosCalculos.kt`: totales, precio de producto (base + mods), precio
+- [x] 5. `domain/pos/PosCalculos.kt`: totales, precio de producto (base + mods), precio
   de promo (fijo), modificadores aplicables, elegibles de espacio, promo completa,
   deuda, activo-en-lista, sellos/regalo.
   - _Requisitos: 2.6, 3.4, 5.2, 5.6, 7.3, 11.1, 11.2_
 
-- [ ] 6. Tests de propiedad `PosCalculosPropertyTest` (kotest-property, 100 iter) para
+- [x] 6. Tests de propiedad `PosCalculosPropertyTest` (kotest-property, 100 iter) para
   las 16 propiedades del diseño. Build/test verdes.
   - _Requisitos: 5.6, 7.3, 8.4, 11.2, 11.3_
 
