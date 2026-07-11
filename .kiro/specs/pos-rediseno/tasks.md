@@ -62,14 +62,15 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase D — Lista de pedidos + clientes
 
-- [ ] 10. `crear_pedido` (RPC get-or-create cliente + pedido ABIERTO).
+- [x] 10. Crear pedido (get-or-create cliente + pedido ABIERTO) — implementado en Kotlin
+  (`ClienteRepository.obtenerOCrear` + `PedidoRepository.crearPedido`), sin RPC (no es op de dinero).
   - _Requisitos: 1.2, 10.1, 10.4_
 
-- [ ] 11. `PosPedidosScreen` + `PedidosViewModel`: lista activa realtime, tarjetas con
+- [x] 11. `PosPedidosScreen` + `PedidosViewModel`: lista activa realtime, tarjetas con
   estado/total/chips y **marca roja de deuda**; FAB "Nuevo pedido" (3 dígitos + nombre opcional).
   - _Requisitos: 1.1, 1.2, 1.3, 1.4, 1.6, 1.7_
 
-- [ ] 12. Cableado navegación/DI: ruta `pos` (lista), `pedido/{id}`, en `NavGraph` +
+- [x] 12. Cableado navegación/DI: ruta `pos` (lista), `pedido/{id}`, en `NavGraph` +
   `MainActivity` + `HomeMenu`; permisos.
   - _Requisitos: 1.1, 14.1_
 

@@ -46,6 +46,11 @@ class MainActivity : ComponentActivity() {
         val sobreRepo = SobreRepository()
         val ventaRepo = VentaRepository()
 
+        // ── Rediseño POS: pedidos + clientes ──
+        val pedidoRepo = com.toppis.app.data.repository.PedidoRepository()
+        val clienteRepo = com.toppis.app.data.repository.ClienteRepository()
+        val pedidosFactory = com.toppis.app.ui.pos.PedidosViewModelFactory(pedidoRepo, clienteRepo)
+
         // ── Menú Interactivo ────────────────────────────────────────────────
         val menuRepo = MenuRepository()
         val menuConfigFactory = MenuConfigViewModelFactory(menuRepo)
@@ -181,6 +186,7 @@ class MainActivity : ComponentActivity() {
                         cierreSemanalViewModelFactory = cierreSemanalFactory,
                         objetivosViewModelFactory = objetivosFactory,
                         rutinaSemanalViewModelFactory = rutinaSemanalFactory,
+                        pedidosViewModelFactory = pedidosFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.fillMaxSize()
                     )

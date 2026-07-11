@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -134,6 +135,7 @@ fun NavGraph(
     cierreSemanalViewModelFactory: com.toppis.app.ui.costos.CierreSemanalViewModelFactory,
     objetivosViewModelFactory: com.toppis.app.ui.costos.ObjetivosViewModelFactory,
     rutinaSemanalViewModelFactory: com.toppis.app.ui.costos.RutinaSemanalViewModelFactory,
+    pedidosViewModelFactory: com.toppis.app.ui.pos.PedidosViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -231,17 +233,31 @@ fun NavGraph(
             )
         }
 
-        // ── Venta (POS) ──────────────────────────────────────────────────────
+        // ── Venta (POS) — lista de pedidos ───────────────────────────────────
         composable("pos") {
-            val posVm: PosViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = posViewModelFactory)
-            val sobreVm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
-            BackScaffold("Punto de Venta", onNavigateBack = { navController.popBackStack() }) { padding ->
-                PosScreen(
-                    posViewModel = posVm,
-                    sobreViewModel = sobreVm,
-                    usuarioId = usuarioActual?.id,
-                    modifier = Modifier.padding(padding)
-                )
+            if (!permisos.puedeAbrir("pos")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.pos.PedidosViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = pedidosViewModelFactory)
+            com.toppis.app.ui.pos.PosPedidosScreen(
+                viewModel = vm,
+                onAbrirPedido = { id -> navController.navigate("pedido/$id") },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Carrito de un pedido (se completa en Fase E) ─────────────────────
+        composable(
+            route = "pedido/{pedidoId}",
+            arguments = listOf(navArgument("pedidoId") { type = NavType.IntType })
+        ) { entry ->
+            val pedidoId = entry.arguments?.getInt("pedidoId") ?: 0
+            BackScaffold("Pedido #$pedidoId", onNavigateBack = { navController.popBackStack() }) { padding ->
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    androidx.compose.material3.Text("Carrito del pedido #$pedidoId (en construcción)")
+                }
             }
         }
 

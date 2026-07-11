@@ -33,6 +33,19 @@ class ClienteRepository {
         emptyList()
     }
 
+    /**
+     * Devuelve un cliente para esos 3 dígitos, creándolo si no existe. Si hay varias
+     * coincidencias, usa la que calce por nombre; si el nombre viene vacío, la primera.
+     */
+    suspend fun obtenerOCrear(telefono3: String, nombre: String?): Cliente {
+        val matches = buscarPorTelefono3(telefono3)
+        if (matches.isNotEmpty()) {
+            if (nombre.isNullOrBlank()) return matches.first()
+            matches.firstOrNull { it.nombre.equals(nombre.trim(), ignoreCase = true) }?.let { return it }
+        }
+        return crear(telefono3, nombre)
+    }
+
     /** Crea un cliente (nombre opcional) y lo devuelve. */
     suspend fun crear(telefono3: String, nombre: String?): Cliente {
         return client.postgrest.from("clientes").insert(
