@@ -89,7 +89,7 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase F — Promos en el POS
 
-- [ ] 16. `PromoConfigDialog`: un selector por espacio (solo elegibles), permite
+- [x] 16. `PromoConfigDialog`: un selector por espacio (solo elegibles), permite
   mods/comentario por elegido; Agregar cuando la promo está completa; precio fijo.
   - _Requisitos: 5.3, 5.4, 5.5, 5.6_
 

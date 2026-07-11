@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -54,6 +55,9 @@ fun PedidoCarritoScreen(
     var tab by remember { mutableStateOf(0) }
     var categoria by remember { mutableStateOf<String?>(null) }
     var productoPopup by remember { mutableStateOf<ItemMenu?>(null) }
+    var promoPopup by remember { mutableStateOf<Promocion?>(null) }
+    var espaciosPromo by remember { mutableStateOf<List<com.toppis.app.data.models.PromocionEspacio>>(emptyList()) }
+    var elegiblesPromo by remember { mutableStateOf<Map<Int, List<ItemMenu>>>(emptyMap()) }
 
     LaunchedEffect(pedidoId) { viewModel.cargar(pedidoId) }
     LaunchedEffect(uiState) {
@@ -115,7 +119,12 @@ fun PedidoCarritoScreen(
                             contentPadding = PaddingValues(vertical = 10.dp)
                         ) {
                             items(promos, key = { it.id }) { promo ->
-                                PromoCard(promo) { onPromoClick(promo) }
+                                PromoCard(promo) {
+                                    onPromoClick(promo)
+                                    viewModel.cargarEspaciosPromo(promo) { esp, eleg ->
+                                        espaciosPromo = esp; elegiblesPromo = eleg; promoPopup = promo
+                                    }
+                                }
                             }
                         }
                     }
@@ -144,6 +153,20 @@ fun PedidoCarritoScreen(
             onAgregar = { modIds, comentario ->
                 viewModel.agregarProducto(item, modIds, comentario)
                 productoPopup = null
+            }
+        )
+    }
+
+    promoPopup?.let { promo ->
+        PromoConfigDialog(
+            promo = promo,
+            espacios = espaciosPromo,
+            elegiblesPorEspacio = elegiblesPromo,
+            modsDe = { item -> viewModel.modificadoresDe(item) },
+            onCancelar = { promoPopup = null; espaciosPromo = emptyList(); elegiblesPromo = emptyMap() },
+            onAgregar = { elecciones ->
+                viewModel.agregarPromo(promo, elecciones)
+                promoPopup = null; espaciosPromo = emptyList(); elegiblesPromo = emptyMap()
             }
         )
     }
@@ -311,6 +334,110 @@ private fun ProductoModsDialog(
             Button(onClick = { onAgregar(seleccionados.toList(), comentario.ifBlank { null }) }) {
                 Text("Agregar ${money.format(precio)}")
             }
+        },
+        dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PromoConfigDialog(
+    promo: Promocion,
+    espacios: List<com.toppis.app.data.models.PromocionEspacio>,
+    elegiblesPorEspacio: Map<Int, List<ItemMenu>>,
+    modsDe: (ItemMenu) -> List<com.toppis.app.data.models.Modificador>,
+    onCancelar: () -> Unit,
+    onAgregar: (List<EleccionPromo>) -> Unit
+) {
+    // Un "slot" por cada unidad a elegir (espacio.cantidad veces).
+    val slots = remember(espacios) { espacios.flatMap { esp -> List(esp.cantidad) { esp } } }
+    val seleccion = remember(slots) { mutableStateListOf<Int?>().apply { repeat(slots.size) { add(null) } } }
+    val comentarios = remember(slots) { mutableStateListOf<String>().apply { repeat(slots.size) { add("") } } }
+    val modsPorSlot = remember(slots) { List(slots.size) { mutableStateListOf<Int>() } }
+
+    val completa = slots.isNotEmpty() && seleccion.all { it != null }
+
+    AlertDialog(
+        onDismissRequest = { /* protegido */ },
+        properties = DialogProperties(dismissOnClickOutside = false, dismissOnBackPress = true),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("${promo.nombre} · ${money.format(promo.precio)}", modifier = Modifier.weight(1f))
+                IconButton(onClick = onCancelar) { Icon(Icons.Filled.Close, contentDescription = "Cancelar") }
+            }
+        },
+        text = {
+            if (slots.isEmpty()) {
+                Text("Esta promo no tiene espacios configurados. Agregalos en Cocina → Promociones.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    itemsIndexed(slots) { i, esp ->
+                        val elegibles = elegiblesPorEspacio[esp.id].orEmpty()
+                        val seleccionadoId = seleccion[i]
+                        val itemSel = elegibles.firstOrNull { it.id == seleccionadoId }
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(esp.nombre, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                if (elegibles.isEmpty()) {
+                                    Text("Sin opciones elegibles.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                } else {
+                                    var exp by remember { mutableStateOf(false) }
+                                    ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+                                        OutlinedTextField(
+                                            value = itemSel?.nombre ?: "Elegí…", onValueChange = {}, readOnly = true,
+                                            label = { Text("Producto") },
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+                                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                                        )
+                                        ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+                                            elegibles.forEach { opt ->
+                                                DropdownMenuItem(text = { Text(opt.nombre) }, onClick = {
+                                                    seleccion[i] = opt.id; modsPorSlot[i].clear(); exp = false
+                                                })
+                                            }
+                                        }
+                                    }
+                                    // Modificadores del producto elegido (opcionales).
+                                    itemSel?.let { sel ->
+                                        val mods = modsDe(sel)
+                                        mods.forEach { m ->
+                                            val checked = m.id in modsPorSlot[i]
+                                            Row(
+                                                Modifier.fillMaxWidth().clickable {
+                                                    if (checked) modsPorSlot[i].remove(m.id) else modsPorSlot[i].add(m.id)
+                                                },
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Checkbox(checked = checked, onCheckedChange = {
+                                                    if (it) modsPorSlot[i].add(m.id) else modsPorSlot[i].remove(m.id)
+                                                })
+                                                Text(m.nombre, style = MaterialTheme.typography.bodySmall)
+                                            }
+                                        }
+                                        OutlinedTextField(
+                                            value = comentarios[i], onValueChange = { comentarios[i] = it },
+                                            label = { Text("Comentario (opcional)") },
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val elecciones = slots.indices.map { i ->
+                        EleccionPromo(seleccion[i]!!, modsPorSlot[i].toList(), comentarios[i].ifBlank { null })
+                    }
+                    onAgregar(elecciones)
+                },
+                enabled = completa
+            ) { Text("Agregar ${money.format(promo.precio)}") }
         },
         dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } }
     )

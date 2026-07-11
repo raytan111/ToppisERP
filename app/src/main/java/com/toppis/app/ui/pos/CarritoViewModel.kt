@@ -32,10 +32,11 @@ data class CarritoLinea(
     val subtotal: Double
 )
 
-/** Selección de un modificador con su nombre y delta (para el popup del producto). */
-data class ModSeleccionable(
-    val modificador: Modificador,
-    var elegido: Boolean = false
+/** Producto elegido para un espacio de una promo, con sus modificadores y comentario. */
+data class EleccionPromo(
+    val itemMenuId: Int,
+    val modIds: List<Int>,
+    val comentario: String?
 )
 
 class CarritoViewModel(
@@ -128,6 +129,49 @@ class CarritoViewModel(
     /** Modificadores aplicables a un producto (por categoría + puntuales). */
     fun modificadoresDe(item: ItemMenu): List<Modificador> =
         PosCalculos.modificadoresAplicables(item.id, item.categoria, modificadores)
+
+    fun itemMenuPorId(id: Int): ItemMenu? = _menu.value.firstOrNull { it.id == id }
+
+    /**
+     * Carga los espacios de una promo y, por cada uno, la lista de productos elegibles
+     * (por lista específica o por categoría).
+     */
+    fun cargarEspaciosPromo(
+        promo: Promocion,
+        onLoaded: (List<com.toppis.app.data.models.PromocionEspacio>, Map<Int, List<ItemMenu>>) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val espacios = promocionRepo.getEspacios(promo.id)
+                val elegibles = espacios.associate { esp ->
+                    val ops = promocionRepo.getOpciones(esp.id)
+                    esp.id to PosCalculos.elegiblesEspacio(esp, ops, _menu.value)
+                }
+                onLoaded(espacios, elegibles)
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al cargar la promo")
+            }
+        }
+    }
+
+    /** Agrega una promo (precio fijo) con los productos elegidos por espacio. */
+    fun agregarPromo(promo: Promocion, elecciones: List<EleccionPromo>) {
+        viewModelScope.launch {
+            try {
+                val itemId = pedidoRepo.agregarItem(
+                    pedidoId, TipoLineaPedido.PROMO, null, promo.id,
+                    cantidad = 1, precioUnitario = promo.precio, subtotal = promo.precio
+                )
+                elecciones.forEach { e ->
+                    val unidadId = pedidoRepo.agregarUnidad(itemId, e.itemMenuId, e.comentario)
+                    e.modIds.forEach { pedidoRepo.agregarMod(unidadId, it) }
+                }
+                refrescarTotales()
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al agregar la promo")
+            }
+        }
+    }
 
     /** Precio resultante de un producto con los modificadores elegidos. */
     fun precioConMods(item: ItemMenu, modIds: List<Int>): Double =
