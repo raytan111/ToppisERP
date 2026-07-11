@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
         val pedidoRepo = com.toppis.app.data.repository.PedidoRepository()
         val clienteRepo = com.toppis.app.data.repository.ClienteRepository()
         val pedidosFactory = com.toppis.app.ui.pos.PedidosViewModelFactory(pedidoRepo, clienteRepo)
+        val comandasFactory = com.toppis.app.ui.pos.ComandasViewModelFactory(pedidoRepo, clienteRepo)
 
         // ── Menú Interactivo ────────────────────────────────────────────────
         val menuRepo = MenuRepository()
@@ -191,6 +192,7 @@ class MainActivity : ComponentActivity() {
                         rutinaSemanalViewModelFactory = rutinaSemanalFactory,
                         pedidosViewModelFactory = pedidosFactory,
                         carritoViewModelFactory = carritoFactory,
+                        comandasViewModelFactory = comandasFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.fillMaxSize()
                     )

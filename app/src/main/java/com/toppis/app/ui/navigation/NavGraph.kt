@@ -137,6 +137,7 @@ fun NavGraph(
     rutinaSemanalViewModelFactory: com.toppis.app.ui.costos.RutinaSemanalViewModelFactory,
     pedidosViewModelFactory: com.toppis.app.ui.pos.PedidosViewModelFactory,
     carritoViewModelFactory: com.toppis.app.ui.pos.CarritoViewModelFactory,
+    comandasViewModelFactory: com.toppis.app.ui.pos.ComandasViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -260,6 +261,14 @@ fun NavGraph(
                 usuarioId = usuarioActual?.id,
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        // ── Cocina: comandas (KDS) ───────────────────────────────────────────
+        composable("comandas") {
+            if (!permisos.puedeAbrir("comandas")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.pos.ComandasViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = comandasViewModelFactory)
+            com.toppis.app.ui.pos.ComandasScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         // ── Fondos ───────────────────────────────────────────────────────────

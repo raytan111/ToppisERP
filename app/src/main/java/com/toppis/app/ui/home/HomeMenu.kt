@@ -47,6 +47,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("preparaciones", "Preparaciones", Icons.Filled.Blender),
             MenuOpcion("modificadores", "Modificadores", Icons.Filled.Tune),
             MenuOpcion("promociones", "Promociones", Icons.Filled.LocalOffer, soloAdmin = true),
+            MenuOpcion("comandas", "Comandas (cocina)", Icons.Filled.Fastfood),
             MenuOpcion("food_cost", "Food Cost & Menú", Icons.Filled.PieChart)
         )
     ),

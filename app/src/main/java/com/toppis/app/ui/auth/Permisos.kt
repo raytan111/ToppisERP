@@ -55,18 +55,18 @@ data class Permisos(
             // Inventario
             "inventario", "mermas", "conteos", "compra_sugerida", "variance", "compras", "proveedores",
             // Cocina
-            "menu_config", "preparaciones", "modificadores", "food_cost",
+            "menu_config", "preparaciones", "modificadores", "food_cost", "comandas",
             // Análisis / otros
             "kpis", "ventas_historial", "comprobantes", "promociones"
         )
 
         private val RUTAS_SUPERVISOR = setOf(
-            "pos", "ventas_historial", "comprobantes", "promociones",
+            "pos", "ventas_historial", "comprobantes", "promociones", "comandas",
             "inventario", "mermas", "conteos", "preparaciones", "modificadores"
         )
 
         private val RUTAS_CAJERO = setOf(
-            "pos", "ventas_historial", "comprobantes"
+            "pos", "ventas_historial", "comprobantes", "comandas"
         )
 
         fun de(rol: Rol?): Permisos = when (rol) {

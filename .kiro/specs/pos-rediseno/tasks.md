@@ -109,7 +109,7 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase H — Cocina (KDS)
 
-- [ ] 20. `ComandasScreen` + `ComandasViewModel`: lista realtime de pedidos CERRADO no
+- [x] 20. `ComandasScreen` + `ComandasViewModel`: lista realtime de pedidos CERRADO no
   entregados con productos/mods/comentarios; botón Entregar; ruta/DI/permisos.
   - _Requisitos: 9.1, 9.2, 9.3_
 

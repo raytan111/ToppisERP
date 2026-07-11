@@ -39,6 +39,16 @@ class PedidoRepository {
         emptyList()
     }
 
+    /** Comandas pendientes de cocina: pedidos CERRADO aún no entregados. */
+    suspend fun getComandasPendientes(): List<Pedido> = try {
+        client.postgrest.from("pedidos").select().decodeList<Pedido>()
+            .filter { it.estado == com.toppis.app.data.db.entities.EstadoPedido.CERRADO && !it.entregado }
+            .sortedBy { it.closedAt ?: it.id.toString() }
+    } catch (e: Exception) {
+        Log.e("PedidoRepository", "Error getComandasPendientes: ${e.message}", e)
+        emptyList()
+    }
+
     suspend fun getPedido(id: Int): Pedido? = try {
         client.postgrest.from("pedidos").select { filter { eq("id", id) } }
             .decodeSingleOrNull<Pedido>()
