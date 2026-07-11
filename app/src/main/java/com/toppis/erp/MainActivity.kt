@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
         val clienteRepo = com.toppis.app.data.repository.ClienteRepository()
         val pedidosFactory = com.toppis.app.ui.pos.PedidosViewModelFactory(pedidoRepo, clienteRepo)
         val comandasFactory = com.toppis.app.ui.pos.ComandasViewModelFactory(pedidoRepo, clienteRepo)
+        val clientesFactory = com.toppis.app.ui.pos.ClientesViewModelFactory(clienteRepo, pedidoRepo)
 
         // ── Menú Interactivo ────────────────────────────────────────────────
         val menuRepo = MenuRepository()
@@ -86,7 +87,7 @@ class MainActivity : ComponentActivity() {
         val foodCostFactory = com.toppis.app.ui.foodcost.FoodCostViewModelFactory(menuRepo)
 
         // Carrito del POS (necesita menú, modificadores y promociones)
-        val carritoFactory = com.toppis.app.ui.pos.CarritoViewModelFactory(pedidoRepo, menuRepo, modificadorRepo, promocionRepo, sobreRepo)
+        val carritoFactory = com.toppis.app.ui.pos.CarritoViewModelFactory(pedidoRepo, menuRepo, modificadorRepo, promocionRepo, sobreRepo, clienteRepo)
 
         val mermaRepo = com.toppis.app.data.repository.MermaRepository()
         val mermaFactory = com.toppis.app.ui.mermas.MermaViewModelFactory(mermaRepo)
@@ -193,6 +194,7 @@ class MainActivity : ComponentActivity() {
                         pedidosViewModelFactory = pedidosFactory,
                         carritoViewModelFactory = carritoFactory,
                         comandasViewModelFactory = comandasFactory,
+                        clientesViewModelFactory = clientesFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.fillMaxSize()
                     )

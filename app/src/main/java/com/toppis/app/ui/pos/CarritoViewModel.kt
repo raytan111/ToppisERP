@@ -44,7 +44,8 @@ class CarritoViewModel(
     private val menuRepo: MenuRepository,
     private val modificadorRepo: ModificadorRepository,
     private val promocionRepo: PromocionRepository,
-    private val sobreRepo: com.toppis.app.data.repository.SobreRepository
+    private val sobreRepo: com.toppis.app.data.repository.SobreRepository,
+    private val clienteRepo: com.toppis.app.data.repository.ClienteRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CarritoUiState>(CarritoUiState.Idle)
@@ -71,6 +72,13 @@ class CarritoViewModel(
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
 
+    private val _cliente = MutableStateFlow<com.toppis.app.data.models.Cliente?>(null)
+    val cliente: StateFlow<com.toppis.app.data.models.Cliente?> = _cliente.asStateFlow()
+
+    /** El cliente tiene cupón disponible (≥ 6 sellos). */
+    private val _puedeRegalar = MutableStateFlow(false)
+    val puedeRegalar: StateFlow<Boolean> = _puedeRegalar.asStateFlow()
+
     private var modificadores: List<Modificador> = emptyList()
     private var pedidoId: Int = 0
 
@@ -87,6 +95,7 @@ class CarritoViewModel(
                         .filter { it.tipo == com.toppis.app.data.db.entities.TipoSobre.CUENTA }
                 }
                 _pedido.value = pedidoRepo.getPedido(id)
+                cargarCliente()
                 recargarLineas()
             } catch (e: Exception) {
                 _uiState.value = CarritoUiState.Error(e.message ?: "Error al cargar el pedido")
@@ -188,17 +197,24 @@ class CarritoViewModel(
     fun precioConMods(item: ItemMenu, modIds: List<Int>): Double =
         PosCalculos.precioProducto(item.precio, modificadores.filter { it.id in modIds }.map { it.deltaPrecio })
 
+    private suspend fun cargarCliente() {
+        val cid = _pedido.value?.clienteId
+        val c = if (cid != null) clienteRepo.getClientes().firstOrNull { it.id == cid } else null
+        _cliente.value = c
+        _puedeRegalar.value = c != null && PosCalculos.puedeRegalar(c.sellosHamburguesa)
+    }
+
     /** Agrega un producto al carrito con sus modificadores y comentario. */
-    fun agregarProducto(item: ItemMenu, modIds: List<Int>, comentario: String?) {
+    fun agregarProducto(item: ItemMenu, modIds: List<Int>, comentario: String?, esRegalo: Boolean = false) {
         viewModelScope.launch {
             try {
-                val precio = precioConMods(item, modIds)
+                val precio = if (esRegalo) PosCalculos.precioRegalo() else precioConMods(item, modIds)
                 val itemId = pedidoRepo.agregarItem(
                     pedidoId, TipoLineaPedido.PRODUCTO, item.id, null,
-                    cantidad = 1, precioUnitario = precio, subtotal = precio
+                    cantidad = 1, precioUnitario = precio, subtotal = precio, esRegalo = esRegalo
                 )
                 val unidadId = pedidoRepo.agregarUnidad(itemId, item.id, comentario)
-                modIds.forEach { pedidoRepo.agregarMod(unidadId, it) }
+                if (!esRegalo) modIds.forEach { pedidoRepo.agregarMod(unidadId, it) }
                 refrescarTotales()
             } catch (e: Exception) {
                 _uiState.value = CarritoUiState.Error(e.message ?: "Error al agregar el producto")
@@ -269,6 +285,7 @@ class CarritoViewModel(
         viewModelScope.launch {
             try {
                 pedidoRepo.pagarPedido(pedidoId, metodo.name, sobreId, usuarioId)
+                aplicarCuponera()
                 _pedido.value = pedidoRepo.getPedido(pedidoId)
                 _mensaje.value = "Pedido pagado"
             } catch (e: Exception) {
@@ -290,6 +307,29 @@ class CarritoViewModel(
         }
     }
 
+    /** Actualiza los sellos del cliente: +1 si el pedido trae hamburguesa; −6 si usó regalo. */
+    private suspend fun aplicarCuponera() {
+        val c = _cliente.value ?: return
+        val menuById = _menu.value.associateBy { it.id }
+        val items = pedidoRepo.getItems(pedidoId)
+        var incluyeHamburguesa = false
+        var huboRegalo = false
+        for (it in items) {
+            if (it.esRegalo) { huboRegalo = true; continue }
+            val unidades = pedidoRepo.getUnidades(it.id)
+            if (unidades.any { u -> menuById[u.itemMenuId]?.categoria.equals("Hamburguesas", ignoreCase = true) }) {
+                incluyeHamburguesa = true
+            }
+        }
+        var nuevos = PosCalculos.sellosTrasPedido(c.sellosHamburguesa, incluyeHamburguesa)
+        if (huboRegalo) nuevos = PosCalculos.sellosTrasRegalo(nuevos)
+        if (nuevos != c.sellosHamburguesa) {
+            clienteRepo.fijarSellos(c.id, nuevos)
+            _cliente.value = c.copy(sellosHamburguesa = nuevos)
+            _puedeRegalar.value = PosCalculos.puedeRegalar(nuevos)
+        }
+    }
+
     fun resetMensaje() { _mensaje.value = null }
 
     fun resetState() { _uiState.value = CarritoUiState.Idle }
@@ -300,12 +340,13 @@ class CarritoViewModelFactory(
     private val menuRepo: MenuRepository,
     private val modificadorRepo: ModificadorRepository,
     private val promocionRepo: PromocionRepository,
-    private val sobreRepo: com.toppis.app.data.repository.SobreRepository
+    private val sobreRepo: com.toppis.app.data.repository.SobreRepository,
+    private val clienteRepo: com.toppis.app.data.repository.ClienteRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CarritoViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CarritoViewModel(pedidoRepo, menuRepo, modificadorRepo, promocionRepo, sobreRepo) as T
+            return CarritoViewModel(pedidoRepo, menuRepo, modificadorRepo, promocionRepo, sobreRepo, clienteRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

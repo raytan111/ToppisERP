@@ -49,6 +49,11 @@ class PedidoRepository {
         emptyList()
     }
 
+    /** Todos los pedidos (para historial y deuda por cliente). */
+    suspend fun getTodosPedidos(): List<Pedido> = try {
+        client.postgrest.from("pedidos").select().decodeList<Pedido>()
+    } catch (e: Exception) { emptyList() }
+
     suspend fun getPedido(id: Int): Pedido? = try {
         client.postgrest.from("pedidos").select { filter { eq("id", id) } }
             .decodeSingleOrNull<Pedido>()

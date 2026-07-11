@@ -53,6 +53,7 @@ fun PedidoCarritoScreen(
     val uiState by viewModel.uiState.collectAsState()
     val sobresCuenta by viewModel.sobresCuenta.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
+    val puedeRegalar by viewModel.puedeRegalar.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -83,6 +84,17 @@ fun PedidoCarritoScreen(
     ) { padding ->
         if (cargando) { com.toppis.app.ui.components.SkeletonList(); return@Scaffold }
         Column(Modifier.fillMaxSize().padding(padding)) {
+
+            if (puedeRegalar) {
+                Surface(color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "🎁 Este cliente tiene cupón: al elegir la Cheese marcá \"Es regalo (cupón)\".",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
 
             // ── Catálogo (arriba) ─────────────────────────────────────────
             TabRow(selectedTabIndex = tab) {
@@ -170,10 +182,11 @@ fun PedidoCarritoScreen(
         ProductoModsDialog(
             item = item,
             modificadores = viewModel.modificadoresDe(item),
+            puedeRegalar = puedeRegalar,
             precioCon = { ids -> viewModel.precioConMods(item, ids) },
             onCancelar = { productoPopup = null },
-            onAgregar = { modIds, comentario ->
-                viewModel.agregarProducto(item, modIds, comentario)
+            onAgregar = { modIds, comentario, esRegalo ->
+                viewModel.agregarProducto(item, modIds, comentario, esRegalo)
                 productoPopup = null
             }
         )
@@ -333,13 +346,15 @@ private fun ColumnScope.CarritoPanel(
 private fun ProductoModsDialog(
     item: ItemMenu,
     modificadores: List<com.toppis.app.data.models.Modificador>,
+    puedeRegalar: Boolean,
     precioCon: (List<Int>) -> Double,
     onCancelar: () -> Unit,
-    onAgregar: (modIds: List<Int>, comentario: String?) -> Unit
+    onAgregar: (modIds: List<Int>, comentario: String?, esRegalo: Boolean) -> Unit
 ) {
     val seleccionados = remember { mutableStateListOf<Int>() }
     var comentario by remember { mutableStateOf("") }
-    val precio = precioCon(seleccionados.toList())
+    var esRegalo by remember { mutableStateOf(false) }
+    val precio = if (esRegalo) 0.0 else precioCon(seleccionados.toList())
 
     AlertDialog(
         onDismissRequest = { /* protegido: no cierra al tocar afuera */ },
@@ -380,10 +395,19 @@ private fun ProductoModsDialog(
                     label = { Text("Comentario (ej: sin tomate)") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (puedeRegalar) {
+                    Row(
+                        Modifier.fillMaxWidth().clickable { esRegalo = !esRegalo },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(checked = esRegalo, onCheckedChange = { esRegalo = it })
+                        Text("🎁 Es regalo (cupón) — precio $0")
+                    }
+                }
             }
         },
         confirmButton = {
-            Button(onClick = { onAgregar(seleccionados.toList(), comentario.ifBlank { null }) }) {
+            Button(onClick = { onAgregar(seleccionados.toList(), comentario.ifBlank { null }, esRegalo) }) {
                 Text("Agregar ${money.format(precio)}")
             }
         },

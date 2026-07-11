@@ -115,11 +115,11 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase I — Cuponera y clientes
 
-- [ ] 21. Cuponera en `pagar_pedido`: +1 sello si trae hamburguesa; habilitar Cheese
+- [x] 21. Cuponera (aplicada tras el pago en Kotlin): +1 sello si trae hamburguesa; habilitar Cheese
   gratis a los 6; aplicar regalo (precio 0, −6 sellos, marca REGALO, no merma).
   - _Requisitos: 11.1, 11.2, 11.3_
 
-- [ ] 22. `ClientesScreen` + `ClientesViewModel`: lista con búsqueda, editar nombre,
+- [x] 22. `ClientesScreen` + `ClientesViewModel`: lista con búsqueda, editar nombre,
   ver **deuda** e **historial**, ver/fijar **sellos** (cargar cupones existentes).
   - _Requisitos: 10.2, 10.3, 11.4, 11.5_
 

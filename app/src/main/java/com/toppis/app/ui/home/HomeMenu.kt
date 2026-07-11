@@ -111,6 +111,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
         icono = Icons.Filled.Settings,
         soloAdmin = true,
         opciones = listOf(
+            MenuOpcion("clientes", "Clientes / Cuponera", Icons.Filled.People, soloAdmin = true),
             MenuOpcion("usuarios", "Usuarios", Icons.Filled.Group, soloAdmin = true),
             MenuOpcion("locales", "Locales", Icons.Filled.Store, soloAdmin = true),
             MenuOpcion("asignaciones_local", "Usuarios por Local", Icons.Filled.SupervisedUserCircle, soloAdmin = true),

@@ -57,7 +57,7 @@ data class Permisos(
             // Cocina
             "menu_config", "preparaciones", "modificadores", "food_cost", "comandas",
             // Análisis / otros
-            "kpis", "ventas_historial", "comprobantes", "promociones"
+            "kpis", "ventas_historial", "comprobantes", "promociones", "clientes"
         )
 
         private val RUTAS_SUPERVISOR = setOf(

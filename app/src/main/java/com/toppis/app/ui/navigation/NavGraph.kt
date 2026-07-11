@@ -138,6 +138,7 @@ fun NavGraph(
     pedidosViewModelFactory: com.toppis.app.ui.pos.PedidosViewModelFactory,
     carritoViewModelFactory: com.toppis.app.ui.pos.CarritoViewModelFactory,
     comandasViewModelFactory: com.toppis.app.ui.pos.ComandasViewModelFactory,
+    clientesViewModelFactory: com.toppis.app.ui.pos.ClientesViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -269,6 +270,13 @@ fun NavGraph(
             val vm: com.toppis.app.ui.pos.ComandasViewModel =
                 viewModel(viewModelStoreOwner = activityOwner, factory = comandasViewModelFactory)
             com.toppis.app.ui.pos.ComandasScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("clientes") {
+            if (!permisos.puedeAbrir("clientes")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.pos.ClientesViewModel =
+                viewModel(viewModelStoreOwner = activityOwner, factory = clientesViewModelFactory)
+            com.toppis.app.ui.pos.ClientesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
         }
 
         // ── Fondos ───────────────────────────────────────────────────────────
