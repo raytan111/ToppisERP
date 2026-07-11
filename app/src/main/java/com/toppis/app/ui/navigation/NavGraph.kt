@@ -257,6 +257,7 @@ fun NavGraph(
             com.toppis.app.ui.pos.PedidoCarritoScreen(
                 viewModel = vm,
                 pedidoId = pedidoId,
+                usuarioId = usuarioActual?.id,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

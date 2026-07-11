@@ -145,6 +145,46 @@ class PedidoRepository {
         ) { filter { eq("id", pedidoId) } }
     }
 
+    // ── Estados ───────────────────────────────────────────────────────────────
+
+    /** Cierra el pedido: guarda la comanda y pasa a estado CERRADO. */
+    suspend fun cerrarPedido(pedidoId: Int, comandaTexto: String) {
+        client.postgrest.from("pedidos").update(
+            buildJsonObject {
+                put("estado", "CERRADO")
+                put("comanda_texto", comandaTexto)
+                put("closed_at", java.time.Instant.now().toString())
+            }
+        ) { filter { eq("id", pedidoId) } }
+    }
+
+    /** Marca el pedido como entregado. */
+    suspend fun marcarEntregado(pedidoId: Int) {
+        client.postgrest.from("pedidos").update(
+            buildJsonObject {
+                put("entregado", true)
+                put("delivered_at", java.time.Instant.now().toString())
+            }
+        ) { filter { eq("id", pedidoId) } }
+    }
+
+    /** Paga el pedido de forma atómica (venta + stock + sobre) vía RPC. Devuelve venta_id. */
+    suspend fun pagarPedido(pedidoId: Int, metodo: String, sobreId: Int, usuarioId: String?): Int = try {
+        client.postgrest.rpc(
+            "pagar_pedido",
+            buildJsonObject {
+                put("p_pedido_id", pedidoId)
+                put("p_metodo", metodo)
+                put("p_sobre_id", sobreId)
+                if (usuarioId == null) put("p_usuario", kotlinx.serialization.json.JsonNull) else put("p_usuario", usuarioId)
+            }
+        ).decodeAs<Int>()
+    } catch (e: Exception) {
+        Log.e("PedidoRepository", "Error pagarPedido: ${e.message}", e)
+        val msg = Regex("\"message\"\\s*:\\s*\"([^\"]+)\"").find(e.message ?: "")?.groupValues?.get(1)
+        throw Exception(msg ?: "Error al pagar el pedido")
+    }
+
     // ── Observador Realtime ─────────────────────────────────────────────────
 
     /** Emite cada vez que cambia la tabla "pedidos". */

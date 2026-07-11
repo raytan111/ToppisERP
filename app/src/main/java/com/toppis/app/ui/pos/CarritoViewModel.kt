@@ -43,7 +43,8 @@ class CarritoViewModel(
     private val pedidoRepo: PedidoRepository,
     private val menuRepo: MenuRepository,
     private val modificadorRepo: ModificadorRepository,
-    private val promocionRepo: PromocionRepository
+    private val promocionRepo: PromocionRepository,
+    private val sobreRepo: com.toppis.app.data.repository.SobreRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CarritoUiState>(CarritoUiState.Idle)
@@ -64,6 +65,12 @@ class CarritoViewModel(
     private val _cargando = MutableStateFlow(true)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
 
+    private val _sobresCuenta = MutableStateFlow<List<com.toppis.app.data.models.Sobre>>(emptyList())
+    val sobresCuenta: StateFlow<List<com.toppis.app.data.models.Sobre>> = _sobresCuenta.asStateFlow()
+
+    private val _mensaje = MutableStateFlow<String?>(null)
+    val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
+
     private var modificadores: List<Modificador> = emptyList()
     private var pedidoId: Int = 0
 
@@ -75,6 +82,10 @@ class CarritoViewModel(
                 if (_menu.value.isEmpty()) _menu.value = menuRepo.getItemsMenuActivos().sortedBy { it.nombre }
                 if (_promos.value.isEmpty()) _promos.value = promocionRepo.getPromociones().filter { it.activo }
                 if (modificadores.isEmpty()) modificadores = modificadorRepo.getModificadores().filter { it.activo }
+                if (_sobresCuenta.value.isEmpty()) {
+                    _sobresCuenta.value = sobreRepo.getSobres()
+                        .filter { it.tipo == com.toppis.app.data.db.entities.TipoSobre.CUENTA }
+                }
                 _pedido.value = pedidoRepo.getPedido(id)
                 recargarLineas()
             } catch (e: Exception) {
@@ -228,6 +239,59 @@ class CarritoViewModel(
         _pedido.value = pedidoRepo.getPedido(pedidoId)
     }
 
+    /** Texto de comanda para cocina, armado desde las líneas del carrito. */
+    private fun construirComanda(): String = buildString {
+        appendLine("PEDIDO #$pedidoId")
+        appendLine("─".repeat(28))
+        _lineas.value.forEach { l ->
+            appendLine("${l.item.cantidad}x ${l.titulo}")
+            if (l.detalle.isNotBlank()) appendLine("   ${l.detalle}")
+        }
+        appendLine("─".repeat(28))
+        appendLine("TOTAL: ${java.text.DecimalFormat("$#,##0").format(_pedido.value?.total ?: 0.0)}")
+    }
+
+    /** Cierra el pedido y emite la comanda. */
+    fun cerrar() {
+        viewModelScope.launch {
+            try {
+                pedidoRepo.cerrarPedido(pedidoId, construirComanda())
+                _pedido.value = pedidoRepo.getPedido(pedidoId)
+                _mensaje.value = "Comanda enviada a cocina"
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al cerrar el pedido")
+            }
+        }
+    }
+
+    /** Cobra el pedido: crea la venta, descuenta stock e ingresa al sobre. */
+    fun pagar(metodo: com.toppis.app.data.db.entities.MetodoPago, sobreId: Int, usuarioId: String?) {
+        viewModelScope.launch {
+            try {
+                pedidoRepo.pagarPedido(pedidoId, metodo.name, sobreId, usuarioId)
+                _pedido.value = pedidoRepo.getPedido(pedidoId)
+                _mensaje.value = "Pedido pagado"
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al pagar")
+            }
+        }
+    }
+
+    /** Marca el pedido como entregado. */
+    fun entregar() {
+        viewModelScope.launch {
+            try {
+                pedidoRepo.marcarEntregado(pedidoId)
+                _pedido.value = pedidoRepo.getPedido(pedidoId)
+                _mensaje.value = "Pedido entregado"
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al marcar entregado")
+            }
+        }
+    }
+
+    fun resetMensaje() { _mensaje.value = null }
+
     fun resetState() { _uiState.value = CarritoUiState.Idle }
 }
 
@@ -235,12 +299,13 @@ class CarritoViewModelFactory(
     private val pedidoRepo: PedidoRepository,
     private val menuRepo: MenuRepository,
     private val modificadorRepo: ModificadorRepository,
-    private val promocionRepo: PromocionRepository
+    private val promocionRepo: PromocionRepository,
+    private val sobreRepo: com.toppis.app.data.repository.SobreRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CarritoViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CarritoViewModel(pedidoRepo, menuRepo, modificadorRepo, promocionRepo) as T
+            return CarritoViewModel(pedidoRepo, menuRepo, modificadorRepo, promocionRepo, sobreRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

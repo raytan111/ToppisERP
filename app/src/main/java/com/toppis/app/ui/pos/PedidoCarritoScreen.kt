@@ -41,6 +41,7 @@ private val money = DecimalFormat("$#,##0")
 fun PedidoCarritoScreen(
     viewModel: CarritoViewModel,
     pedidoId: Int,
+    usuarioId: String? = null,
     onPromoClick: (Promocion) -> Unit = {},
     onNavigateBack: () -> Unit = {}
 ) {
@@ -50,7 +51,10 @@ fun PedidoCarritoScreen(
     val lineas by viewModel.lineas.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val sobresCuenta by viewModel.sobresCuenta.collectAsState()
+    val mensaje by viewModel.mensaje.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var tab by remember { mutableStateOf(0) }
     var categoria by remember { mutableStateOf<String?>(null) }
@@ -58,16 +62,23 @@ fun PedidoCarritoScreen(
     var promoPopup by remember { mutableStateOf<Promocion?>(null) }
     var espaciosPromo by remember { mutableStateOf<List<com.toppis.app.data.models.PromocionEspacio>>(emptyList()) }
     var elegiblesPromo by remember { mutableStateOf<Map<Int, List<ItemMenu>>>(emptyMap()) }
+    var showPagar by remember { mutableStateOf(false) }
+    var showComanda by remember { mutableStateOf(false) }
+    var showEntregarSinPagar by remember { mutableStateOf(false) }
 
     LaunchedEffect(pedidoId) { viewModel.cargar(pedidoId) }
     LaunchedEffect(uiState) {
         (uiState as? CarritoUiState.Error)?.let { errorMsg = it.message; viewModel.resetState() }
+    }
+    LaunchedEffect(mensaje) {
+        mensaje?.let { snackbarHostState.showSnackbar(it); viewModel.resetMensaje() }
     }
     errorMsg?.let { msg ->
         com.toppis.app.ui.components.ToppisErrorDialog(mensaje = msg, onDismiss = { errorMsg = null })
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { ToppisTopBar(titulo = "Pedido #$pedidoId", onBack = onNavigateBack) }
     ) { padding ->
         if (cargando) { com.toppis.app.ui.components.SkeletonList(); return@Scaffold }
@@ -141,6 +152,17 @@ fun PedidoCarritoScreen(
                 onMenos = { viewModel.cambiarCantidad(it, it.item.cantidad - 1) },
                 onQuitar = { viewModel.quitarLinea(it) }
             )
+
+            pedido?.let { p ->
+                AccionesPedido(
+                    pedido = p,
+                    hayLineas = lineas.isNotEmpty(),
+                    onCerrar = { viewModel.cerrar() },
+                    onCobrar = { showPagar = true },
+                    onEntregar = { if (p.pagado) viewModel.entregar() else showEntregarSinPagar = true },
+                    onVerComanda = { showComanda = true }
+                )
+            }
         }
     }
 
@@ -168,6 +190,36 @@ fun PedidoCarritoScreen(
                 viewModel.agregarPromo(promo, elecciones)
                 promoPopup = null; espaciosPromo = emptyList(); elegiblesPromo = emptyMap()
             }
+        )
+    }
+
+    if (showPagar) {
+        PagarDialog(
+            total = pedido?.total ?: 0.0,
+            sobres = sobresCuenta,
+            onDismiss = { showPagar = false },
+            onConfirm = { metodo, sobreId ->
+                showPagar = false
+                viewModel.pagar(metodo, sobreId, usuarioId)
+            }
+        )
+    }
+
+    if (showComanda) {
+        AlertDialog(
+            onDismissRequest = { showComanda = false },
+            title = { Text("Comanda") },
+            text = { Text(pedido?.comandaTexto ?: "Sin comanda todavía.") },
+            confirmButton = { TextButton(onClick = { showComanda = false }) { Text("Cerrar") } }
+        )
+    }
+
+    if (showEntregarSinPagar) {
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Entregar sin pagar",
+            mensaje = "Este pedido todavía no está pagado. ¿Marcar como entregado igual? Quedará con deuda.",
+            onConfirm = { showEntregarSinPagar = false; viewModel.entregar() },
+            onDismiss = { showEntregarSinPagar = false }
         )
     }
 }
@@ -440,5 +492,87 @@ private fun PromoConfigDialog(
             ) { Text("Agregar ${money.format(promo.precio)}") }
         },
         dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } }
+    )
+}
+
+@Composable
+private fun ColumnScope.AccionesPedido(
+    pedido: com.toppis.app.data.models.Pedido,
+    hayLineas: Boolean,
+    onCerrar: () -> Unit,
+    onCobrar: () -> Unit,
+    onEntregar: () -> Unit,
+    onVerComanda: () -> Unit
+) {
+    val abierto = pedido.estado == com.toppis.app.data.db.entities.EstadoPedido.ABIERTO
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (abierto) {
+                Button(onClick = onCerrar, enabled = hayLineas, modifier = Modifier.weight(1f)) {
+                    Text("Cerrar y enviar comanda")
+                }
+            } else {
+                OutlinedButton(onClick = onVerComanda, modifier = Modifier.weight(1f)) { Text("Ver comanda") }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!pedido.pagado) {
+                Button(onClick = onCobrar, enabled = hayLineas, modifier = Modifier.weight(1f)) { Text("Cobrar") }
+            }
+            if (!pedido.entregado) {
+                OutlinedButton(onClick = onEntregar, modifier = Modifier.weight(1f)) { Text("Entregar") }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PagarDialog(
+    total: Double,
+    sobres: List<com.toppis.app.data.models.Sobre>,
+    onDismiss: () -> Unit,
+    onConfirm: (com.toppis.app.data.db.entities.MetodoPago, Int) -> Unit
+) {
+    var metodo by remember { mutableStateOf(com.toppis.app.data.db.entities.MetodoPago.EFECTIVO) }
+    var sobre by remember { mutableStateOf(sobres.firstOrNull()) }
+    var exp by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Cobrar ${money.format(total)}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Método de pago", style = MaterialTheme.typography.labelLarge)
+                com.toppis.app.data.db.entities.MetodoPago.entries.forEach { m ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { metodo = m },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = metodo == m, onClick = { metodo = m })
+                        Text(m.label)
+                    }
+                }
+                ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
+                    OutlinedTextField(
+                        value = sobre?.nombre ?: "Elegí un sobre", onValueChange = {}, readOnly = true,
+                        label = { Text("Sobre destino") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+                        sobres.forEach { s ->
+                            DropdownMenuItem(text = { Text(s.nombre) }, onClick = { sobre = s; exp = false })
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { sobre?.let { onConfirm(metodo, it.id) } }, enabled = sobre != null) {
+                Text("Confirmar pago")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }

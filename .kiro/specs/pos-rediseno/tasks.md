@@ -95,15 +95,15 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase G — Estados y pago
 
-- [ ] 17. `cerrar_pedido` (RPC): genera/guarda comanda, estado CERRADO; al abrir un
+- [x] 17. `cerrar_pedido` (en Kotlin, update de una tabla): genera/guarda comanda, estado CERRADO; al abrir un
   pedido CERRADO se muestra la comanda.
   - _Requisitos: 7.2, 7.6, 9.4_
 
-- [ ] 18. `pagar_pedido` (RPC atómica): materializa venta desde `pedido_unidades`,
+- [x] 18. `pagar_pedido` (RPC atómica): materializa venta desde `pedido_unidades`,
   descuenta stock + mods, ingresa al sobre, marca pagado/venta_id; idempotente por venta_id.
   - _Requisitos: 7.4, 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 19. `marcar_entregado` (RPC) + `PagarDialog` (método → sobre) + avisos de deuda
+- [x] 19. `marcar_entregado` (Kotlin) + `PagarDialog` (método → sobre) + avisos de deuda
   (rojo en lista; aviso al entregar sin pagar, no bloquea).
   - _Requisitos: 7.3, 7.5, 8.1, 1.6_
 
