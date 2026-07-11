@@ -125,14 +125,14 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase J — Envío, diseño final y verificación
 
-- [ ] 23. Envío por zonas (1000–3000) en el carrito, sumado al total y registrado en la venta.
+- [x] 23. Envío por zonas (1000–3000) en el carrito, sumado al total y registrado en la venta.
   - _Requisitos: 12.1, 12.2, 12.3_
 
-- [ ] 24. Pulido visual (imágenes, acentos, EmptyState/Skeleton, errores en
+- [x] 24. Pulido visual (imágenes, acentos, EmptyState/Skeleton, errores en
   `ToppisErrorDialog`) y consistencia con el sistema de diseño.
   - _Requisitos: 13.1, 13.2, 13.3, 13.4_
 
-- [ ] 25. Verificación final: build verde, correr tests de propiedad, revisar flujo
+- [x] 25. Verificación final: build verde, correr tests de propiedad, revisar flujo
   completo (crear→armar→cerrar→pagar→entregar + cocina + cupón); actualizar `README.md`
   y `.kiro/PROYECTO-CONTEXTO.md`.
   - _Requisitos: 14.1, 14.2, 14.3_

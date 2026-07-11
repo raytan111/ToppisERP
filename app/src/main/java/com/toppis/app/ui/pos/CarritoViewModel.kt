@@ -246,6 +246,19 @@ class CarritoViewModel(
         }
     }
 
+    /** Fija la zona de envío y recalcula el total. */
+    fun setEnvio(zona: com.toppis.app.data.db.entities.ZonaEnvio) {
+        viewModelScope.launch {
+            try {
+                val total = PosCalculos.totalPedido(_lineas.value.map { it.subtotal }, zona.precio)
+                pedidoRepo.actualizarTotales(pedidoId, total, zona.name, zona.precio)
+                _pedido.value = pedidoRepo.getPedido(pedidoId)
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al fijar el envío")
+            }
+        }
+    }
+
     private suspend fun refrescarTotales() {
         recargarLineas()
         val ped = _pedido.value

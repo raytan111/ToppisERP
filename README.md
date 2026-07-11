@@ -8,7 +8,7 @@ Construido con **Jetpack Compose** y **Supabase** (PostgreSQL en la nube). Espa�
 
 ## ✨ Características
 
-- 🛒 **Punto de Venta (POS)** — carrito, modificadores (extra/doble/quitar/cambiar sobre la receta real), salsas con cantidad, promociones, envíos, comanda y comprobante interno.
+- 🛒 **Punto de Venta (POS)** — **múltiples pedidos en paralelo** (carritos por cliente, persistidos y en tiempo real), catálogo con imágenes y pestañas Menú/Promos, popup protegido de modificadores por categoría + comentarios, **promos configurables** (el cliente elige por espacio), estados abierto/cerrado/pagado/entregado con aviso de deuda, **pantalla de cocina (KDS)**, **clientes + cuponera** y envío por zonas.
 - 🍔 **Cocina / Food Cost** — artículos unificados, preparaciones (sub-recetas), recetas de menú, food cost % por plato y menu engineering.
 - 📦 **Inventario Pro** — stock en unidad base, mermas (waste log), conteos, compra sugerida y análisis de variación.
 - 🚚 **Compras** — proveedores y recepción con costo promedio ponderado y caducidad por lote.
@@ -132,7 +132,7 @@ supabase/functions/        # Edge Functions (admin-usuarios)
 - [x] Imágenes de productos/promos (Coil + Supabase Storage)
 - [x] Sistema de diseño (splash, ícono, Login moneda 3D, Home, tipografía, modo oscuro, transiciones, buscadores, skeletons/estados vacíos, diálogos unificados)
 - [x] Control de costos y resultado semanal (fijos/variables, semáforos, break-even, rutina de cierre)
-- [ ] Rediseño del POS con nuevas funcionalidades
+- [x] Rediseño del POS (pedidos múltiples, promos configurables, cocina/KDS, clientes + cuponera)
 - [ ] Boletas electrónicas (SII Chile)
 - [ ] Contabilidad/tributario completo
 - [ ] IA (predicción de demanda, optimización de inventario)

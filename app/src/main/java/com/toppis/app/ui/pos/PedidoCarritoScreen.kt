@@ -166,6 +166,13 @@ fun PedidoCarritoScreen(
             )
 
             pedido?.let { p ->
+                if (!p.pagado) {
+                    EnvioSelector(
+                        zonaActual = runCatching { com.toppis.app.data.db.entities.ZonaEnvio.valueOf(p.zonaEnvio) }
+                            .getOrDefault(com.toppis.app.data.db.entities.ZonaEnvio.SIN_ENVIO),
+                        onSelect = { viewModel.setEnvio(it) }
+                    )
+                }
                 AccionesPedido(
                     pedido = p,
                     hayLineas = lineas.isNotEmpty(),
@@ -599,4 +606,37 @@ private fun PagarDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EnvioSelector(
+    zonaActual: com.toppis.app.data.db.entities.ZonaEnvio,
+    onSelect: (com.toppis.app.data.db.entities.ZonaEnvio) -> Unit
+) {
+    var exp by remember { mutableStateOf(false) }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Envío:", style = MaterialTheme.typography.labelLarge)
+        ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }, modifier = Modifier.weight(1f)) {
+            OutlinedTextField(
+                value = if (zonaActual == com.toppis.app.data.db.entities.ZonaEnvio.SIN_ENVIO) "Sin envío"
+                else "${zonaActual.label} · ${money.format(zonaActual.precio)}",
+                onValueChange = {}, readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+            )
+            ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
+                com.toppis.app.data.db.entities.ZonaEnvio.entries.forEach { z ->
+                    DropdownMenuItem(
+                        text = { Text(if (z == com.toppis.app.data.db.entities.ZonaEnvio.SIN_ENVIO) "Sin envío" else "${z.label} · ${money.format(z.precio)}") },
+                        onClick = { onSelect(z); exp = false }
+                    )
+                }
+            }
+        }
+    }
 }

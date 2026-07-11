@@ -1,7 +1,7 @@
 # ToppisERP - Contexto del Proyecto
 
-**Última Actualización**: 2026-07-09
-**Versión Actual**: 3.4 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos)
+**Última Actualización**: 2026-07-11
+**Versión Actual**: 3.5 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos + POS rediseñado)
 **Ubicación**: Chile (CLP, español chileno, integración SII futura)
 
 ---
@@ -52,6 +52,7 @@ ToppisERP es una app Android para gestionar una hamburguesería / dark kitchen. 
 - `supabase-schema.sql`, `supabase-rls.sql`, `supabase-realtime.sql`
 - `supabase-fase4-*` (food cost / clean slate de cocina), `supabase-fase5-*` (mermas, conteos), `supabase-fase6-*` (proveedores, compras), `supabase-fase7-dinero.sql` (sobres/arqueo), `supabase-fase8-manoobra.sql`, `supabase-fase9-*` (locales, roles-local)
 - `supabase-control-costos.sql` (v3.4): categoría de artículo, costos fijos, config de objetivos, pasos de rutina semanal, cierres semanales con snapshot; RPCs `registrar_compra` (último precio) + `recalcular_recetas_articulo` + `confirmar_cierre_semanal`
+- `supabase-pos-rediseno.sql` + `supabase-pos-pagar.sql` (v3.5): tablas de pedidos/clientes/promo-espacios, `modificadores.categoria`, categorías de bebida en inventario, y RPC `pagar_pedido`
 - `supabase-roles-v2.sql` — amplía enum `rol` a 4 valores
 - `supabase-clean-slate.sql` — borra transaccionales y resetea stocks/saldos (puesta en marcha)
 
@@ -184,7 +185,7 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 
 ## 7. Módulos / Funcionalidades
 
-- **POS**: venta veloz, modificadores (extra/doble agregan; quitar/cambiar se editan sobre la receta real con botón lápiz por línea), salsas (artículos/preparaciones con `seleccionable_en_pos` + `cantidad_pos`), promos, comandas, descuento de stock, comprobante.
+- **POS (v3.5, rediseñado)**: múltiples pedidos en paralelo (carritos persistidos + realtime) por cliente (3 dígitos WhatsApp + nombre); catálogo con imágenes y pestañas Menú/Promos; popup protegido de modificadores por categoría + comentario; promos configurables (elección por espacio, precio fijo); estados abierto/cerrado/pagado/entregado con aviso de deuda; venta atómica al pagar (RPC `pagar_pedido`); pantalla de cocina/KDS; clientes + cuponera; envío por zonas. Capa pura `domain/pos/CalculosPos` con 16 tests de propiedad.
 - **Food Cost & Menú**: food cost % por plato, menu engineering.
 - **Inventario**: artículos unificados, mermas (waste log), conteos (pantalla completa), compra sugerida, análisis/variance.
 - **Compras**: proveedores, recepción (pide "total pagado" por línea → costo unitario; costo promedio ponderado; caducidad por lote; gasto/sobre opcional).
@@ -216,6 +217,19 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.5 — Rediseño del POS (2026-07-11)
+Spec: `.kiro/specs/pos-rediseno/`. SQL: `.kiro/database/supabase-pos-rediseno.sql` + `supabase-pos-pagar.sql`.
+- **Capa de pedidos** sobre ventas: tabla `pedidos` (+ `pedido_items`, `pedido_unidades`, `pedido_unidad_mods`), persistida y en **Realtime**. La **venta** (`ventas`) se materializa al **pagar** (RPC `pagar_pedido`, atómica: crea venta+detalle, descuenta stock por receta+mods, ingresa al sobre, marca pagado; idempotente por `venta_id`). KPIs/reportes/costos intactos.
+- **Múltiples carritos** simultáneos: `PosPedidosScreen` (lista realtime con estado y **marca de deuda**), crear pedido con 3 dígitos del WhatsApp + nombre opcional (`ClienteRepository.obtenerOCrear`).
+- **Carrito** (`PedidoCarritoScreen`): dividido, catálogo con **pestañas Menú/Promos** + filtro por categoría, tarjetas con imagen; **popup protegido** (`ProductoModsDialog`) con modificadores de la categoría + comentario libre; cantidades y total.
+- **Modificadores por categoría** (columna `modificadores.categoria`); el comentario "sin…" no descuenta stock.
+- **Promos configurables**: `promocion_espacios` (+ `promocion_espacio_opciones`), espacios por **lista** o **categoría**; en el POS `PromoConfigDialog` elige un producto por espacio (con mods) a **precio fijo**.
+- **Estados**: ABIERTO→CERRADO (genera comanda), `pagado`/`entregado` independientes; **cocina/KDS** (`ComandasScreen`) realtime con "entregar".
+- **Clientes + cuponera** (`ClientesScreen`): 3 dígitos + nombre, historial, deuda, sellos; regla 6 pedidos con hamburguesa → **Cheese gratis** (línea `es_regalo` a $0, descuenta stock, no cuenta como merma); cargar cupones existentes (fijar sellos).
+- **Bebidas** como categorías propias (menú: "Bebida lata"/"Bebida mediana"; inventario `CategoriaArticulo.BEBIDA_LATA/BEBIDA_MEDIANA`). **Envío** por zonas 1000–3000.
+- **Capa pura** `domain/pos/PosCalculos.kt` con **16 tests de propiedad** (verdes).
+- POS viejo (`PosScreen`/`PosViewModel`) reemplazado por el flujo de pedidos (queda como código muerto por ahora).
 
 ### Auditoría de base de datos (2026-07-09) — ✅ base sana
 Scripts: `.kiro/database/supabase-auditoria.sql` (solo lectura), `supabase-limpieza.sql`, `supabase-indices.sql` (todos corridos).
