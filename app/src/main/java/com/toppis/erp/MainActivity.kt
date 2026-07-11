@@ -84,6 +84,9 @@ class MainActivity : ComponentActivity() {
 
         val foodCostFactory = com.toppis.app.ui.foodcost.FoodCostViewModelFactory(menuRepo)
 
+        // Carrito del POS (necesita menú, modificadores y promociones)
+        val carritoFactory = com.toppis.app.ui.pos.CarritoViewModelFactory(pedidoRepo, menuRepo, modificadorRepo, promocionRepo)
+
         val mermaRepo = com.toppis.app.data.repository.MermaRepository()
         val mermaFactory = com.toppis.app.ui.mermas.MermaViewModelFactory(mermaRepo)
 
@@ -187,6 +190,7 @@ class MainActivity : ComponentActivity() {
                         objetivosViewModelFactory = objetivosFactory,
                         rutinaSemanalViewModelFactory = rutinaSemanalFactory,
                         pedidosViewModelFactory = pedidosFactory,
+                        carritoViewModelFactory = carritoFactory,
                         authViewModel = authViewModel,
                         modifier = Modifier.fillMaxSize()
                     )

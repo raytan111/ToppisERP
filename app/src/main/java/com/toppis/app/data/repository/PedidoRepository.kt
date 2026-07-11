@@ -118,6 +118,16 @@ class PedidoRepository {
         )
     }
 
+    /** Cambia la cantidad de una línea y su subtotal. */
+    suspend fun actualizarCantidadItem(pedidoItemId: Int, cantidad: Int, subtotal: Double) {
+        client.postgrest.from("pedido_items").update(
+            buildJsonObject {
+                put("cantidad", cantidad)
+                put("subtotal", subtotal)
+            }
+        ) { filter { eq("id", pedidoItemId) } }
+    }
+
     /** Elimina una línea (y en cascada sus unidades/mods). */
     suspend fun quitarItem(pedidoItemId: Int) {
         client.postgrest.from("pedido_items").delete { filter { eq("id", pedidoItemId) } }

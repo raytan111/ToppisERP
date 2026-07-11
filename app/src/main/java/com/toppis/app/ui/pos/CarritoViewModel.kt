@@ -1,0 +1,203 @@
+package com.toppis.app.ui.pos
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.toppis.app.data.db.entities.TipoLineaPedido
+import com.toppis.app.data.models.ItemMenu
+import com.toppis.app.data.models.Modificador
+import com.toppis.app.data.models.Pedido
+import com.toppis.app.data.models.PedidoItem
+import com.toppis.app.data.models.Promocion
+import com.toppis.app.data.repository.MenuRepository
+import com.toppis.app.data.repository.ModificadorRepository
+import com.toppis.app.data.repository.PedidoRepository
+import com.toppis.app.data.repository.PromocionRepository
+import com.toppis.app.domain.pos.PosCalculos
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+sealed class CarritoUiState {
+    object Idle : CarritoUiState()
+    data class Error(val message: String) : CarritoUiState()
+}
+
+/** Línea del carrito lista para mostrar (título + detalle + subtotal). */
+data class CarritoLinea(
+    val item: PedidoItem,
+    val titulo: String,
+    val detalle: String,
+    val subtotal: Double
+)
+
+/** Selección de un modificador con su nombre y delta (para el popup del producto). */
+data class ModSeleccionable(
+    val modificador: Modificador,
+    var elegido: Boolean = false
+)
+
+class CarritoViewModel(
+    private val pedidoRepo: PedidoRepository,
+    private val menuRepo: MenuRepository,
+    private val modificadorRepo: ModificadorRepository,
+    private val promocionRepo: PromocionRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<CarritoUiState>(CarritoUiState.Idle)
+    val uiState: StateFlow<CarritoUiState> = _uiState.asStateFlow()
+
+    private val _pedido = MutableStateFlow<Pedido?>(null)
+    val pedido: StateFlow<Pedido?> = _pedido.asStateFlow()
+
+    private val _menu = MutableStateFlow<List<ItemMenu>>(emptyList())
+    val menu: StateFlow<List<ItemMenu>> = _menu.asStateFlow()
+
+    private val _promos = MutableStateFlow<List<Promocion>>(emptyList())
+    val promos: StateFlow<List<Promocion>> = _promos.asStateFlow()
+
+    private val _lineas = MutableStateFlow<List<CarritoLinea>>(emptyList())
+    val lineas: StateFlow<List<CarritoLinea>> = _lineas.asStateFlow()
+
+    private val _cargando = MutableStateFlow(true)
+    val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
+
+    private var modificadores: List<Modificador> = emptyList()
+    private var pedidoId: Int = 0
+
+    fun cargar(id: Int) {
+        pedidoId = id
+        viewModelScope.launch {
+            _cargando.value = true
+            try {
+                if (_menu.value.isEmpty()) _menu.value = menuRepo.getItemsMenuActivos().sortedBy { it.nombre }
+                if (_promos.value.isEmpty()) _promos.value = promocionRepo.getPromociones().filter { it.activo }
+                if (modificadores.isEmpty()) modificadores = modificadorRepo.getModificadores().filter { it.activo }
+                _pedido.value = pedidoRepo.getPedido(id)
+                recargarLineas()
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al cargar el pedido")
+            } finally {
+                _cargando.value = false
+            }
+        }
+    }
+
+    private suspend fun recargarLineas() {
+        val items = pedidoRepo.getItems(pedidoId)
+        val menuById = _menu.value.associateBy { it.id }
+        val promoById = _promos.value.associateBy { it.id }
+        val modById = modificadores.associateBy { it.id }
+        val lineas = items.map { pi ->
+            val unidades = pedidoRepo.getUnidades(pi.id)
+            // Precalcular mods por unidad (suspend) para no llamar red dentro de lambdas.
+            val modsPorUnidad = unidades.associate { u ->
+                u.id to pedidoRepo.getMods(u.id).mapNotNull { m -> modById[m.modificadorId]?.nombre }
+            }
+            val titulo = when (pi.tipo) {
+                TipoLineaPedido.PROMO -> promoById[pi.promocionId]?.nombre ?: "Promoción"
+                TipoLineaPedido.PRODUCTO -> menuById[pi.itemMenuId]?.nombre ?: "Producto"
+            }
+            val detalle = when (pi.tipo) {
+                TipoLineaPedido.PRODUCTO -> {
+                    val u = unidades.firstOrNull()
+                    if (u == null) "" else {
+                        val mods = modsPorUnidad[u.id].orEmpty()
+                        listOfNotNull(
+                            if (mods.isNotEmpty()) "+ ${mods.joinToString(", ")}" else null,
+                            u.comentario?.takeIf { it.isNotBlank() }
+                        ).joinToString(" · ")
+                    }
+                }
+                TipoLineaPedido.PROMO -> unidades.joinToString(" · ") { u ->
+                    val nombreProd = menuById[u.itemMenuId]?.nombre ?: "Producto"
+                    val mods = modsPorUnidad[u.id].orEmpty()
+                    buildString {
+                        append(nombreProd)
+                        if (mods.isNotEmpty()) append(" (+${mods.joinToString(", ")})")
+                        u.comentario?.takeIf { it.isNotBlank() }?.let { append(" $it") }
+                    }
+                }
+            }
+            CarritoLinea(pi, if (pi.esRegalo) "🎁 $titulo" else titulo, detalle, pi.subtotal)
+        }
+        _lineas.value = lineas
+    }
+
+    /** Modificadores aplicables a un producto (por categoría + puntuales). */
+    fun modificadoresDe(item: ItemMenu): List<Modificador> =
+        PosCalculos.modificadoresAplicables(item.id, item.categoria, modificadores)
+
+    /** Precio resultante de un producto con los modificadores elegidos. */
+    fun precioConMods(item: ItemMenu, modIds: List<Int>): Double =
+        PosCalculos.precioProducto(item.precio, modificadores.filter { it.id in modIds }.map { it.deltaPrecio })
+
+    /** Agrega un producto al carrito con sus modificadores y comentario. */
+    fun agregarProducto(item: ItemMenu, modIds: List<Int>, comentario: String?) {
+        viewModelScope.launch {
+            try {
+                val precio = precioConMods(item, modIds)
+                val itemId = pedidoRepo.agregarItem(
+                    pedidoId, TipoLineaPedido.PRODUCTO, item.id, null,
+                    cantidad = 1, precioUnitario = precio, subtotal = precio
+                )
+                val unidadId = pedidoRepo.agregarUnidad(itemId, item.id, comentario)
+                modIds.forEach { pedidoRepo.agregarMod(unidadId, it) }
+                refrescarTotales()
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al agregar el producto")
+            }
+        }
+    }
+
+    fun cambiarCantidad(linea: CarritoLinea, nuevaCantidad: Int) {
+        if (nuevaCantidad < 1) { quitarLinea(linea); return }
+        viewModelScope.launch {
+            try {
+                val precioUnit = linea.item.precioUnitario
+                pedidoRepo.actualizarCantidadItem(linea.item.id, nuevaCantidad, precioUnit * nuevaCantidad)
+                refrescarTotales()
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al cambiar la cantidad")
+            }
+        }
+    }
+
+    fun quitarLinea(linea: CarritoLinea) {
+        viewModelScope.launch {
+            try {
+                pedidoRepo.quitarItem(linea.item.id)
+                refrescarTotales()
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al quitar la línea")
+            }
+        }
+    }
+
+    private suspend fun refrescarTotales() {
+        recargarLineas()
+        val ped = _pedido.value
+        val envio = ped?.montoEnvio ?: 0.0
+        val total = PosCalculos.totalPedido(_lineas.value.map { it.subtotal }, envio)
+        pedidoRepo.actualizarTotales(pedidoId, total, ped?.zonaEnvio ?: "SIN_ENVIO", envio)
+        _pedido.value = pedidoRepo.getPedido(pedidoId)
+    }
+
+    fun resetState() { _uiState.value = CarritoUiState.Idle }
+}
+
+class CarritoViewModelFactory(
+    private val pedidoRepo: PedidoRepository,
+    private val menuRepo: MenuRepository,
+    private val modificadorRepo: ModificadorRepository,
+    private val promocionRepo: PromocionRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CarritoViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CarritoViewModel(pedidoRepo, menuRepo, modificadorRepo, promocionRepo) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

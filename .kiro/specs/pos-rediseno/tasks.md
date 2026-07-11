@@ -76,15 +76,15 @@ DI manual en `MainActivity`, rutas en `NavGraph`, opción de menú en `HomeMenu`
 
 ## Fase E — Carrito (armado)
 
-- [ ] 13. `PedidoCarritoScreen` dividida (catálogo arriba con **pestañas Menú/Promos** +
+- [x] 13. `PedidoCarritoScreen` dividida (catálogo arriba con **pestañas Menú/Promos** +
   filtro por categoría, tarjetas con imagen+nombre; carrito abajo con total y envío).
   - _Requisitos: 2.1, 2.2, 2.3, 2.4, 2.6_
 
-- [ ] 14. `ProductoModsDialog` (popup **protegido**): modificadores de la categoría +
+- [x] 14. `ProductoModsDialog` (popup **protegido**): modificadores de la categoría +
   comentario libre + precio resultante; Agregar / X.
   - _Requisitos: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 15. Editar/quitar líneas y persistir cambios del carrito (pedido_items/unidades/mods).
+- [x] 15. Editar/quitar líneas y persistir cambios del carrito (pedido_items/unidades/mods).
   - _Requisitos: 2.5, 2.7_
 
 ## Fase F — Promos en el POS

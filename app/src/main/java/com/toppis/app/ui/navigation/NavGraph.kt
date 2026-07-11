@@ -136,6 +136,7 @@ fun NavGraph(
     objetivosViewModelFactory: com.toppis.app.ui.costos.ObjetivosViewModelFactory,
     rutinaSemanalViewModelFactory: com.toppis.app.ui.costos.RutinaSemanalViewModelFactory,
     pedidosViewModelFactory: com.toppis.app.ui.pos.PedidosViewModelFactory,
+    carritoViewModelFactory: com.toppis.app.ui.pos.CarritoViewModelFactory,
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
@@ -251,14 +252,13 @@ fun NavGraph(
             arguments = listOf(navArgument("pedidoId") { type = NavType.IntType })
         ) { entry ->
             val pedidoId = entry.arguments?.getInt("pedidoId") ?: 0
-            BackScaffold("Pedido #$pedidoId", onNavigateBack = { navController.popBackStack() }) { padding ->
-                androidx.compose.foundation.layout.Box(
-                    modifier = Modifier.padding(padding).fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    androidx.compose.material3.Text("Carrito del pedido #$pedidoId (en construcción)")
-                }
-            }
+            // VM scopeado al backstack entry (uno por pedido, no reutiliza estado).
+            val vm: com.toppis.app.ui.pos.CarritoViewModel = viewModel(factory = carritoViewModelFactory)
+            com.toppis.app.ui.pos.PedidoCarritoScreen(
+                viewModel = vm,
+                pedidoId = pedidoId,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // ── Fondos ───────────────────────────────────────────────────────────
