@@ -474,10 +474,21 @@ private fun ArmarPromoDialog(
     var selectedItem by remember { mutableStateOf(itemsMenu.firstOrNull()) }
     var expandedItem by remember { mutableStateOf(false) }
     var cantidadText by remember { mutableStateOf("1") }
+    var itemAEliminar by remember { mutableStateOf<PromocionItemDetalle?>(null) }
 
     LaunchedEffect(itemsMenu) { if (selectedItem == null) selectedItem = itemsMenu.firstOrNull() }
 
     val cantidadValida = cantidadText.toIntOrNull()?.let { it > 0 } ?: false
+
+    itemAEliminar?.let { detalle ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Quitar de la promo",
+            mensaje = "¿Quitar \"${detalle.item.nombre}\" de ${promocion.nombre}?",
+            textoConfirmar = "Quitar",
+            onConfirm = { onEliminarItem(detalle); itemAEliminar = null },
+            onDismiss = { itemAEliminar = null }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -510,7 +521,7 @@ private fun ArmarPromoDialog(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            IconButton(onClick = { onEliminarItem(detalle) }) {
+                            IconButton(onClick = { itemAEliminar = detalle }) {
                                 Icon(
                                     Icons.Filled.Delete,
                                     contentDescription = "Quitar",
@@ -652,9 +663,30 @@ private fun EspaciosPromoDialog(
     var modo by remember { mutableStateOf(ModoEspacioPromo.CATEGORIA) }
     var categoria by remember { mutableStateOf(CategoriaMenu.HAMBURGUESAS.label) }
     var expCat by remember { mutableStateOf(false) }
+    var espacioAEliminar by remember { mutableStateOf<PromocionEspacio?>(null) }
+    var opcionAEliminarId by remember { mutableStateOf<Int?>(null) }
 
     val nombreById = remember(itemsMenu) { itemsMenu.associate { it.id to it.nombre } }
     val cantidadValida = cantidadText.toIntOrNull()?.let { it > 0 } ?: false
+
+    espacioAEliminar?.let { esp ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Eliminar espacio",
+            mensaje = "¿Eliminar el espacio \"${esp.nombre}\" de ${promocion.nombre}?",
+            textoConfirmar = "Eliminar",
+            onConfirm = { onEliminarEspacio(esp.id); espacioAEliminar = null },
+            onDismiss = { espacioAEliminar = null }
+        )
+    }
+    opcionAEliminarId?.let { id ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Quitar opción",
+            mensaje = "¿Quitar esta opción del espacio?",
+            textoConfirmar = "Quitar",
+            onConfirm = { onEliminarOpcion(id); opcionAEliminarId = null },
+            onDismiss = { opcionAEliminarId = null }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -675,9 +707,9 @@ private fun EspaciosPromoDialog(
                             opciones = opcionesPorEspacio[esp.id].orEmpty(),
                             itemsMenu = itemsMenu,
                             nombreById = nombreById,
-                            onEliminar = { onEliminarEspacio(esp.id) },
+                            onEliminar = { espacioAEliminar = esp },
                             onAgregarOpcion = { itemId -> onAgregarOpcion(esp.id, itemId) },
-                            onEliminarOpcion = { id -> onEliminarOpcion(id) }
+                            onEliminarOpcion = { id -> opcionAEliminarId = id }
                         )
                     }
                 }

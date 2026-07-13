@@ -66,6 +66,7 @@ fun PedidoCarritoScreen(
     var showPagar by remember { mutableStateOf(false) }
     var showComanda by remember { mutableStateOf(false) }
     var showEntregarSinPagar by remember { mutableStateOf(false) }
+    var lineaAQuitar by remember { mutableStateOf<CarritoLinea?>(null) }
 
     LaunchedEffect(pedidoId) { viewModel.cargar(pedidoId) }
     LaunchedEffect(uiState) {
@@ -162,7 +163,7 @@ fun PedidoCarritoScreen(
                 total = pedido?.total ?: 0.0,
                 onMas = { viewModel.cambiarCantidad(it, it.item.cantidad + 1) },
                 onMenos = { viewModel.cambiarCantidad(it, it.item.cantidad - 1) },
-                onQuitar = { viewModel.quitarLinea(it) }
+                onQuitar = { lineaAQuitar = it }
             )
 
             pedido?.let { p ->
@@ -231,6 +232,16 @@ fun PedidoCarritoScreen(
             title = { Text("Comanda") },
             text = { Text(pedido?.comandaTexto ?: "Sin comanda todavía.") },
             confirmButton = { TextButton(onClick = { showComanda = false }) { Text("Cerrar") } }
+        )
+    }
+
+    lineaAQuitar?.let { linea ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Quitar del carrito",
+            mensaje = "¿Quitar \"${linea.titulo}\" del pedido?",
+            textoConfirmar = "Quitar",
+            onConfirm = { viewModel.quitarLinea(linea); lineaAQuitar = null },
+            onDismiss = { lineaAQuitar = null }
         )
     }
 

@@ -47,6 +47,7 @@ fun MenuConfigScreen(
     var selectedItem by remember { mutableStateOf<ItemMenu?>(null) }
     var itemEnEdicion by remember { mutableStateOf<ItemMenu?>(null) }
     var fotoDe by remember { mutableStateOf<ItemMenu?>(null) }
+    var itemAEliminar by remember { mutableStateOf<ItemMenu?>(null) }
     var componentesReceta by remember { mutableStateOf<List<ComponenteReceta>>(emptyList()) }
     var query by remember { mutableStateOf("") }
     val itemsFiltrados = remember(itemsMenu, query) {
@@ -100,7 +101,7 @@ fun MenuConfigScreen(
                     },
                     onEditar = { itemEnEdicion = it },
                     onFoto = { fotoDe = it },
-                    onEliminar = { viewModel.eliminarItemMenu(it) }
+                    onEliminar = { itemAEliminar = it }
                 )
             }
         }
@@ -146,6 +147,15 @@ fun MenuConfigScreen(
                 )
             },
             confirmButton = { TextButton(onClick = { fotoDe = null }) { Text("Cerrar") } }
+        )
+    }
+
+    itemAEliminar?.let { item ->
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = item.nombre,
+            titulo = "Eliminar ítem del menú",
+            onConfirm = { viewModel.eliminarItemMenu(item); itemAEliminar = null },
+            onDismiss = { itemAEliminar = null }
         )
     }
 
@@ -403,10 +413,21 @@ private fun RecetaMenuDialog(
     var selectedPrep by remember { mutableStateOf(preparaciones.firstOrNull()) }
     var cantidadText by remember { mutableStateOf("") }
     var expandedDropdown by remember { mutableStateOf(false) }
+    var compAEliminar by remember { mutableStateOf<ComponenteReceta?>(null) }
 
     val cantidadValida = cantidadText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
     val money = DecimalFormat("$#,##0")
     val costoTotal = componentes.sumOf { it.costoLinea }
+
+    compAEliminar?.let { comp ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Quitar de la receta",
+            mensaje = "¿Quitar \"${comp.nombre}\" de la receta de ${itemMenu.nombre}?",
+            textoConfirmar = "Quitar",
+            onConfirm = { onEliminarComponente(comp); compAEliminar = null },
+            onDismiss = { compAEliminar = null }
+        )
+    }
 
     LaunchedEffect(articulos) { if (selectedArticulo == null) selectedArticulo = articulos.firstOrNull() }
     LaunchedEffect(preparaciones) { if (selectedPrep == null) selectedPrep = preparaciones.firstOrNull() }
@@ -437,7 +458,7 @@ private fun RecetaMenuDialog(
                                 Text("${DecimalFormat("#,##0.##").format(comp.recetaMenu.cantidadBase)} ${comp.unidad} · ${money.format(comp.costoLinea)}",
                                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             }
-                            IconButton(onClick = { onEliminarComponente(comp) }) {
+                            IconButton(onClick = { compAEliminar = comp }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "Quitar", tint = MaterialTheme.colorScheme.error)
                             }
                         }

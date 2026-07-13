@@ -337,8 +337,19 @@ private fun RecetaModificadorDialog(
     var selectedPrep by remember { mutableStateOf(preparaciones.firstOrNull()) }
     var cantidadText by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+    var compAEliminar by remember { mutableStateOf<ModificadorComponente?>(null) }
 
     val cantidadValida = cantidadText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
+
+    compAEliminar?.let { c ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Quitar de la receta",
+            mensaje = "¿Quitar \"${nombreComponente(c.tipoComponente, c.componenteId)}\" del modificador ${modificador.nombre}?",
+            textoConfirmar = "Quitar",
+            onConfirm = { onEliminar(c.id); compAEliminar = null },
+            onDismiss = { compAEliminar = null }
+        )
+    }
 
     LaunchedEffect(articulos) { if (selectedArticulo == null) selectedArticulo = articulos.firstOrNull() }
     LaunchedEffect(preparaciones) { if (selectedPrep == null) selectedPrep = preparaciones.firstOrNull() }
@@ -358,7 +369,7 @@ private fun RecetaModificadorDialog(
                             val etiqueta = if (c.accion == AccionModificador.AGREGAR) "➕" else "➖"
                             Text("$etiqueta ${nombreComponente(c.tipoComponente, c.componenteId)} · ${DecimalFormat("#,##0.##").format(c.cantidadBase)}",
                                 modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                            IconButton(onClick = { onEliminar(c.id) }) {
+                            IconButton(onClick = { compAEliminar = c }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "Quitar", tint = MaterialTheme.colorScheme.error)
                             }
                         }

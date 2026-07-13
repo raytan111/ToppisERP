@@ -359,10 +359,21 @@ private fun RecetaPreparacionDialog(
     var selectedArticulo by remember { mutableStateOf(articulos.firstOrNull()) }
     var cantidadText by remember { mutableStateOf("") }
     var expandedDropdown by remember { mutableStateOf(false) }
+    var compAEliminar by remember { mutableStateOf<ComponentePreparacion?>(null) }
 
     val cantidadValida = cantidadText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
     val costoLote = componentes.sumOf { it.costoLinea }
     val costoUnidad = if (preparacion.rendimientoLote > 0) costoLote / preparacion.rendimientoLote else 0.0
+
+    compAEliminar?.let { comp ->
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Quitar de la receta",
+            mensaje = "¿Quitar \"${comp.nombre}\" de la receta de ${preparacion.nombre}?",
+            textoConfirmar = "Quitar",
+            onConfirm = { onEliminarComponente(comp); compAEliminar = null },
+            onDismiss = { compAEliminar = null }
+        )
+    }
 
     LaunchedEffect(articulos) { if (selectedArticulo == null) selectedArticulo = articulos.firstOrNull() }
 
@@ -398,7 +409,7 @@ private fun RecetaPreparacionDialog(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            IconButton(onClick = { onEliminarComponente(comp) }) {
+                            IconButton(onClick = { compAEliminar = comp }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "Quitar", tint = MaterialTheme.colorScheme.error)
                             }
                         }
