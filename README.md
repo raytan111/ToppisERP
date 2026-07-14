@@ -133,6 +133,7 @@ supabase/functions/        # Edge Functions (admin-usuarios)
 - [x] Sistema de diseño (splash, ícono, Login moneda 3D, Home, tipografía, modo oscuro, transiciones, buscadores, skeletons/estados vacíos, diálogos unificados)
 - [x] Control de costos y resultado semanal (fijos/variables, semáforos, break-even, rutina de cierre)
 - [x] Rediseño del POS (pedidos múltiples, promos configurables, cocina/KDS, clientes + cuponera)
+- [x] Promociones v2 (grupos de elección con imágenes, editor en pantalla, repetición configurable)
 - [ ] Boletas electrónicas (SII Chile)
 - [ ] Contabilidad/tributario completo
 - [ ] IA (predicción de demanda, optimización de inventario)

@@ -49,7 +49,7 @@ Kotlin/Compose MVVM, DI en `MainActivity`, rutas en `NavGraph`, componentes comp
 
 ### Fase D — Verificación + docs
 
-- [ ] 7. Build verde, correr tests de propiedad, verificar flujo (crear Duo → vender
+- [x] 7. Build verde, correr tests de propiedad, verificar flujo (crear Duo → vender
   eligiendo iguales/distintas → comanda + food cost); actualizar `README.md` y
   `.kiro/PROYECTO-CONTEXTO.md`.
   - _Requisitos: 5.1, 5.2, 5.3, 6.2_

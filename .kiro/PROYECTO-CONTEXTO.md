@@ -1,7 +1,7 @@
 # ToppisERP - Contexto del Proyecto
 
-**Última Actualización**: 2026-07-11
-**Versión Actual**: 3.5 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos + POS rediseñado)
+**Última Actualización**: 2026-07-14
+**Versión Actual**: 3.6 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos + POS rediseñado + Promos v2)
 **Ubicación**: Chile (CLP, español chileno, integración SII futura)
 
 ---
@@ -217,6 +217,22 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.6 — Promociones v2 (2026-07-14)
+Spec: `.kiro/specs/promociones-v2/`. SQL: `.kiro/database/supabase-promos-v2.sql`.
+- **Grupos de elección** con `permite_repetir` (columna nueva en `promocion_espacios`):
+  cantidad a elegir + fuente lista/categoría; si false, las unidades del grupo deben ser
+  distintas. Las bebidas por **categoría** (Bebida lata/mediana) quedan disponibles solas.
+- **Pantalla de creación/edición** dedicada (`PromocionEditorScreen`, view, no popup):
+  imagen + nombre + precio + grupos; en lista fija se eligen productos con **tarjetas de
+  imagen**; en categoría, preview de incluidos. Reemplaza los diálogos de creación.
+- **Selección en el POS con imágenes** (`PromoConfigDialog` v2): tarjetas foto por grupo,
+  contador "elegidas/cantidad", sumar/quitar unidades, respeta `permite_repetir`; agrega
+  a precio fijo.
+- Ya vigente desde el POS v3.5 (no cambia): detalle real en comanda y **food cost real
+  por venta** (cada producto elegido registra su costo).
+- `domain/pos/PosCalculos`: `grupoCompleto`, `puedeAgregarAlGrupo`, `promoCompletaPorGrupos`
+  con 4 tests de propiedad nuevos (20 tests POS en total).
 
 ### v3.5 — Rediseño del POS (2026-07-11)
 Spec: `.kiro/specs/pos-rediseno/`. SQL: `.kiro/database/supabase-pos-rediseno.sql` + `supabase-pos-pagar.sql`.
