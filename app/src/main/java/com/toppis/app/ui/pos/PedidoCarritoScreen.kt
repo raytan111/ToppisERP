@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
@@ -67,6 +69,10 @@ fun PedidoCarritoScreen(
     var showComanda by remember { mutableStateOf(false) }
     var showEntregarSinPagar by remember { mutableStateOf(false) }
     var lineaAQuitar by remember { mutableStateOf<CarritoLinea?>(null) }
+    var carritoExpandido by remember { mutableStateOf(false) }
+
+    // Se abre solo al ingresar el primer producto.
+    LaunchedEffect(lineas.isNotEmpty()) { if (lineas.isNotEmpty()) carritoExpandido = true }
 
     LaunchedEffect(pedidoId) { viewModel.cargar(pedidoId) }
     LaunchedEffect(uiState) {
@@ -157,10 +163,12 @@ fun PedidoCarritoScreen(
 
             HorizontalDivider()
 
-            // ── Carrito (abajo) ───────────────────────────────────────────
+            // ── Carrito (abajo, colapsable) ───────────────────────────────
             CarritoPanel(
                 lineas = lineas,
                 total = pedido?.total ?: 0.0,
+                expandido = carritoExpandido,
+                onToggle = { carritoExpandido = !carritoExpandido },
                 onMas = { viewModel.cambiarCantidad(it, it.item.cantidad + 1) },
                 onMenos = { viewModel.cambiarCantidad(it, it.item.cantidad - 1) },
                 onQuitar = { lineaAQuitar = it }
@@ -324,35 +332,56 @@ private fun PromoCard(promo: Promocion, onClick: () -> Unit) {
 private fun ColumnScope.CarritoPanel(
     lineas: List<CarritoLinea>,
     total: Double,
+    expandido: Boolean,
+    onToggle: () -> Unit,
     onMas: (CarritoLinea) -> Unit,
     onMenos: (CarritoLinea) -> Unit,
     onQuitar: (CarritoLinea) -> Unit
 ) {
-    Column(Modifier.fillMaxWidth().heightIn(min = 140.dp, max = 300.dp).padding(12.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Carrito", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("Total ${money.format(total)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        }
-        Spacer(Modifier.height(6.dp))
-        if (lineas.isEmpty()) {
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                Text("Todavía no hay productos.", color = MaterialTheme.colorScheme.outline)
+    val cantidadTotal = lineas.sumOf { it.item.cantidad }
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 2.dp) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+            // Encabezado compacto (siempre visible, toca para abrir/cerrar).
+            Row(
+                Modifier.fillMaxWidth().clickable(enabled = lineas.isNotEmpty(), onClick = onToggle),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (lineas.isNotEmpty()) {
+                    Icon(
+                        if (expandido) Icons.Filled.ExpandMore else Icons.Filled.ExpandLess,
+                        contentDescription = if (expandido) "Cerrar carrito" else "Abrir carrito"
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
+                Text(
+                    if (lineas.isEmpty()) "Carrito vacío" else "Carrito · $cantidadTotal",
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text("Total ${money.format(total)}", style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary)
             }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(lineas, key = { it.item.id }) { linea ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(linea.titulo, style = MaterialTheme.typography.bodyLarge)
-                            if (linea.detalle.isNotBlank()) {
-                                Text(linea.detalle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            if (expandido && lineas.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 190.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(lineas, key = { it.item.id }) { linea ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(linea.titulo, style = MaterialTheme.typography.bodyMedium)
+                                if (linea.detalle.isNotBlank()) {
+                                    Text(linea.detalle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(money.format(linea.subtotal), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                             }
-                            Text(money.format(linea.subtotal), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                            IconButton(onClick = { onMenos(linea) }) { Icon(Icons.Filled.Remove, contentDescription = "Menos") }
+                            Text("${linea.item.cantidad}", style = MaterialTheme.typography.titleMedium)
+                            IconButton(onClick = { onMas(linea) }) { Icon(Icons.Filled.Add, contentDescription = "Más") }
+                            IconButton(onClick = { onQuitar(linea) }) { Icon(Icons.Filled.Delete, contentDescription = "Quitar", tint = MaterialTheme.colorScheme.error) }
                         }
-                        IconButton(onClick = { onMenos(linea) }) { Icon(Icons.Filled.Remove, contentDescription = "Menos") }
-                        Text("${linea.item.cantidad}", style = MaterialTheme.typography.titleMedium)
-                        IconButton(onClick = { onMas(linea) }) { Icon(Icons.Filled.Add, contentDescription = "Más") }
-                        IconButton(onClick = { onQuitar(linea) }) { Icon(Icons.Filled.Delete, contentDescription = "Quitar", tint = MaterialTheme.colorScheme.error) }
                     }
                 }
             }
