@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -128,8 +129,29 @@ fun PedidoCarritoScreen(
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
                                 contentPadding = PaddingValues(vertical = 10.dp)
                             ) {
-                                items(filtrado, key = { it.id }) { item ->
-                                    ProductoCard(item) { productoPopup = item }
+                                if (categoria == null) {
+                                    // "Todas": agrupadas por categoría con encabezado.
+                                    CategoriaMenu.entries.forEach { cm ->
+                                        val delGrupo = menu.filter { CategoriaMenu.porLabel(it.categoria) == cm }
+                                        if (delGrupo.isNotEmpty()) {
+                                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                                Text(
+                                                    cm.label,
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.padding(top = 6.dp)
+                                                )
+                                            }
+                                            items(delGrupo, key = { it.id }) { item ->
+                                                ProductoCard(item) { productoPopup = item }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    items(filtrado, key = { it.id }) { item ->
+                                        ProductoCard(item) { productoPopup = item }
+                                    }
                                 }
                             }
                         }
