@@ -13,12 +13,12 @@ Kotlin/Compose MVVM, DI en `MainActivity`, rutas en `NavGraph`, componentes comp
 
 ### Fase A — Datos + dominio
 
-- [ ] 1. SQL `supabase-promos-v2.sql`: `ALTER TABLE promocion_espacios ADD COLUMN
+- [x] 1. SQL `supabase-promos-v2.sql`: `ALTER TABLE promocion_espacios ADD COLUMN
   permite_repetir BOOLEAN NOT NULL DEFAULT TRUE`. Modelo `PromocionEspacio` +
   `permiteRepetir`; `PromocionRepository.crearEspacio` guarda `permite_repetir`.
   - _Requisitos: 1.1, 6.1_
 
-- [ ] 2. Funciones puras en `domain/pos/PosCalculos.kt`: `grupoCompleto(cantidad, elegidas)`,
+- [x] 2. Funciones puras en `domain/pos/PosCalculos.kt`: `grupoCompleto(cantidad, elegidas)`,
   `puedeAgregarAlGrupo(permiteRepetir, yaElegidos, productoId, cantidad)`,
   `promoCompletaPorGrupo(...)`. Tests de propiedad (kotest-property) para las 5 propiedades.
   - _Requisitos: 1.2, 1.3, 1.4, 3.5, 5.3_

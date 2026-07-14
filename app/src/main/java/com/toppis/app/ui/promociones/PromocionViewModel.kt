@@ -180,11 +180,12 @@ class PromocionViewModel(
         modo: com.toppis.app.data.db.entities.ModoEspacioPromo,
         categoria: String?,
         orden: Int,
+        permiteRepetir: Boolean = true,
         onDone: () -> Unit = {}
     ) {
         viewModelScope.launch {
             try {
-                promocionRepository.crearEspacio(promocionId, nombre, cantidad, modo, categoria, orden)
+                promocionRepository.crearEspacio(promocionId, nombre, cantidad, modo, categoria, orden, permiteRepetir)
                 onDone()
             } catch (e: Exception) {
                 _uiState.value = PromocionUiState.Error(e.message ?: "Error al crear espacio")

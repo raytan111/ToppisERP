@@ -71,6 +71,33 @@ object PosCalculos {
     fun promoCompleta(espacios: List<PromocionEspacio>, elegidosPorEspacio: Map<Int, Int>): Boolean =
         espacios.all { (elegidosPorEspacio[it.id] ?: 0) >= it.cantidad }
 
+    // ── Promos v2: grupos con repetición ───────────────────────────────────────
+
+    /** Un grupo está completo cuando la suma de unidades elegidas iguala su cantidad. */
+    fun grupoCompleto(cantidad: Int, elegidas: Int): Boolean = elegidas == cantidad
+
+    /**
+     * ¿Se puede sumar [productoId] al grupo? Solo si aún falta cantidad y, si el grupo no
+     * permite repetir, el producto no fue elegido antes en ese grupo.
+     */
+    fun puedeAgregarAlGrupo(
+        permiteRepetir: Boolean,
+        yaElegidos: List<Int>,
+        productoId: Int,
+        cantidad: Int
+    ): Boolean = yaElegidos.size < cantidad && (permiteRepetir || productoId !in yaElegidos)
+
+    /**
+     * ¿La promo está completa? Todos los grupos con su cantidad cubierta.
+     * [elegidasPorGrupo] = grupoId → lista de productoId elegidos (permite repetidos).
+     */
+    fun promoCompletaPorGrupos(
+        cantidadesPorGrupo: Map<Int, Int>,
+        elegidasPorGrupo: Map<Int, List<Int>>
+    ): Boolean = cantidadesPorGrupo.all { (grupoId, cant) ->
+        grupoCompleto(cant, elegidasPorGrupo[grupoId]?.size ?: 0)
+    }
+
     // ── Estados del pedido ──────────────────────────────────────────────────────
 
     /** Debe la plata: se entregó pero no se pagó. */

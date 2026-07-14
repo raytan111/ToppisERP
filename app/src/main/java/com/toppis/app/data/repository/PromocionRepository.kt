@@ -130,7 +130,8 @@ class PromocionRepository {
         cantidad: Int,
         modo: com.toppis.app.data.db.entities.ModoEspacioPromo,
         categoria: String?,
-        orden: Int
+        orden: Int,
+        permiteRepetir: Boolean = true
     ): Int = client.postgrest.from("promocion_espacios").insert(
         buildJsonObject {
             put("promocion_id", promocionId)
@@ -138,6 +139,7 @@ class PromocionRepository {
             put("cantidad", cantidad)
             put("modo", modo.name)
             if (categoria.isNullOrBlank()) put("categoria", JsonNull) else put("categoria", categoria)
+            put("permite_repetir", permiteRepetir)
             put("orden", orden)
         }
     ) { select() }.decodeSingle<com.toppis.app.data.models.PromocionEspacio>().id

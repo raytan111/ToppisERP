@@ -43,6 +43,8 @@ data class PromocionEspacio(
     val cantidad: Int = 1,
     val modo: com.toppis.app.data.db.entities.ModoEspacioPromo,
     val categoria: String? = null,
+    @SerialName("permite_repetir")
+    val permiteRepetir: Boolean = true,
     val orden: Int = 0,
     @SerialName("created_at")
     val createdAt: String? = null

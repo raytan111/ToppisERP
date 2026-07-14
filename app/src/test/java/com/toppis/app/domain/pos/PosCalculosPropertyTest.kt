@@ -208,6 +208,53 @@ class PosCalculosPropertyTest {
             assertEquals(k1, k2) // misma unidad (item+mods), sin importar orden ni comentario
         }
     }
+
+    // ── Promos v2: grupos con repetición ───────────────────────────────────────
+
+    // Property (v2) 17: grupo completo ⇔ elegidas == cantidad
+    @Test fun p17_grupoCompleto() = prop {
+        checkAll(ITERS, Arb.int(1..5), Arb.int(0..5)) { cant, eleg ->
+            assertEquals(eleg == cant, PosCalculos.grupoCompleto(cant, eleg))
+        }
+    }
+
+    // Property (v2) 18: repetición permitida deja sumar mientras falte cantidad
+    @Test fun p18_repeticionPermitida() = prop {
+        checkAll(ITERS, Arb.int(1..4), Arb.int(1..50)) { cant, prod ->
+            // Con permiteRepetir=true, mientras haya menos elegidas que la cantidad, se puede sumar el mismo producto
+            val yaElegidos = List((0 until cant - 1).count()) { prod } // cant-1 repetidos
+            if (cant >= 1) {
+                assertTrue(PosCalculos.puedeAgregarAlGrupo(true, yaElegidos, prod, cant))
+            }
+            // Si ya se llegó a la cantidad, no se puede sumar más
+            val lleno = List(cant) { prod }
+            assertFalse(PosCalculos.puedeAgregarAlGrupo(true, lleno, prod, cant))
+        }
+    }
+
+    // Property (v2) 19: repetición prohibida ⇒ no se repite el mismo producto
+    @Test fun p19_repeticionProhibida() = prop {
+        checkAll(ITERS, Arb.int(2..5), Arb.int(1..50)) { cant, prod ->
+            // Ya elegido una vez ese producto; con permiteRepetir=false no se puede volver a elegir
+            assertFalse(PosCalculos.puedeAgregarAlGrupo(false, listOf(prod), prod, cant))
+            // Un producto distinto sí se puede (si falta cantidad)
+            assertTrue(PosCalculos.puedeAgregarAlGrupo(false, listOf(prod), prod + 1, cant))
+        }
+    }
+
+    // Property (v2) 20: promo completa ⇔ todos los grupos con su cantidad cubierta
+    @Test fun p20_promoCompletaPorGrupos() = prop {
+        checkAll(ITERS, Arb.list(Arb.int(1..3), 1..4)) { cantidades ->
+            val cantsPorGrupo = cantidades.mapIndexed { i, c -> i to c }.toMap()
+            val completas = cantsPorGrupo.mapValues { (_, c) -> List(c) { 1 } }
+            assertTrue(PosCalculos.promoCompletaPorGrupos(cantsPorGrupo, completas))
+            // A un grupo le falta uno → incompleta
+            val faltante = completas.toMutableMap()
+            val primero = cantsPorGrupo.keys.first()
+            faltante[primero] = completas[primero]!!.dropLast(1)
+            assertFalse(PosCalculos.promoCompletaPorGrupos(cantsPorGrupo, faltante))
+        }
+    }
 }
 
 private fun Arb<Int>.orNullable(): Arb<Int?> = arbitrary { if (Arb.boolean().bind()) null else this@orNullable.bind() }
