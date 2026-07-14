@@ -37,6 +37,10 @@ class ModificadorViewModel(
     private val _preparaciones = MutableStateFlow<List<Preparacion>>(emptyList())
     val preparaciones: StateFlow<List<Preparacion>> = _preparaciones.asStateFlow()
 
+    /** Delta de costo (food cost) de cada modificador, por id. */
+    private val _costos = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    val costos: StateFlow<Map<Int, Double>> = _costos.asStateFlow()
+
     /** true mientras se hace la primera carga (para mostrar skeleton). */
     private val _cargandoInicial = MutableStateFlow(true)
     val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
@@ -51,6 +55,7 @@ class ModificadorViewModel(
         viewModelScope.launch {
             try {
                 _modificadores.value = modificadorRepository.getModificadores()
+                _costos.value = modificadorRepository.getCostoPorModificador()
             } catch (e: Exception) {
                 _uiState.value = ModificadorUiState.Error(e.message ?: "Error al cargar modificadores")
             } finally {

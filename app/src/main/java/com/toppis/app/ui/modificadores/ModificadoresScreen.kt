@@ -36,6 +36,7 @@ fun ModificadoresScreen(
     val modificadores by viewModel.modificadores.collectAsState()
     val articulos by viewModel.articulos.collectAsState()
     val preparaciones by viewModel.preparaciones.collectAsState()
+    val costos by viewModel.costos.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val cargandoInicial by viewModel.cargandoInicial.collectAsState()
 
@@ -94,6 +95,20 @@ fun ModificadoresScreen(
                                     val signo = if (mod.deltaPrecio >= 0) "+" else "-"
                                     Text("Precio: $signo${money.format(kotlin.math.abs(mod.deltaPrecio))}",
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    val costo = costos[mod.id] ?: 0.0
+                                    val fcPct = if (mod.deltaPrecio > 0) costo / mod.deltaPrecio * 100.0 else 0.0
+                                    val fcColor = when {
+                                        mod.deltaPrecio <= 0 -> MaterialTheme.colorScheme.outline
+                                        fcPct <= 32 -> MaterialTheme.colorScheme.primary
+                                        fcPct <= 40 -> MaterialTheme.colorScheme.tertiary
+                                        else -> MaterialTheme.colorScheme.error
+                                    }
+                                    Text(
+                                        if (mod.deltaPrecio > 0)
+                                            "Costo ${money.format(costo)} · Food cost ${DecimalFormat("0.#").format(fcPct)}%"
+                                        else "Costo ${money.format(costo)}",
+                                        style = MaterialTheme.typography.labelSmall, color = fcColor
+                                    )
                                 }
                                 IconButton(onClick = {
                                     modSeleccionado = mod

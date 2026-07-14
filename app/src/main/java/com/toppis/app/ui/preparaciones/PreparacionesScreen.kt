@@ -103,6 +103,7 @@ fun PreparacionesScreen(
             preparacion = prep,
             componentes = componentes,
             articulos = articulos,
+            preparaciones = preparaciones.filter { it.id != prep.id && it.activo },
             onDismiss = {
                 selectedPrep = null
                 componentes = emptyList()
@@ -352,14 +353,20 @@ private fun RecetaPreparacionDialog(
     preparacion: Preparacion,
     componentes: List<ComponentePreparacion>,
     articulos: List<Articulo>,
+    preparaciones: List<Preparacion>,
     onDismiss: () -> Unit,
     onAgregarComponente: (tipo: TipoComponente, componenteId: Int, cantidad: Double) -> Unit,
     onEliminarComponente: (ComponentePreparacion) -> Unit
 ) {
+    var tipo by remember { mutableStateOf(TipoComponente.ARTICULO) }
     var selectedArticulo by remember { mutableStateOf(articulos.firstOrNull()) }
+    var selectedPrepComp by remember { mutableStateOf(preparaciones.firstOrNull()) }
     var cantidadText by remember { mutableStateOf("") }
     var expandedDropdown by remember { mutableStateOf(false) }
     var compAEliminar by remember { mutableStateOf<ComponentePreparacion?>(null) }
+
+    LaunchedEffect(articulos) { if (selectedArticulo == null) selectedArticulo = articulos.firstOrNull() }
+    LaunchedEffect(preparaciones) { if (selectedPrepComp == null) selectedPrepComp = preparaciones.firstOrNull() }
 
     val cantidadValida = cantidadText.replace(",", ".").toDoubleOrNull()?.let { it > 0 } ?: false
     val costoLote = componentes.sumOf { it.costoLinea }
@@ -434,15 +441,24 @@ private fun RecetaPreparacionDialog(
                 item { Text("Agregar componente:", style = MaterialTheme.typography.labelLarge) }
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = true, onClick = {})
+                        RadioButton(selected = tipo == TipoComponente.ARTICULO, onClick = { tipo = TipoComponente.ARTICULO; expandedDropdown = false })
                         Text("Artículo", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.width(8.dp))
+                        RadioButton(selected = tipo == TipoComponente.PREPARACION, onClick = { tipo = TipoComponente.PREPARACION; expandedDropdown = false })
+                        Text("Preparación", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 item {
-                    val unidadActual = selectedArticulo?.unidadBase ?: preparacion.unidadBase
-                    if (articulos.isEmpty()) {
+                    val unidadActual = when (tipo) {
+                        TipoComponente.ARTICULO -> selectedArticulo?.unidadBase ?: preparacion.unidadBase
+                        TipoComponente.PREPARACION -> selectedPrepComp?.unidadBase ?: preparacion.unidadBase
+                    }
+                    val listaVacia = (tipo == TipoComponente.ARTICULO && articulos.isEmpty()) ||
+                        (tipo == TipoComponente.PREPARACION && preparaciones.isEmpty())
+                    if (listaVacia) {
                         Text(
-                            "No hay artículos. Crealos en Inventario.",
+                            if (tipo == TipoComponente.ARTICULO) "No hay artículos. Crealos en Inventario."
+                            else "No hay otras preparaciones para usar como componente.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -451,17 +467,29 @@ private fun RecetaPreparacionDialog(
                             expanded = expandedDropdown,
                             onExpandedChange = { expandedDropdown = !expandedDropdown }
                         ) {
+                            val valor = when (tipo) {
+                                TipoComponente.ARTICULO -> selectedArticulo?.nombre ?: ""
+                                TipoComponente.PREPARACION -> selectedPrepComp?.nombre ?: ""
+                            }
                             OutlinedTextField(
-                                value = selectedArticulo?.nombre ?: "", onValueChange = {}, readOnly = true,
-                                label = { Text("Artículo") },
+                                value = valor, onValueChange = {}, readOnly = true,
+                                label = { Text(if (tipo == TipoComponente.ARTICULO) "Artículo" else "Preparación") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDropdown) },
                                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth()
                             )
                             ExposedDropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }) {
-                                articulos.forEach { a ->
-                                    DropdownMenuItem(text = { Text("${a.nombre} (${a.unidadBase})") }, onClick = {
-                                        selectedArticulo = a; expandedDropdown = false
-                                    })
+                                if (tipo == TipoComponente.ARTICULO) {
+                                    articulos.forEach { a ->
+                                        DropdownMenuItem(text = { Text("${a.nombre} (${a.unidadBase})") }, onClick = {
+                                            selectedArticulo = a; expandedDropdown = false
+                                        })
+                                    }
+                                } else {
+                                    preparaciones.forEach { p ->
+                                        DropdownMenuItem(text = { Text("${p.nombre} (${p.unidadBase})") }, onClick = {
+                                            selectedPrepComp = p; expandedDropdown = false
+                                        })
+                                    }
                                 }
                             }
                         }
@@ -477,11 +505,17 @@ private fun RecetaPreparacionDialog(
                 item {
                     Button(
                         onClick = {
-                            val compId = selectedArticulo?.id ?: return@Button
-                            onAgregarComponente(TipoComponente.ARTICULO, compId, cantidadText.replace(",", ".").toDoubleOrNull() ?: return@Button)
+                            val compId = when (tipo) {
+                                TipoComponente.ARTICULO -> selectedArticulo?.id ?: return@Button
+                                TipoComponente.PREPARACION -> selectedPrepComp?.id ?: return@Button
+                            }
+                            onAgregarComponente(tipo, compId, cantidadText.replace(",", ".").toDoubleOrNull() ?: return@Button)
                             cantidadText = ""
                         },
-                        enabled = cantidadValida && selectedArticulo != null,
+                        enabled = cantidadValida && when (tipo) {
+                            TipoComponente.ARTICULO -> selectedArticulo != null
+                            TipoComponente.PREPARACION -> selectedPrepComp != null
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("+ Agregar a receta") }
                 }

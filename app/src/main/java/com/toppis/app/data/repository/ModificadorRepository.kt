@@ -114,6 +114,26 @@ class ModificadorRepository {
      * Modificadores aplicables a un item, con su delta de costo resuelto y sus componentes.
      * deltaCosto = Σ(signo × costoBase × cantidad), donde AGREGAR suma y QUITAR resta.
      */
+    suspend fun getCostoPorModificador(): Map<Int, Double> {
+        val mods = getModificadores()
+        val costoArticulos = mutableMapOf<Int, Double>()
+        val costoPreps = mutableMapOf<Int, Double>()
+        val result = mutableMapOf<Int, Double>()
+        for (m in mods) {
+            var delta = 0.0
+            for (c in getComponentes(m.id)) {
+                val costoBase = when (c.tipoComponente) {
+                    TipoComponente.ARTICULO -> costoArticulos.getOrPut(c.componenteId) { costoArticulo(c.componenteId) }
+                    TipoComponente.PREPARACION -> costoPreps.getOrPut(c.componenteId) { costoPreparacion(c.componenteId) }
+                }
+                val signo = if (c.accion == AccionModificador.QUITAR) -1.0 else 1.0
+                delta += signo * costoBase * c.cantidadBase
+            }
+            result[m.id] = delta
+        }
+        return result
+    }
+
     suspend fun getModificadoresConCosto(itemMenuId: Int): List<ModificadorConCosto> {
         val mods = getModificadoresParaItem(itemMenuId)
         val costoArticulos = mutableMapOf<Int, Double>()
