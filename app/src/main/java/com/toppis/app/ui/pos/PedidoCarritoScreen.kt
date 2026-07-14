@@ -3,6 +3,7 @@ package com.toppis.app.ui.pos
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -34,6 +35,7 @@ import coil.compose.AsyncImage
 import com.toppis.app.data.db.entities.CategoriaMenu
 import com.toppis.app.data.models.ItemMenu
 import com.toppis.app.data.models.Promocion
+import com.toppis.app.domain.pos.PosCalculos
 import com.toppis.app.ui.components.ToppisTopBar
 import java.text.DecimalFormat
 
@@ -235,7 +237,6 @@ fun PedidoCarritoScreen(
             promo = promo,
             espacios = espaciosPromo,
             elegiblesPorEspacio = elegiblesPromo,
-            modsDe = { item -> viewModel.modificadoresDe(item) },
             onCancelar = { promoPopup = null; espaciosPromo = emptyList(); elegiblesPromo = emptyMap() },
             onAgregar = { elecciones ->
                 viewModel.agregarPromo(promo, elecciones)
@@ -490,17 +491,19 @@ private fun PromoConfigDialog(
     promo: Promocion,
     espacios: List<com.toppis.app.data.models.PromocionEspacio>,
     elegiblesPorEspacio: Map<Int, List<ItemMenu>>,
-    modsDe: (ItemMenu) -> List<com.toppis.app.data.models.Modificador>,
     onCancelar: () -> Unit,
     onAgregar: (List<EleccionPromo>) -> Unit
 ) {
-    // Un "slot" por cada unidad a elegir (espacio.cantidad veces).
-    val slots = remember(espacios) { espacios.flatMap { esp -> List(esp.cantidad) { esp } } }
-    val seleccion = remember(slots) { mutableStateListOf<Int?>().apply { repeat(slots.size) { add(null) } } }
-    val comentarios = remember(slots) { mutableStateListOf<String>().apply { repeat(slots.size) { add("") } } }
-    val modsPorSlot = remember(slots) { List(slots.size) { mutableStateListOf<Int>() } }
+    // Unidades elegidas: (espacioId, itemMenuId). Permite repetidos.
+    val elegidas = remember(espacios) { mutableStateListOf<Pair<Int, Int>>() }
+    fun countGrupo(espId: Int) = elegidas.count { it.first == espId }
+    fun idsGrupo(espId: Int) = elegidas.filter { it.first == espId }.map { it.second }
+    val nombresMenu = remember(elegiblesPorEspacio) {
+        elegiblesPorEspacio.values.flatten().associate { it.id to it.nombre }
+    }
 
-    val completa = slots.isNotEmpty() && seleccion.all { it != null }
+    val completa = espacios.isNotEmpty() &&
+        espacios.all { PosCalculos.grupoCompleto(it.cantidad, countGrupo(it.id)) }
 
     AlertDialog(
         onDismissRequest = { /* protegido */ },
@@ -512,62 +515,54 @@ private fun PromoConfigDialog(
             }
         },
         text = {
-            if (slots.isEmpty()) {
-                Text("Esta promo no tiene espacios configurados. Agregalos en Cocina → Promociones.",
+            if (espacios.isEmpty()) {
+                Text("Esta promo no tiene grupos configurados. Agregalos en Cocina → Promociones.",
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    itemsIndexed(slots) { i, esp ->
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    espacios.forEach { esp ->
                         val elegibles = elegiblesPorEspacio[esp.id].orEmpty()
-                        val seleccionadoId = seleccion[i]
-                        val itemSel = elegibles.firstOrNull { it.id == seleccionadoId }
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(esp.nombre, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                                if (elegibles.isEmpty()) {
-                                    Text("Sin opciones elegibles.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                                } else {
-                                    var exp by remember { mutableStateOf(false) }
-                                    ExposedDropdownMenuBox(expanded = exp, onExpandedChange = { exp = !exp }) {
-                                        OutlinedTextField(
-                                            value = itemSel?.nombre ?: "Elegí…", onValueChange = {}, readOnly = true,
-                                            label = { Text("Producto") },
-                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = exp) },
-                                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
-                                        )
-                                        ExposedDropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
-                                            elegibles.forEach { opt ->
-                                                DropdownMenuItem(text = { Text(opt.nombre) }, onClick = {
-                                                    seleccion[i] = opt.id; modsPorSlot[i].clear(); exp = false
-                                                })
-                                            }
+                        val yaElegidos = idsGrupo(esp.id)
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                "${esp.nombre}  (${countGrupo(esp.id)}/${esp.cantidad})",
+                                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold
+                            )
+                            if (elegibles.isEmpty()) {
+                                Text("Sin opciones elegibles.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                            } else {
+                                elegibles.chunked(3).forEach { fila ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        fila.forEach { item ->
+                                            val puede = PosCalculos.puedeAgregarAlGrupo(esp.permiteRepetir, yaElegidos, item.id, esp.cantidad)
+                                            PromoOpcionCard(
+                                                item = item,
+                                                habilitado = puede,
+                                                modifier = Modifier.weight(1f),
+                                                onClick = { if (puede) elegidas.add(esp.id to item.id) }
+                                            )
                                         }
+                                        repeat(3 - fila.size) { Spacer(Modifier.weight(1f)) }
                                     }
-                                    // Modificadores del producto elegido (opcionales).
-                                    itemSel?.let { sel ->
-                                        val mods = modsDe(sel)
-                                        mods.forEach { m ->
-                                            val checked = m.id in modsPorSlot[i]
-                                            Row(
-                                                Modifier.fillMaxWidth().clickable {
-                                                    if (checked) modsPorSlot[i].remove(m.id) else modsPorSlot[i].add(m.id)
-                                                },
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Checkbox(checked = checked, onCheckedChange = {
-                                                    if (it) modsPorSlot[i].add(m.id) else modsPorSlot[i].remove(m.id)
-                                                })
-                                                Text(m.nombre, style = MaterialTheme.typography.bodySmall)
-                                            }
+                                }
+                                if (yaElegidos.isNotEmpty()) {
+                                    yaElegidos.forEach { itemId ->
+                                        Row(
+                                            Modifier.fillMaxWidth().clickable {
+                                                val idx = elegidas.indexOfFirst { it.first == esp.id && it.second == itemId }
+                                                if (idx >= 0) elegidas.removeAt(idx)
+                                            },
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("• ${nombresMenu[itemId] ?: "Producto"}", modifier = Modifier.weight(1f),
+                                                style = MaterialTheme.typography.bodySmall)
+                                            Icon(Icons.Filled.Close, contentDescription = "Quitar",
+                                                tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                         }
-                                        OutlinedTextField(
-                                            value = comentarios[i], onValueChange = { comentarios[i] = it },
-                                            label = { Text("Comentario (opcional)") },
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
                                     }
                                 }
                             }
+                            HorizontalDivider()
                         }
                     }
                 }
@@ -575,17 +570,44 @@ private fun PromoConfigDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    val elecciones = slots.indices.map { i ->
-                        EleccionPromo(seleccion[i]!!, modsPorSlot[i].toList(), comentarios[i].ifBlank { null })
-                    }
-                    onAgregar(elecciones)
-                },
+                onClick = { onAgregar(elegidas.map { EleccionPromo(it.second, emptyList(), null) }) },
                 enabled = completa
             ) { Text("Agregar ${money.format(promo.precio)}") }
         },
         dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } }
     )
+}
+
+@Composable
+private fun PromoOpcionCard(
+    item: ItemMenu,
+    habilitado: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.then(if (habilitado) Modifier.clickable(onClick = onClick) else Modifier),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (habilitado) MaterialTheme.colorScheme.surface
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column {
+            Box(Modifier.fillMaxWidth().height(70.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                if (item.imagenUrl != null) {
+                    AsyncImage(model = item.imagenUrl, contentDescription = null,
+                        contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                } else {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Text(item.nombre, style = MaterialTheme.typography.labelSmall, maxLines = 2,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
+        }
+    }
 }
 
 @Composable

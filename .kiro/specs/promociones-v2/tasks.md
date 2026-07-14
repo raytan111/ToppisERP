@@ -41,7 +41,7 @@ Kotlin/Compose MVVM, DI en `MainActivity`, rutas en `NavGraph`, componentes comp
 
 ### Fase C — Selección interactiva en el POS
 
-- [ ] 6. Nuevo selector de promo en el carrito con **tarjetas de imagen** por grupo,
+- [x] 6. Nuevo selector de promo en el carrito con **tarjetas de imagen** por grupo,
   contador "elegidas/cantidad", sumar/quitar unidades, respeta `permite_repetir`;
   reemplaza `PromoConfigDialog`. Habilita Agregar solo con todos los grupos completos;
   agrega a precio fijo.
