@@ -64,36 +64,19 @@ private val pct = DecimalFormat("0.#")
 fun PromocionesScreen(
     viewModel: PromocionViewModel,
     puedeBorrar: Boolean = true,
+    onNuevaPromo: () -> Unit = {},
+    onEditarPromo: (Int) -> Unit = {},
     onNavigateBack: () -> Unit = {}
 ) {
     val promociones by viewModel.promociones.collectAsState()
-    val itemsMenu by viewModel.itemsMenu.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCrearDialog by remember { mutableStateOf(false) }
     var promoAEliminar by remember { mutableStateOf<Promocion?>(null) }
-    var promoAEditar by remember { mutableStateOf<Promocion?>(null) }
     var fotoDe by remember { mutableStateOf<Promocion?>(null) }
 
-    var promoSeleccionada by remember { mutableStateOf<Promocion?>(null) }
-    var detalleItems by remember { mutableStateOf<List<PromocionItemDetalle>>(emptyList()) }
-    var analisis by remember { mutableStateOf<AnalisisPromocion?>(null) }
-
-    var espaciosDe by remember { mutableStateOf<Promocion?>(null) }
-    var espacios by remember { mutableStateOf<List<PromocionEspacio>>(emptyList()) }
-    var opcionesPorEspacio by remember { mutableStateOf<Map<Int, List<PromocionEspacioOpcion>>>(emptyMap()) }
-
-    fun recargarDetalle(promo: Promocion) {
-        viewModel.cargarDetalle(promo) { items, an ->
-            detalleItems = items
-            analisis = an
-        }
-    }
-
-    fun recargarEspacios(promo: Promocion) {
-        viewModel.cargarEspacios(promo.id) { esp, ops -> espacios = esp; opcionesPorEspacio = ops }
-    }
+    // Recargar al volver del editor.
+    LaunchedEffect(Unit) { viewModel.recargar() }
 
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -110,7 +93,7 @@ fun PromocionesScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { ToppisTopBar(titulo = "Promociones", onBack = onNavigateBack) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCrearDialog = true }) {
+            FloatingActionButton(onClick = onNuevaPromo) {
                 Icon(Icons.Filled.Add, contentDescription = "Crear promoción")
             }
         }
@@ -131,12 +114,7 @@ fun PromocionesScreen(
                 ) {
                     items(promociones) { promo ->
                         Card(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                promoSeleccionada = promo
-                                detalleItems = emptyList()
-                                analisis = null
-                                recargarDetalle(promo)
-                            }
+                            modifier = Modifier.fillMaxWidth().clickable { onEditarPromo(promo.id) }
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
@@ -161,14 +139,7 @@ fun PromocionesScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                IconButton(onClick = { espaciosDe = promo; recargarEspacios(promo) }) {
-                                    Icon(
-                                        Icons.Filled.Category,
-                                        contentDescription = "Espacios a elegir",
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                }
-                                IconButton(onClick = { promoAEditar = promo }) {
+                                IconButton(onClick = { onEditarPromo(promo.id) }) {
                                     Icon(
                                         Icons.Filled.Edit,
                                         contentDescription = "Editar",
@@ -211,71 +182,12 @@ fun PromocionesScreen(
         )
     }
 
-    if (showCrearDialog) {
-        CrearPromocionDialog(
-            onDismiss = { showCrearDialog = false },
-            onConfirm = { nombre, tipo, precio, descuento ->
-                viewModel.crearPromocion(nombre, tipo, precio, descuento)
-                showCrearDialog = false
-            }
-        )
-    }
-
     promoAEliminar?.let { promo ->
         com.toppis.app.ui.components.ToppisDeleteDialog(
             nombre = promo.nombre,
             titulo = "Eliminar promoción",
             onConfirm = { viewModel.eliminarPromocion(promo.id); promoAEliminar = null },
             onDismiss = { promoAEliminar = null }
-        )
-    }
-
-    promoAEditar?.let { promo ->
-        EditarPromocionDialog(
-            promocion = promo,
-            onDismiss = { promoAEditar = null },
-            onConfirm = { nombre, tipo, precio, descuento ->
-                viewModel.actualizarPromocion(
-                    promo.copy(nombre = nombre, tipo = tipo, precio = precio, descuentoPct = descuento)
-                )
-                promoAEditar = null
-            }
-        )
-    }
-
-    promoSeleccionada?.let { promo ->
-        ArmarPromoDialog(
-            promocion = promo,
-            detalleItems = detalleItems,
-            analisis = analisis,
-            itemsMenu = itemsMenu,
-            onDismiss = {
-                promoSeleccionada = null
-                detalleItems = emptyList()
-                analisis = null
-            },
-            onAgregarItem = { itemMenuId, cantidad ->
-                viewModel.agregarItem(promo.id, itemMenuId, cantidad) { recargarDetalle(promo) }
-            },
-            onEliminarItem = { detalle ->
-                viewModel.eliminarItem(detalle.promocionItem.id) { recargarDetalle(promo) }
-            }
-        )
-    }
-
-    espaciosDe?.let { promo ->
-        EspaciosPromoDialog(
-            promocion = promo,
-            espacios = espacios,
-            opcionesPorEspacio = opcionesPorEspacio,
-            itemsMenu = itemsMenu,
-            onDismiss = { espaciosDe = null; espacios = emptyList(); opcionesPorEspacio = emptyMap() },
-            onCrearEspacio = { nombre, cantidad, modo, categoria ->
-                viewModel.crearEspacio(promo.id, nombre, cantidad, modo, categoria, espacios.size) { recargarEspacios(promo) }
-            },
-            onEliminarEspacio = { id -> viewModel.eliminarEspacio(id) { recargarEspacios(promo) } },
-            onAgregarOpcion = { espacioId, itemMenuId -> viewModel.agregarOpcion(espacioId, itemMenuId) { recargarEspacios(promo) } },
-            onEliminarOpcion = { id -> viewModel.eliminarOpcion(id) { recargarEspacios(promo) } }
         )
     }
 }

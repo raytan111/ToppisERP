@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
         val modificadorFactory = com.toppis.app.ui.modificadores.ModificadorViewModelFactory(modificadorRepo)
 
         val promocionFactory = com.toppis.app.ui.promociones.PromocionViewModelFactory(promocionRepo)
+        val promocionEditorFactory = com.toppis.app.ui.promociones.PromocionEditorViewModelFactory(promocionRepo)
         // promocionRepo y modificadorRepo se definen arriba (los usa también el POS)
 
         val foodCostFactory = com.toppis.app.ui.foodcost.FoodCostViewModelFactory(menuRepo)
@@ -176,6 +177,7 @@ class MainActivity : ComponentActivity() {
                         preparacionViewModelFactory = preparacionFactory,
                         modificadorViewModelFactory = modificadorFactory,
                         promocionViewModelFactory = promocionFactory,
+                        promocionEditorViewModelFactory = promocionEditorFactory,
                         foodCostViewModelFactory = foodCostFactory,
                         mermaViewModelFactory = mermaFactory,
                         conteoViewModelFactory = conteoFactory,

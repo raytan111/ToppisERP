@@ -37,6 +37,9 @@ class PromocionViewModel(
         refrescarItemsMenu()
     }
 
+    /** Recarga la lista de promociones (ej: al volver del editor). */
+    fun recargar() = refrescarPromociones()
+
     private fun refrescarPromociones() {
         viewModelScope.launch {
             try {

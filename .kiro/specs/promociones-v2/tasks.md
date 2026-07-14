@@ -25,17 +25,17 @@ Kotlin/Compose MVVM, DI en `MainActivity`, rutas en `NavGraph`, componentes comp
 
 ### Fase B — Pantalla de creación/edición (view)
 
-- [ ] 3. `PromocionEditorViewModel` (+ Factory): cargar promo/grupos/opciones para editar;
+- [x] 3. `PromocionEditorViewModel` (+ Factory): cargar promo/grupos/opciones para editar;
   guardar nombre/precio/imagen + grupos (nombre, cantidad, fuente, permite_repetir) +
   opciones de lista fija.
   - _Requisitos: 2.7, 6.2_
 
-- [ ] 4. `PromocionEditorScreen` (view, no popup): encabezado (imagen/nombre/precio),
+- [x] 4. `PromocionEditorScreen` (view, no popup): encabezado (imagen/nombre/precio),
   lista de grupos editable, editor de grupo con **tarjetas de imagen** para lista fija y
   selector + preview para categoría, switch `permite_repetir`, resumen y guardar.
   - _Requisitos: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 4.1, 4.2_
 
-- [ ] 5. Integrar en `PromocionesScreen`: FAB y tap abren `PromocionEditorScreen`; quitar
+- [x] 5. Integrar en `PromocionesScreen`: FAB y tap abren `PromocionEditorScreen`; quitar
   `CrearPromocionDialog`/`ArmarPromoDialog`/`EspaciosPromoDialog`. Ruta + DI en NavGraph/MainActivity.
   - _Requisitos: 2.1_
 

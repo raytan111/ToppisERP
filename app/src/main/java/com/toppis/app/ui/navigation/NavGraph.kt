@@ -120,6 +120,7 @@ fun NavGraph(
     preparacionViewModelFactory: PreparacionViewModelFactory,
     modificadorViewModelFactory: ModificadorViewModelFactory,
     promocionViewModelFactory: PromocionViewModelFactory,
+    promocionEditorViewModelFactory: com.toppis.app.ui.promociones.PromocionEditorViewModelFactory,
     foodCostViewModelFactory: FoodCostViewModelFactory,
     mermaViewModelFactory: MermaViewModelFactory,
     conteoViewModelFactory: ConteoViewModelFactory,
@@ -440,7 +441,36 @@ fun NavGraph(
         composable("promociones") {
             if (!permisos.puedeAbrir("promociones")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: PromocionViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = promocionViewModelFactory)
-            PromocionesScreen(viewModel = vm, puedeBorrar = permisos.puedeBorrar, onNavigateBack = { navController.popBackStack() })
+            PromocionesScreen(
+                viewModel = vm, puedeBorrar = permisos.puedeBorrar,
+                onNuevaPromo = { navController.navigate("promo_editor") },
+                onEditarPromo = { id -> navController.navigate("promo_editor/$id") },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("promo_editor") {
+            if (!permisos.puedeAbrir("promociones")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val vm: com.toppis.app.ui.promociones.PromocionEditorViewModel = viewModel(factory = promocionEditorViewModelFactory)
+            com.toppis.app.ui.promociones.PromocionEditorScreen(
+                viewModel = vm, promocionId = null,
+                onGuardado = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "promo_editor/{promoId}",
+            arguments = listOf(navArgument("promoId") { type = NavType.IntType })
+        ) { entry ->
+            if (!permisos.puedeAbrir("promociones")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val id = entry.arguments?.getInt("promoId")
+            val vm: com.toppis.app.ui.promociones.PromocionEditorViewModel = viewModel(factory = promocionEditorViewModelFactory)
+            com.toppis.app.ui.promociones.PromocionEditorScreen(
+                viewModel = vm, promocionId = id,
+                onGuardado = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable("exportacion") {
