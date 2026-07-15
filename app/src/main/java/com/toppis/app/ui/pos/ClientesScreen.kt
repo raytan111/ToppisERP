@@ -22,6 +22,7 @@ import com.toppis.app.ui.components.ToppisTopBar
 @Composable
 fun ClientesScreen(
     viewModel: ClientesViewModel,
+    puedeBorrar: Boolean = true,
     onNavigateBack: () -> Unit = {}
 ) {
     val clientes by viewModel.clientes.collectAsState()
@@ -29,6 +30,7 @@ fun ClientesScreen(
 
     var query by remember { mutableStateOf("") }
     var editar by remember { mutableStateOf<ClienteResumen?>(null) }
+    var aEliminar by remember { mutableStateOf<ClienteResumen?>(null) }
 
     LaunchedEffect(Unit) { viewModel.cargar() }
 
@@ -81,12 +83,24 @@ fun ClientesScreen(
     editar?.let { r ->
         EditarClienteDialog(
             resumen = r,
+            puedeBorrar = puedeBorrar,
             onDismiss = { editar = null },
-            onGuardar = { nombre, sellos ->
+            onGuardar = { nombre, telefono3, sellos ->
+                if (telefono3 != r.cliente.telefono3) viewModel.actualizarTelefono3(r.cliente.id, telefono3)
                 if (nombre != (r.cliente.nombre ?: "")) viewModel.actualizarNombre(r.cliente.id, nombre)
                 if (sellos != r.cliente.sellosHamburguesa) viewModel.fijarSellos(r.cliente.id, sellos)
                 editar = null
-            }
+            },
+            onEliminar = { editar = null; aEliminar = r }
+        )
+    }
+
+    aEliminar?.let { r ->
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = r.cliente.etiqueta,
+            titulo = "Eliminar cliente",
+            onConfirm = { viewModel.eliminar(r.cliente.id); aEliminar = null },
+            onDismiss = { aEliminar = null }
         )
     }
 }
@@ -126,18 +140,29 @@ private fun ClienteCard(r: ClienteResumen, onClick: () -> Unit) {
 @Composable
 private fun EditarClienteDialog(
     resumen: ClienteResumen,
+    puedeBorrar: Boolean,
     onDismiss: () -> Unit,
-    onGuardar: (nombre: String, sellos: Int) -> Unit
+    onGuardar: (nombre: String, telefono3: String, sellos: Int) -> Unit,
+    onEliminar: () -> Unit
 ) {
     var nombre by remember { mutableStateOf(resumen.cliente.nombre ?: "") }
+    var telefonoText by remember { mutableStateOf(resumen.cliente.telefono3) }
     var sellosText by remember { mutableStateOf(resumen.cliente.sellosHamburguesa.toString()) }
+    val telefonoValido = telefonoText.isNotBlank()
     val sellosValido = sellosText.toIntOrNull()?.let { it >= 0 } ?: false
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Cliente ${resumen.cliente.telefono3}") },
+        title = { Text("Editar cliente") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = telefonoText, onValueChange = { telefonoText = it.filter { c -> c.isDigit() }.take(3) },
+                    label = { Text("3 dígitos WhatsApp") },
+                    supportingText = { Text("Los 3 últimos dígitos del número del cliente.") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
                 OutlinedTextField(
                     value = nombre, onValueChange = { nombre = it },
                     label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth()
@@ -149,12 +174,18 @@ private fun EditarClienteDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
+                if (puedeBorrar) {
+                    TextButton(
+                        onClick = onEliminar,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) { Text("Eliminar cliente") }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onGuardar(nombre.trim(), sellosText.toIntOrNull() ?: 0) },
-                enabled = sellosValido
+                onClick = { onGuardar(nombre.trim(), telefonoText.trim(), sellosText.toIntOrNull() ?: 0) },
+                enabled = telefonoValido && sellosValido
             ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }

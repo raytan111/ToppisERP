@@ -277,7 +277,7 @@ fun NavGraph(
             if (!permisos.puedeAbrir("clientes")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: com.toppis.app.ui.pos.ClientesViewModel =
                 viewModel(viewModelStoreOwner = activityOwner, factory = clientesViewModelFactory)
-            com.toppis.app.ui.pos.ClientesScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+            com.toppis.app.ui.pos.ClientesScreen(viewModel = vm, puedeBorrar = permisos.esAdminGlobal, onNavigateBack = { navController.popBackStack() })
         }
 
         // ── Fondos ───────────────────────────────────────────────────────────

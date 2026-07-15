@@ -57,9 +57,21 @@ class ClientesViewModel(
         }
     }
 
+    fun actualizarTelefono3(id: Int, telefono3: String) {
+        viewModelScope.launch {
+            try { clienteRepo.actualizarTelefono3(id, telefono3); cargar() } catch (_: Exception) {}
+        }
+    }
+
     fun fijarSellos(id: Int, sellos: Int) {
         viewModelScope.launch {
             try { clienteRepo.fijarSellos(id, sellos); cargar() } catch (_: Exception) {}
+        }
+    }
+
+    fun eliminar(id: Int) {
+        viewModelScope.launch {
+            try { clienteRepo.eliminar(id); cargar() } catch (_: Exception) {}
         }
     }
 }

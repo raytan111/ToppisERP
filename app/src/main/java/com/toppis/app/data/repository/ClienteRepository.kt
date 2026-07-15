@@ -4,6 +4,7 @@ import android.util.Log
 import com.toppis.app.data.models.Cliente
 import com.toppis.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -64,10 +65,28 @@ class ClienteRepository {
         ) { filter { eq("id", id) } }
     }
 
+    /** Actualiza los 3 dígitos de WhatsApp del cliente. */
+    suspend fun actualizarTelefono3(id: Int, telefono3: String) {
+        client.postgrest.from("clientes").update(
+            buildJsonObject { put("telefono3", telefono3.trim()); put("updated_at", java.time.Instant.now().toString()) }
+        ) { filter { eq("id", id) } }
+    }
+
     /** Fija los sellos de la cuponera (para cargar cupones ya existentes). */
     suspend fun fijarSellos(id: Int, sellos: Int) {
         client.postgrest.from("clientes").update(
             buildJsonObject { put("sellos_hamburguesa", sellos.coerceAtLeast(0)) }
         ) { filter { eq("id", id) } }
+    }
+
+    /**
+     * Elimina un cliente. Primero desvincula sus pedidos (cliente_id → NULL, FK sin
+     * cascada) para no borrar ventas ni afectar la caja/reportes; luego borra el cliente.
+     */
+    suspend fun eliminar(id: Int) {
+        client.postgrest.from("pedidos").update(
+            buildJsonObject { put("cliente_id", JsonNull) }
+        ) { filter { eq("cliente_id", id) } }
+        client.postgrest.from("clientes").delete { filter { eq("id", id) } }
     }
 }
