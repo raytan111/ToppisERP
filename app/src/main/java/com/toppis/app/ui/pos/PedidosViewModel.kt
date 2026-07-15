@@ -58,12 +58,25 @@ class PedidosViewModel(
         }
     }
 
-    /** Crea un pedido para el cliente de esos 3 dígitos (creándolo si no existe). */
+    /** Crea un pedido para un cliente NUEVO (o reusa si calza teléfono + nombre exactos). */
     fun crearPedido(telefono3: String, nombre: String?, onCreado: (Int) -> Unit) {
         viewModelScope.launch {
             try {
                 val cliente = clienteRepo.obtenerOCrear(telefono3.trim(), nombre?.trim())
                 val pedido = pedidoRepo.crearPedido(cliente.id)
+                cargar()
+                onCreado(pedido.id)
+            } catch (e: Exception) {
+                _uiState.value = PedidosUiState.Error(e.message ?: "Error al crear el pedido")
+            }
+        }
+    }
+
+    /** Crea un pedido para un cliente ya existente (seleccionado de la lista). */
+    fun crearPedidoParaCliente(clienteId: Int, onCreado: (Int) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val pedido = pedidoRepo.crearPedido(clienteId)
                 cargar()
                 onCreado(pedido.id)
             } catch (e: Exception) {

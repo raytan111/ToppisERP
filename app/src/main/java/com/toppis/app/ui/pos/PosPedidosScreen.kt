@@ -4,8 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PointOfSale
@@ -85,11 +87,17 @@ fun PosPedidosScreen(
     }
 
     if (showNuevo) {
+        val clientesList = remember(clientes) { clientes.values.sortedBy { it.nombre ?: it.telefono3 } }
         NuevoPedidoDialog(
+            clientes = clientesList,
             onDismiss = { showNuevo = false },
-            onConfirm = { tel, nombre ->
+            onCrearNuevo = { tel, nombre ->
                 showNuevo = false
                 viewModel.crearPedido(tel, nombre) { id -> onAbrirPedido(id) }
+            },
+            onSeleccionar = { cliente ->
+                showNuevo = false
+                viewModel.crearPedidoParaCliente(cliente.id) { id -> onAbrirPedido(id) }
             }
         )
     }
@@ -151,21 +159,37 @@ private fun EstadoChip(texto: String, color: androidx.compose.ui.graphics.Color)
 
 @Composable
 private fun NuevoPedidoDialog(
+    clientes: List<com.toppis.app.data.models.Cliente>,
     onDismiss: () -> Unit,
-    onConfirm: (telefono3: String, nombre: String?) -> Unit
+    onCrearNuevo: (telefono: String, nombre: String?) -> Unit,
+    onSeleccionar: (com.toppis.app.data.models.Cliente) -> Unit
 ) {
     var tel by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
-    val telValido = tel.length in 3..4 && tel.all { it.isDigit() }
+    val telValido = tel.length >= 3 && tel.all { it.isDigit() }
+
+    // Coincidencias con clientes existentes mientras se escribe (teléfono o nombre).
+    val coincidencias = remember(tel, nombre, clientes) {
+        val q = tel.trim()
+        val qn = nombre.trim()
+        if (q.isBlank() && qn.length < 2) emptyList()
+        else clientes.filter { c ->
+            (q.isNotBlank() && c.telefono3.contains(q)) ||
+                (qn.length >= 2 && (c.nombre?.contains(qn, ignoreCase = true) ?: false))
+        }.take(6)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nuevo pedido") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 OutlinedTextField(
-                    value = tel, onValueChange = { if (it.length <= 4) tel = it.filter { c -> c.isDigit() } },
-                    label = { Text("Últimos 3 dígitos del WhatsApp") },
+                    value = tel, onValueChange = { tel = it.filter { c -> c.isDigit() } },
+                    label = { Text("WhatsApp (últimos dígitos o completo)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
@@ -174,13 +198,35 @@ private fun NuevoPedidoDialog(
                     label = { Text("Nombre (opcional)") },
                     singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
+                if (coincidencias.isNotEmpty()) {
+                    Text("Clientes existentes (tocá para usar):",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    coincidencias.forEach { c ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            modifier = Modifier.fillMaxWidth().clickable { onSeleccionar(c) }
+                        ) {
+                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(c.etiqueta, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                    Text("Sellos: ${c.sellosHamburguesa}/6", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("Usar", style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(tel, nombre.ifBlank { null }) },
+                onClick = { onCrearNuevo(tel, nombre.ifBlank { null }) },
                 enabled = telValido
-            ) { Text("Crear") }
+            ) { Text("Crear nuevo") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
