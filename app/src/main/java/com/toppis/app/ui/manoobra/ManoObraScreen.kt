@@ -3,6 +3,7 @@ package com.toppis.app.ui.manoobra
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -12,6 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.toppis.app.data.db.entities.TipoPago
@@ -23,6 +27,7 @@ import java.time.LocalDate
 
 private val money = DecimalFormat("$#,##0")
 private val pct = DecimalFormat("0.#")
+private const val META_LABOR = 20.0
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,16 +36,19 @@ fun ManoObraScreen(
     usuarioId: String? = null,
     onNavigateBack: () -> Unit = {}
 ) {
-    val periodo by viewModel.periodo.collectAsState()
+    val modo by viewModel.modo.collectAsState()
+    val etiqueta by viewModel.etiqueta.collectAsState()
     val prime by viewModel.prime.collectAsState()
     val jornadas by viewModel.jornadas.collectAsState()
     val propinas by viewModel.propinas.collectAsState()
     val empleados by viewModel.empleados.collectAsState()
+    val empleadosCosto by viewModel.empleadosCosto.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showJornada by remember { mutableStateOf(false) }
     var showPropina by remember { mutableStateOf(false) }
+    val esSemana = modo == PeriodoModo.SEMANA
 
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -56,27 +64,46 @@ fun ManoObraScreen(
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            // Selector de período
+            // Toggle Semana / Mes
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { viewModel.mesAnterior() }) { Icon(Icons.Filled.ChevronLeft, "Mes anterior") }
-                    Text("${periodo.monthValue.toString().padStart(2, '0')}/${periodo.year}", style = MaterialTheme.typography.titleMedium)
-                    IconButton(onClick = { viewModel.mesSiguiente() }) { Icon(Icons.Filled.ChevronRight, "Mes siguiente") }
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = esSemana,
+                        onClick = { viewModel.setModo(PeriodoModo.SEMANA) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                    ) { Text("Semana") }
+                    SegmentedButton(
+                        selected = !esSemana,
+                        onClick = { viewModel.setModo(PeriodoModo.MES) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                    ) { Text("Mes") }
                 }
             }
 
-            // Prime Cost
+            // Selector de período
+            item {
+                Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { viewModel.anterior() }) { Icon(Icons.Filled.ChevronLeft, "Anterior") }
+                        Text(etiqueta, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { viewModel.siguiente() }) { Icon(Icons.Filled.ChevronRight, "Siguiente") }
+                    }
+                }
+            }
+
+            // Hero: Labor cost con medidor
+            item { LaborCard(prime, esSemana) }
+
+            // Prime cost detalle
             item {
                 val p = prime
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Prime Cost del mes", style = MaterialTheme.typography.titleSmall)
-                        if (p == null) {
-                            Text("Calculando...", color = MaterialTheme.colorScheme.outline)
-                        } else {
+                if (p != null) {
+                    Card(shape = RoundedCornerShape(16.dp)) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Prime Cost ${if (esSemana) "de la semana" else "del mes"}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Fila("Ventas", money.format(p.ventas))
                             Fila("Food cost (teórico)", "${money.format(p.foodCost)} · ${pct.format(p.foodPct)}%")
                             Fila("Mano de obra", "${money.format(p.laborCost)} · ${pct.format(p.laborPct)}%")
@@ -88,9 +115,24 @@ fun ManoObraScreen(
                             }
                             Fila("PRIME COST", "${money.format(p.primeCost)} · ${pct.format(p.primePct)}%", primeColor)
                             Text("Meta saludable: ≤ 60–65%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                            if (p.propinas > 0) Text("Propinas del mes: ${money.format(p.propinas)}",
+                            if (p.propinas > 0) Text("Propinas del período: ${money.format(p.propinas)}",
                                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
                         }
+                    }
+                }
+            }
+
+            // Costo del equipo (equivalente semanal/mensual)
+            if (empleadosCosto.isNotEmpty()) {
+                item { Text("Costo del equipo", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold) }
+                items(empleadosCosto) { ec -> EmpleadoCostoCard(ec, esSemana) }
+                item {
+                    val totalFijoSemana = empleadosCosto.filter { it.esFijo }.sumOf { it.semanal }
+                    if (totalFijoSemana > 0) {
+                        Text(
+                            "Sueldos fijos: ${money.format(totalFijoSemana)} / semana  ·  ${money.format(empleadosCosto.filter { it.esFijo }.sumOf { it.mensual })} / mes",
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -98,18 +140,18 @@ fun ManoObraScreen(
             // Jornadas
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Turnos / horas", style = MaterialTheme.typography.titleSmall)
+                    Text("Turnos / horas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     TextButton(onClick = { showJornada = true }, enabled = empleados.isNotEmpty()) { Text("+ Registrar") }
                 }
             }
             if (jornadas.isEmpty()) {
-                item { Text("Sin turnos registrados este mes.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+                item { Text("Sin turnos registrados en el período.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
             } else {
                 items(jornadas) { j ->
-                    Card(Modifier.fillMaxWidth()) {
+                    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(j.nombre, style = MaterialTheme.typography.bodyMedium)
+                                Text(j.nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                                 Text("${j.jornada.fecha} · ${DecimalFormat("#,##0.##").format(j.jornada.cantidad)} · ${money.format(j.jornada.costo)}",
                                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             }
@@ -124,15 +166,15 @@ fun ManoObraScreen(
             // Propinas
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Propinas (total por día)", style = MaterialTheme.typography.titleSmall)
+                    Text("Propinas (total por día)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     TextButton(onClick = { showPropina = true }) { Text("+ Registrar") }
                 }
             }
             if (propinas.isEmpty()) {
-                item { Text("Sin propinas registradas este mes.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+                item { Text("Sin propinas registradas en el período.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
             } else {
                 items(propinas) { p ->
-                    Card(Modifier.fillMaxWidth()) {
+                    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(p.fecha ?: "", style = MaterialTheme.typography.bodyMedium)
@@ -164,7 +206,77 @@ fun ManoObraScreen(
 }
 
 @Composable
-private fun Fila(label: String, valor: String, color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface) {
+private fun LaborCard(p: com.toppis.app.data.repository.PrimeCost?, esSemana: Boolean) {
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Labor cost ${if (esSemana) "de la semana" else "del mes"}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+            if (p == null) {
+                Text("Calculando…", color = MaterialTheme.colorScheme.outline)
+                return@Column
+            }
+            val laborColor = when {
+                p.ventas == 0.0 -> MaterialTheme.colorScheme.outline
+                p.laborPct <= META_LABOR -> MaterialTheme.colorScheme.primary
+                p.laborPct <= META_LABOR + 5 -> MaterialTheme.colorScheme.tertiary
+                else -> MaterialTheme.colorScheme.error
+            }
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("${pct.format(p.laborPct)}%", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = laborColor)
+                Spacer(Modifier.width(10.dp))
+                Text(money.format(p.laborCost), style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
+            }
+            val frac = if (p.ventas == 0.0) 0f else (p.laborPct / 40.0).toFloat().coerceIn(0f, 1f)
+            LinearProgressIndicator(
+                progress = { frac },
+                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
+                color = laborColor,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+            Text("Meta ${pct.format(META_LABOR)}% de las ventas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        }
+    }
+}
+
+@Composable
+private fun EmpleadoCostoCard(ec: EmpleadoCosto, esSemana: Boolean) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(ec.empleado.nombre, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(
+                    ec.empleado.cargo.ifBlank { ec.empleado.tipoPago.label },
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                if (ec.esFijo) {
+                    // Resalta el equivalente del período elegido.
+                    val principal = if (esSemana) ec.semanal else ec.mensual
+                    val secundario = if (esSemana) ec.mensual else ec.semanal
+                    val etqPrin = if (esSemana) "/ semana" else "/ mes"
+                    val etqSec = if (esSemana) "/ mes" else "/ semana"
+                    Text("${money.format(principal)} $etqPrin", style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("${money.format(secundario)} $etqSec", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline)
+                } else {
+                    Text("${money.format(ec.empleado.monto)}", style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                    Text("por ${ec.empleado.tipoPago.label.lowercase()}", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Fila(label: String, valor: String, color: Color = MaterialTheme.colorScheme.onSurface) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         Text(valor, style = MaterialTheme.typography.bodyMedium, color = color)
@@ -214,7 +326,7 @@ private fun JornadaDialog(
                 if (costoEstimado != null) {
                     Text("Costo: ${money.format(costoEstimado)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     if (empleado?.tipoPago == TipoPago.SUELDO_FIJO) {
-                        Text("Ojo: este empleado es sueldo fijo; su sueldo ya entra al prime cost del mes. Registrar turnos lo sumaría doble.",
+                        Text("Ojo: este empleado es sueldo fijo; su sueldo ya entra al prime cost. Registrar turnos lo sumaría doble.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
                 }

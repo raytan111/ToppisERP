@@ -95,7 +95,11 @@ class ManoObraRepository {
 
     // ── Prime Cost ────────────────────────────────────────────────────────────
 
-    suspend fun getPrimeCost(desdeIso: String, hastaIso: String): PrimeCost {
+    /**
+     * Prime cost del período. [factorSueldoFijo] prorratea el sueldo fijo mensual al
+     * período: 1.0 para el mes completo, 1/4.33 para una semana.
+     */
+    suspend fun getPrimeCost(desdeIso: String, hastaIso: String, factorSueldoFijo: Double = 1.0): PrimeCost {
         // Ventas del período (completadas)
         val ventas = try {
             client.postgrest.from("ventas").select().decodeList<Venta>()
@@ -114,9 +118,9 @@ class ManoObraRepository {
             0.0
         }
 
-        // Labor: jornadas del período + sueldos fijos mensuales (empleados activos)
+        // Labor: jornadas del período + sueldos fijos (prorrateados según el período)
         val jornadasCosto = getJornadas(desdeIso, hastaIso).sumOf { it.jornada.costo }
-        val sueldosFijos = getEmpleados().filter { it.activo && it.tipoPago == TipoPago.SUELDO_FIJO }.sumOf { it.monto }
+        val sueldosFijos = getEmpleados().filter { it.activo && it.tipoPago == TipoPago.SUELDO_FIJO }.sumOf { it.monto } * factorSueldoFijo
         val labor = jornadasCosto + sueldosFijos
 
         val propinas = getPropinas(desdeIso, hastaIso).sumOf { it.monto }
