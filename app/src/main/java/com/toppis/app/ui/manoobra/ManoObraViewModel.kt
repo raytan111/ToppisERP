@@ -22,7 +22,7 @@ import java.util.Locale
 sealed class ManoObraUiState {
     object Idle : ManoObraUiState()
     data class Error(val message: String) : ManoObraUiState()
-    object Success : ManoObraUiState()
+    data class Success(val message: String) : ManoObraUiState()
 }
 
 /** Vista de período: por semana (operativa) o por mes (informativo). */
@@ -128,10 +128,22 @@ class ManoObraViewModel(
         viewModelScope.launch { _propinas.value = repository.getPropinas(desde, hasta) }
     }
 
+    /** Ajusta el período visible para que contenga [fecha] (yyyy-MM-dd). */
+    private fun irAPeriodoDe(fecha: String) {
+        val f = runCatching { java.time.LocalDate.parse(fecha.take(10)) }.getOrNull() ?: return
+        if (_modo.value == PeriodoModo.SEMANA) _semana.value = FechaUtil.semanaDe(f)
+        else _mes.value = YearMonth.from(f)
+    }
+
     fun registrarJornada(empleado: Empleado, fecha: String, cantidad: Double, nota: String, usuarioId: String?) {
         viewModelScope.launch {
-            try { repository.registrarJornada(empleado, fecha, cantidad, nota, usuarioId); cargar(); _uiState.value = ManoObraUiState.Success }
-            catch (e: Exception) { _uiState.value = ManoObraUiState.Error(e.message ?: "Error al registrar jornada") }
+            try {
+                repository.registrarJornada(empleado, fecha, cantidad, nota, usuarioId)
+                irAPeriodoDe(fecha); cargar()
+                _uiState.value = ManoObraUiState.Success("Turno registrado")
+            } catch (e: Exception) {
+                _uiState.value = ManoObraUiState.Error(e.message ?: "Error al registrar jornada")
+            }
         }
     }
 
@@ -141,8 +153,13 @@ class ManoObraViewModel(
 
     fun registrarPropina(fecha: String, monto: Double, nota: String) {
         viewModelScope.launch {
-            try { repository.registrarPropina(fecha, monto, nota); cargar(); _uiState.value = ManoObraUiState.Success }
-            catch (e: Exception) { _uiState.value = ManoObraUiState.Error(e.message ?: "Error al registrar propina") }
+            try {
+                repository.registrarPropina(fecha, monto, nota)
+                irAPeriodoDe(fecha); cargar()
+                _uiState.value = ManoObraUiState.Success("Propina registrada")
+            } catch (e: Exception) {
+                _uiState.value = ManoObraUiState.Error(e.message ?: "Error al registrar propina")
+            }
         }
     }
 

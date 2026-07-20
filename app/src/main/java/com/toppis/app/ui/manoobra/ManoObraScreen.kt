@@ -51,9 +51,9 @@ fun ManoObraScreen(
     val esSemana = modo == PeriodoModo.SEMANA
 
     LaunchedEffect(uiState) {
-        when (uiState) {
-            is ManoObraUiState.Error -> { snackbarHostState.showSnackbar((uiState as ManoObraUiState.Error).message); viewModel.resetState() }
-            ManoObraUiState.Success -> viewModel.resetState()
+        when (val s = uiState) {
+            is ManoObraUiState.Error -> { snackbarHostState.showSnackbar(s.message); viewModel.resetState() }
+            is ManoObraUiState.Success -> { snackbarHostState.showSnackbar(s.message); viewModel.resetState() }
             else -> {}
         }
     }
