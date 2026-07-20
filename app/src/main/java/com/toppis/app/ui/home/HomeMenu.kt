@@ -115,7 +115,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("usuarios", "Usuarios", Icons.Filled.Group, soloAdmin = true),
             MenuOpcion("locales", "Locales", Icons.Filled.Store, soloAdmin = true),
             MenuOpcion("asignaciones_local", "Usuarios por Local", Icons.Filled.SupervisedUserCircle, soloAdmin = true),
-            MenuOpcion("kpis", "KPIs Ejecutivos", Icons.Filled.Dashboard, soloAdmin = true),
+            MenuOpcion("kpis", "KPIs Semanales", Icons.Filled.Dashboard, soloAdmin = true),
             MenuOpcion("ventas_historial", "Historial de Ventas", Icons.Filled.History),
             MenuOpcion("comprobantes", "Comprobantes", Icons.Filled.Receipt),
             MenuOpcion("config_color", "Configurar Colores", Icons.Filled.Palette, soloAdmin = true),
