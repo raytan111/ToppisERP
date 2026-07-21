@@ -43,13 +43,17 @@ fun ToppisERPTheme(
     )
 
     // En modo oscuro forzamos texto blanco (y grises muy claros para el texto
-    // secundario) para máxima legibilidad sin perder del todo la jerarquía.
+    // secundario) para máxima legibilidad. Además reemplazamos el acento "primary"
+    // (rosado del color de marca) por un blanco grisáceo neutro, más moderno; se usa
+    // en textos, iconos y botones. onPrimary queda oscuro para leer sobre botones claros.
     val colorScheme = if (dark) base.copy(
         onSurface = Color.White,
         onBackground = Color.White,
         onSurfaceVariant = Color(0xFFE3E3E3),
         outline = Color(0xFFC2C2C2),
-        outlineVariant = Color(0xFF5A5A5A)
+        outlineVariant = Color(0xFF5A5A5A),
+        primary = Color(0xFFE6E6EA),
+        onPrimary = Color(0xFF1B1B1F)
     ) else base
 
     MaterialTheme(

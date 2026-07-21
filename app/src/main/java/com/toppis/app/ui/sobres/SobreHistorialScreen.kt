@@ -124,6 +124,7 @@ fun SobreHistorialScreen(
                     sobresById = sobresById,
                     onTransferir = { showTransfer = true }
                 )
+                // (deslizá para ver otras cuentas)
             }
         }
     }
@@ -177,7 +178,6 @@ private fun PaginaHistorial(
     onTransferir: () -> Unit
 ) {
     val esCuenta = sobre.tipo != TipoSobre.FONDO
-    val acento = if (esCuenta) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
 
     val statement = remember(movimientos, sobre.saldo) {
         var running = sobre.saldo
@@ -194,7 +194,7 @@ private fun PaginaHistorial(
     }
 
     Column(Modifier.fillMaxSize()) {
-        HeaderCuenta(sobre, acento, esCuenta, onTransferir)
+        HeaderCuenta(sobre, esCuenta, onTransferir)
         when {
             cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             statement.isEmpty() -> com.toppis.app.ui.components.EmptyState(
@@ -216,11 +216,15 @@ private fun PaginaHistorial(
 }
 
 @Composable
-private fun HeaderCuenta(sobre: Sobre, acento: Color, esCuenta: Boolean, onTransferir: () -> Unit) {
+private fun HeaderCuenta(sobre: Sobre, esCuenta: Boolean, onTransferir: () -> Unit) {
     val animado by animateFloatAsState(
         targetValue = sobre.saldo.toFloat(),
         animationSpec = tween(700), label = "saldo"
     )
+    // El degradado usa colores de contenedor (no "primary", que ahora es blanco),
+    // y el texto usa su on-container para contraste correcto.
+    val bg = if (esCuenta) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+    val onBg = if (esCuenta) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer
     Surface(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = RoundedCornerShape(22.dp),
@@ -228,28 +232,28 @@ private fun HeaderCuenta(sobre: Sobre, acento: Color, esCuenta: Boolean, onTrans
     ) {
         Box(
             Modifier.background(
-                Brush.verticalGradient(listOf(acento.copy(alpha = 0.85f), acento.copy(alpha = 0.55f)))
+                Brush.verticalGradient(listOf(bg, bg.copy(alpha = 0.6f)))
             ).fillMaxWidth().padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(if (esCuenta) "Cuenta · dinero real" else "Fondo · provisión",
-                        style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f))
+                        style = MaterialTheme.typography.labelMedium, color = onBg.copy(alpha = 0.85f))
                     Spacer(Modifier.height(6.dp))
-                    Text("Saldo actual", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.85f))
+                    Text("Saldo actual", style = MaterialTheme.typography.labelSmall, color = onBg.copy(alpha = 0.85f))
                     Text(money.format(animado.toDouble()), style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold, color = Color.White)
+                        fontWeight = FontWeight.Bold, color = onBg)
                     if (sobre.descripcion.isNotBlank()) {
                         Spacer(Modifier.height(6.dp))
-                        Text(sobre.descripcion, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+                        Text(sobre.descripcion, style = MaterialTheme.typography.bodySmall, color = onBg.copy(alpha = 0.9f))
                     }
                 }
                 // Botón transferir centrado a la derecha dentro de la card del saldo.
                 FilledIconButton(
                     onClick = onTransferir,
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.22f),
-                        contentColor = Color.White
+                        containerColor = onBg.copy(alpha = 0.18f),
+                        contentColor = onBg
                     )
                 ) { Icon(Icons.Filled.SwapHoriz, contentDescription = "Transferir") }
             }
