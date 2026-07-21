@@ -45,8 +45,6 @@ fun SobresScreen(
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var selectedSobre by remember { mutableStateOf<Sobre?>(null) }
 
     // Recargar al abrir (refleja cambios hechos fuera de la app).
@@ -104,14 +102,6 @@ fun SobresScreen(
                     onTransferirClick = {
                         selectedSobre = sobre
                         showTransferDialog = true
-                    },
-                    onEditarClick = {
-                        selectedSobre = sobre
-                        showEditDialog = true
-                    },
-                    onEliminarClick = {
-                        selectedSobre = sobre
-                        showDeleteConfirmDialog = true
                     }
                 )
             }
@@ -162,36 +152,6 @@ fun SobresScreen(
         )
     }
 
-    if (showEditDialog && selectedSobre != null) {
-        EditarSobreDialog(
-            sobre = selectedSobre!!,
-            onDismiss = { showEditDialog = false },
-            onConfirm = { nombre, descripcion, tipo ->
-                viewModel.editarSobre(
-                    selectedSobre!!.copy(nombre = nombre, descripcion = descripcion, tipo = tipo)
-                )
-                showEditDialog = false
-            }
-        )
-    }
-
-    if (showDeleteConfirmDialog && selectedSobre != null) {
-        val conSaldo = selectedSobre!!.saldo > 0
-        com.toppis.app.ui.components.ToppisDeleteDialog(
-            nombre = selectedSobre!!.nombre,
-            titulo = "Eliminar sobre",
-            mensaje = if (conSaldo)
-                "No se puede eliminar un sobre con saldo (${DecimalFormat("$#,##0 CLP").format(selectedSobre!!.saldo)})."
-            else
-                "¿Eliminar el sobre \"${selectedSobre!!.nombre}\"? Esta acción no se puede deshacer.",
-            confirmarHabilitado = !conSaldo,
-            onConfirm = {
-                viewModel.eliminarSobre(selectedSobre!!)
-                showDeleteConfirmDialog = false
-            },
-            onDismiss = { showDeleteConfirmDialog = false }
-        )
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -199,41 +159,25 @@ fun SobresScreen(
 fun SobreCard(
     sobre: Sobre,
     onCardClick: () -> Unit,
-    onTransferirClick: () -> Unit,
-    onEditarClick: () -> Unit,
-    onEliminarClick: () -> Unit
+    onTransferirClick: () -> Unit
 ) {
     val esCuenta = sobre.tipo == com.toppis.app.data.db.entities.TipoSobre.CUENTA
     val acento = if (esCuenta) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), onClick = onCardClick) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                        Text(text = sobre.nombre, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                        Spacer(Modifier.width(8.dp))
-                        Surface(shape = RoundedCornerShape(8.dp), color = acento.copy(alpha = 0.15f)) {
-                            Text(
-                                text = if (esCuenta) "Cuenta" else "Fondo",
-                                style = MaterialTheme.typography.labelSmall, color = acento,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                    if (sobre.descripcion.isNotBlank()) {
-                        Text(text = sobre.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(text = sobre.nombre, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
+                Spacer(Modifier.width(8.dp))
+                Surface(shape = RoundedCornerShape(8.dp), color = acento.copy(alpha = 0.15f)) {
+                    Text(
+                        text = if (esCuenta) "Cuenta" else "Fondo",
+                        style = MaterialTheme.typography.labelSmall, color = acento,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
                 }
-                IconButton(onClick = onEditarClick, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onEliminarClick, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
-                }
+            }
+            if (sobre.descripcion.isNotBlank()) {
+                Text(text = sobre.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -241,14 +185,10 @@ fun SobreCard(
             val formatter = DecimalFormat("$#,##0 CLP")
             Text(text = "Saldo: ${formatter.format(sobre.saldo)}",
                 style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = acento)
+                color = MaterialTheme.colorScheme.onSurface)
 
             Spacer(modifier = Modifier.height(10.dp))
             Button(onClick = onTransferirClick, modifier = Modifier.fillMaxWidth()) { Text("Transferir") }
-            Spacer(Modifier.height(2.dp))
-            Text("Tocá la tarjeta para ver el historial",
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp))
         }
     }
 }

@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,6 +68,9 @@ fun SobreHistorialScreen(
     val esCuenta = sobre?.tipo != TipoSobre.FONDO
     val acento = if (esCuenta) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
 
+    var showEdit by remember { mutableStateOf(false) }
+    var showDelete by remember { mutableStateOf(false) }
+
     // Enriquecer con saldo corriente (desde el saldo actual hacia atrás).
     val statement = remember(movimientos, sobre?.saldo) {
         var running = sobre?.saldo ?: 0.0
@@ -82,7 +87,22 @@ fun SobreHistorialScreen(
     }
 
     Scaffold(
-        topBar = { ToppisTopBar(titulo = sobre?.nombre ?: "Historial", onBack = onNavigateBack) }
+        topBar = {
+            ToppisTopBar(
+                titulo = sobre?.nombre ?: "Historial",
+                onBack = onNavigateBack,
+                actions = {
+                    if (sobre != null) {
+                        IconButton(onClick = { showEdit = true }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                        }
+                        IconButton(onClick = { showDelete = true }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            )
+        }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (sobre != null) HeaderCuenta(sobre, acento, esCuenta)
@@ -105,6 +125,36 @@ fun SobreHistorialScreen(
                 }
             }
         }
+    }
+
+    if (showEdit && sobre != null) {
+        EditarSobreDialog(
+            sobre = sobre,
+            onDismiss = { showEdit = false },
+            onConfirm = { nombre, descripcion, tipo ->
+                viewModel.editarSobre(sobre.copy(nombre = nombre, descripcion = descripcion, tipo = tipo))
+                showEdit = false
+            }
+        )
+    }
+
+    if (showDelete && sobre != null) {
+        val conSaldo = sobre.saldo != 0.0
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = sobre.nombre,
+            titulo = "Eliminar sobre",
+            mensaje = if (conSaldo)
+                "No se puede eliminar un sobre con saldo (${money.format(sobre.saldo)})."
+            else
+                "¿Eliminar el sobre \"${sobre.nombre}\"? Esta acción no se puede deshacer.",
+            confirmarHabilitado = !conSaldo,
+            onConfirm = {
+                viewModel.eliminarSobre(sobre)
+                showDelete = false
+                onNavigateBack()
+            },
+            onDismiss = { showDelete = false }
+        )
     }
 }
 
