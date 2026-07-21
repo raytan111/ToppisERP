@@ -77,6 +77,26 @@ class PedidoRepository {
             .decodeList<PedidoUnidadMod>()
     } catch (e: Exception) { emptyList() }
 
+    /** Todas las unidades de varias líneas en UNA sola consulta (evita N+1). */
+    suspend fun getUnidadesDeItems(itemIds: List<Int>): List<PedidoUnidad> {
+        if (itemIds.isEmpty()) return emptyList()
+        return try {
+            client.postgrest.from("pedido_unidades").select {
+                filter { isIn("pedido_item_id", itemIds) }
+            }.decodeList<PedidoUnidad>().sortedBy { it.id }
+        } catch (e: Exception) { emptyList() }
+    }
+
+    /** Todos los mods de varias unidades en UNA sola consulta (evita N+1). */
+    suspend fun getModsDeUnidades(unidadIds: List<Int>): List<PedidoUnidadMod> {
+        if (unidadIds.isEmpty()) return emptyList()
+        return try {
+            client.postgrest.from("pedido_unidad_mods").select {
+                filter { isIn("pedido_unidad_id", unidadIds) }
+            }.decodeList<PedidoUnidadMod>()
+        } catch (e: Exception) { emptyList() }
+    }
+
     // ── Escritura ─────────────────────────────────────────────────────────────
 
     /** Crea un pedido ABIERTO para un cliente y lo devuelve. */

@@ -108,12 +108,14 @@ class CarritoViewModel(
         val menuById = _menu.value.associateBy { it.id }
         val promoById = _promos.value.associateBy { it.id }
         val modById = modificadores.associateBy { it.id }
+        // Batch: todas las unidades y mods del pedido en 2 consultas (en vez de N+1).
+        val unidadesAll = pedidoRepo.getUnidadesDeItems(items.map { it.id })
+        val modsAll = pedidoRepo.getModsDeUnidades(unidadesAll.map { it.id })
+        val unidadesPorItem = unidadesAll.groupBy { it.pedidoItemId }
+        val modsPorUnidad = modsAll.groupBy { it.pedidoUnidadId }
+            .mapValues { (_, list) -> list.mapNotNull { modById[it.modificadorId]?.nombre } }
         val lineas = items.map { pi ->
-            val unidades = pedidoRepo.getUnidades(pi.id)
-            // Precalcular mods por unidad (suspend) para no llamar red dentro de lambdas.
-            val modsPorUnidad = unidades.associate { u ->
-                u.id to pedidoRepo.getMods(u.id).mapNotNull { m -> modById[m.modificadorId]?.nombre }
-            }
+            val unidades = unidadesPorItem[pi.id].orEmpty().sortedBy { it.id }
             val titulo = when (pi.tipo) {
                 TipoLineaPedido.PROMO -> promoById[pi.promocionId]?.nombre ?: "Promoción"
                 TipoLineaPedido.PRODUCTO -> menuById[pi.itemMenuId]?.nombre ?: "Producto"

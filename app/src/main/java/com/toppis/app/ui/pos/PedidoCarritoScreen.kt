@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -181,7 +183,8 @@ fun PedidoCarritoScreen(
             }
 
             Box(Modifier.weight(1f)) {
-                if (tab == 0) {
+              androidx.compose.animation.Crossfade(targetState = tab, label = "tabPos") { tabActual ->
+                if (tabActual == 0) {
                     Column {
                         CategoriaFiltro(categoria) { categoria = it }
                         val filtrado = if (categoria == null) menu
@@ -252,6 +255,7 @@ fun PedidoCarritoScreen(
                         }
                     }
                 }
+              }
             }
 
             HorizontalDivider()
@@ -394,8 +398,13 @@ private fun CategoriaFiltro(seleccion: String?, onSelect: (String?) -> Unit) {
 
 @Composable
 private fun ProductoCard(item: ItemMenu, onClick: () -> Unit) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "prodScale")
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current, onClick = onClick),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column {
@@ -424,8 +433,13 @@ private fun ProductoCard(item: ItemMenu, onClick: () -> Unit) {
 
 @Composable
 private fun PromoCard(promo: Promocion, onClick: () -> Unit) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "promoScale")
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current, onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
     ) {
