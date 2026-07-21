@@ -285,8 +285,23 @@ fun NavGraph(
             if (!permisos.puedeAbrir("sobres")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
             BackScaffold("Sobres", onNavigateBack = { navController.popBackStack() }) { padding ->
-                SobresScreen(viewModel = vm, isAdmin = isAdmin, modifier = Modifier.padding(padding))
+                SobresScreen(
+                    viewModel = vm, isAdmin = isAdmin,
+                    onAbrirHistorial = { id -> navController.navigate("sobre_historial/$id") },
+                    modifier = Modifier.padding(padding)
+                )
             }
+        }
+
+        composable("sobre_historial/{sobreId}") { backStackEntry ->
+            if (!permisos.puedeAbrir("sobres")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
+            val id = backStackEntry.arguments?.getString("sobreId")?.toIntOrNull() ?: run {
+                LaunchedEffect(Unit) { navController.popBackStack() }; return@composable
+            }
+            val vm: SobreViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = sobreViewModelFactory)
+            com.toppis.app.ui.sobres.SobreHistorialScreen(
+                viewModel = vm, sobreId = id, onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable("gastos") {
