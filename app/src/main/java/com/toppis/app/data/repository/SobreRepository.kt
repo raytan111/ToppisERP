@@ -1,6 +1,7 @@
 package com.toppis.app.data.repository
 
 import android.util.Log
+import com.toppis.app.data.models.MovimientoSobre
 import com.toppis.app.data.models.Sobre
 import com.toppis.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -38,6 +39,16 @@ class SobreRepository {
             Log.e("SobreRepository", "Error al leer sobres: ${e.message}", e)
             emptyList()
         }
+    }
+
+    /** Movimientos donde el sobre participa (como origen o destino), más nuevos primero. */
+    suspend fun getMovimientos(sobreId: Int): List<MovimientoSobre> = try {
+        client.postgrest.from("movimientos_sobre").select().decodeList<MovimientoSobre>()
+            .filter { it.origenId == sobreId || it.destinoId == sobreId }
+            .sortedByDescending { it.createdAt ?: it.fecha ?: "" }
+    } catch (e: Exception) {
+        Log.e("SobreRepository", "Error movimientos: ${e.message}", e)
+        emptyList()
     }
 
     // ── Observador Realtime ─────────────────────────────────────────────────────

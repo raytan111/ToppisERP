@@ -27,6 +27,24 @@ class SobreViewModel(private val repository: SobreRepository) : ViewModel() {
     private val _cargandoInicial = MutableStateFlow(true)
     val cargandoInicial: StateFlow<Boolean> = _cargandoInicial.asStateFlow()
 
+    // Historial de movimientos del sobre seleccionado.
+    private val _movimientos = MutableStateFlow<List<com.toppis.app.data.models.MovimientoSobre>>(emptyList())
+    val movimientos: StateFlow<List<com.toppis.app.data.models.MovimientoSobre>> = _movimientos.asStateFlow()
+
+    private val _cargandoMovimientos = MutableStateFlow(false)
+    val cargandoMovimientos: StateFlow<Boolean> = _cargandoMovimientos.asStateFlow()
+
+    fun cargarMovimientos(sobreId: Int) {
+        viewModelScope.launch {
+            _cargandoMovimientos.value = true
+            _movimientos.value = emptyList()
+            try { _movimientos.value = repository.getMovimientos(sobreId) }
+            finally { _cargandoMovimientos.value = false }
+        }
+    }
+
+    fun limpiarMovimientos() { _movimientos.value = emptyList() }
+
     init {
         // Carga inicial
         refrescar()

@@ -33,7 +33,7 @@ fun ToppisERPTheme(
     val seed: Color = ThemeManager.hexToColor(seedHex)
         ?: ThemeManager.hexToColor(ThemeManager.SEED_POR_DEFECTO)!!
 
-    val colorScheme = rememberDynamicColorScheme(
+    val base = rememberDynamicColorScheme(
         seedColor = seed,
         isDark = dark,
         isAmoled = false,
@@ -41,6 +41,16 @@ fun ToppisERPTheme(
         // Más contraste en oscuro: superficies más profundas y texto legible.
         contrastLevel = if (dark) 0.4 else 0.0
     )
+
+    // En modo oscuro forzamos texto blanco (y grises muy claros para el texto
+    // secundario) para máxima legibilidad sin perder del todo la jerarquía.
+    val colorScheme = if (dark) base.copy(
+        onSurface = Color.White,
+        onBackground = Color.White,
+        onSurfaceVariant = Color(0xFFE3E3E3),
+        outline = Color(0xFFC2C2C2),
+        outlineVariant = Color(0xFF5A5A5A)
+    ) else base
 
     MaterialTheme(
         colorScheme = colorScheme,
