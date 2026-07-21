@@ -307,18 +307,37 @@ class CarritoViewModel(
         }
     }
 
-    /** Marca el pedido como entregado. */
-    fun entregar() {
+    /** Marca el pedido como entregado. Al terminar invoca [onDone] (para cerrar el POS). */
+    fun entregar(onDone: () -> Unit = {}) {
         viewModelScope.launch {
             try {
                 pedidoRepo.marcarEntregado(pedidoId)
                 _pedido.value = pedidoRepo.getPedido(pedidoId)
                 _mensaje.value = "Pedido entregado"
+                onDone()
             } catch (e: Exception) {
                 _uiState.value = CarritoUiState.Error(e.message ?: "Error al marcar entregado")
             }
         }
     }
+
+    /** Elimina el pedido (solo si no está pagado). Al terminar invoca [onDone]. */
+    fun eliminarPedido(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                if (_pedido.value?.pagado == true) {
+                    _uiState.value = CarritoUiState.Error("No se puede eliminar un pedido ya pagado.")
+                    return@launch
+                }
+                pedidoRepo.eliminarPedido(pedidoId)
+                onDone()
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al eliminar el pedido")
+            }
+        }
+    }
+
+
 
     /** Actualiza los sellos del cliente: +1 si el pedido trae hamburguesa; −6 si usó regalo. */
     private suspend fun aplicarCuponera() {

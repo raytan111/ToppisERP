@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import com.toppis.app.data.db.entities.CategoriaMenu
 import com.toppis.app.data.models.ItemMenu
 import com.toppis.app.data.models.Promocion
@@ -71,8 +72,19 @@ fun PedidoCarritoScreen(
     var showPagar by remember { mutableStateOf(false) }
     var showComanda by remember { mutableStateOf(false) }
     var showEntregarSinPagar by remember { mutableStateOf(false) }
+    var showEntregarConfirm by remember { mutableStateOf(false) }
+    var showEliminar by remember { mutableStateOf(false) }
     var lineaAQuitar by remember { mutableStateOf<CarritoLinea?>(null) }
     var carritoExpandido by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // Solo se puede agregar/editar con el pedido ABIERTO y sin pagar.
+    val editable = pedido?.let {
+        it.estado == com.toppis.app.data.db.entities.EstadoPedido.ABIERTO && !it.pagado
+    } ?: false
+    fun avisarCerrado() {
+        scope.launch { snackbarHostState.showSnackbar("El pedido está cerrado: no se pueden agregar más productos.") }
+    }
 
     // Se abre solo al ingresar el primer producto.
     LaunchedEffect(lineas.isNotEmpty()) { if (lineas.isNotEmpty()) carritoExpandido = true }
@@ -146,13 +158,13 @@ fun PedidoCarritoScreen(
                                                 )
                                             }
                                             items(delGrupo, key = { it.id }) { item ->
-                                                ProductoCard(item) { productoPopup = item }
+                                                ProductoCard(item) { if (editable) productoPopup = item else avisarCerrado() }
                                             }
                                         }
                                     }
                                 } else {
                                     items(filtrado, key = { it.id }) { item ->
-                                        ProductoCard(item) { productoPopup = item }
+                                        ProductoCard(item) { if (editable) productoPopup = item else avisarCerrado() }
                                     }
                                 }
                             }
@@ -174,6 +186,7 @@ fun PedidoCarritoScreen(
                         ) {
                             items(promos, key = { it.id }) { promo ->
                                 PromoCard(promo) {
+                                    if (!editable) { avisarCerrado(); return@PromoCard }
                                     onPromoClick(promo)
                                     viewModel.cargarEspaciosPromo(promo) { esp, eleg ->
                                         espaciosPromo = esp; elegiblesPromo = eleg; promoPopup = promo
@@ -193,9 +206,9 @@ fun PedidoCarritoScreen(
                 total = pedido?.total ?: 0.0,
                 expandido = carritoExpandido,
                 onToggle = { carritoExpandido = !carritoExpandido },
-                onMas = { viewModel.cambiarCantidad(it, it.item.cantidad + 1) },
-                onMenos = { viewModel.cambiarCantidad(it, it.item.cantidad - 1) },
-                onQuitar = { lineaAQuitar = it }
+                onMas = { if (editable) viewModel.cambiarCantidad(it, it.item.cantidad + 1) else avisarCerrado() },
+                onMenos = { if (editable) viewModel.cambiarCantidad(it, it.item.cantidad - 1) else avisarCerrado() },
+                onQuitar = { if (editable) lineaAQuitar = it else avisarCerrado() }
             )
 
             pedido?.let { p ->
@@ -211,8 +224,9 @@ fun PedidoCarritoScreen(
                     hayLineas = lineas.isNotEmpty(),
                     onCerrar = { viewModel.cerrar() },
                     onCobrar = { showPagar = true },
-                    onEntregar = { if (p.pagado) viewModel.entregar() else showEntregarSinPagar = true },
-                    onVerComanda = { showComanda = true }
+                    onEntregar = { if (p.pagado) showEntregarConfirm = true else showEntregarSinPagar = true },
+                    onVerComanda = { showComanda = true },
+                    onEliminar = { showEliminar = true }
                 )
             }
         }
@@ -280,8 +294,29 @@ fun PedidoCarritoScreen(
         com.toppis.app.ui.components.ToppisConfirmDialog(
             titulo = "Entregar sin pagar",
             mensaje = "Este pedido todavía no está pagado. ¿Marcar como entregado igual? Quedará con deuda.",
-            onConfirm = { showEntregarSinPagar = false; viewModel.entregar() },
+            textoConfirmar = "Entregar",
+            onConfirm = { showEntregarSinPagar = false; viewModel.entregar { onNavigateBack() } },
             onDismiss = { showEntregarSinPagar = false }
+        )
+    }
+
+    if (showEntregarConfirm) {
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Entregar pedido",
+            mensaje = "¿Confirmás que el pedido fue entregado? Se cerrará el pedido.",
+            textoConfirmar = "Entregar",
+            onConfirm = { showEntregarConfirm = false; viewModel.entregar { onNavigateBack() } },
+            onDismiss = { showEntregarConfirm = false }
+        )
+    }
+
+    if (showEliminar) {
+        com.toppis.app.ui.components.ToppisConfirmDialog(
+            titulo = "Eliminar pedido",
+            mensaje = "¿Eliminar este pedido? Se borrará del sistema y no se puede deshacer.",
+            textoConfirmar = "Eliminar",
+            onConfirm = { showEliminar = false; viewModel.eliminarPedido { onNavigateBack() } },
+            onDismiss = { showEliminar = false }
         )
     }
 }
@@ -617,7 +652,8 @@ private fun ColumnScope.AccionesPedido(
     onCerrar: () -> Unit,
     onCobrar: () -> Unit,
     onEntregar: () -> Unit,
-    onVerComanda: () -> Unit
+    onVerComanda: () -> Unit,
+    onEliminar: () -> Unit
 ) {
     val abierto = pedido.estado == com.toppis.app.data.db.entities.EstadoPedido.ABIERTO
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -637,6 +673,14 @@ private fun ColumnScope.AccionesPedido(
             if (!pedido.entregado) {
                 OutlinedButton(onClick = onEntregar, modifier = Modifier.weight(1f)) { Text("Entregar") }
             }
+        }
+        // Eliminar/cancelar pedido: permitido mientras no esté pagado.
+        if (!pedido.pagado) {
+            OutlinedButton(
+                onClick = onEliminar,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) { Text("Eliminar pedido") }
         }
     }
 }

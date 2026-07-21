@@ -183,6 +183,11 @@ class PedidoRepository {
         ) { filter { eq("id", pedidoId) } }
     }
 
+    /** Elimina un pedido y su detalle (cascada). No debe usarse en pedidos pagados. */
+    suspend fun eliminarPedido(pedidoId: Int) {
+        client.postgrest.from("pedidos").delete { filter { eq("id", pedidoId) } }
+    }
+
     /** Paga el pedido de forma atómica (venta + stock + sobre) vía RPC. Devuelve venta_id. */
     suspend fun pagarPedido(pedidoId: Int, metodo: String, sobreId: Int, usuarioId: String?): Int = try {
         client.postgrest.rpc(
