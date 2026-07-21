@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeliveryDining
@@ -26,6 +25,7 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -106,7 +106,20 @@ fun PedidoCarritoScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { ToppisTopBar(titulo = "Pedido #$pedidoId", onBack = onNavigateBack) }
+        topBar = {
+            ToppisTopBar(
+                titulo = "Pedido #$pedidoId",
+                onBack = onNavigateBack,
+                actions = {
+                    // Eliminar pedido (solo icono) mientras no esté pagado.
+                    if (pedido?.pagado == false) {
+                        IconButton(onClick = { showEliminar = true }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Eliminar pedido", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            )
+        }
     ) { padding ->
         if (cargando) { com.toppis.app.ui.components.SkeletonList(); return@Scaffold }
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -230,8 +243,7 @@ fun PedidoCarritoScreen(
                     onReabrir = { viewModel.reabrir() },
                     onCobrar = { showPagar = true },
                     onEntregar = { if (p.pagado) showEntregarConfirm = true else showEntregarSinPagar = true },
-                    onVerComanda = { showComanda = true },
-                    onEliminar = { showEliminar = true }
+                    onVerComanda = { showComanda = true }
                 )
             }
         }
@@ -658,66 +670,41 @@ private fun ColumnScope.AccionesPedido(
     onReabrir: () -> Unit,
     onCobrar: () -> Unit,
     onEntregar: () -> Unit,
-    onVerComanda: () -> Unit,
-    onEliminar: () -> Unit
+    onVerComanda: () -> Unit
 ) {
     val abierto = pedido.estado == com.toppis.app.data.db.entities.EstadoPedido.ABIERTO
     val listo = !abierto  // CERRADO (o pagado) = marcado como listo
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // ── Listo (toggle): cerrar cuando está abierto / reabrir cuando está cerrado ──
-            val listoColor = if (listo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-            val listoContent = if (listo) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-            Button(
-                onClick = { if (abierto) onCerrar() else onReabrir() },
-                // Abierto: se puede marcar listo si hay líneas. Cerrado: reabrir solo si no está pagado.
-                enabled = if (abierto) hayLineas else !pedido.pagado,
-                colors = ButtonDefaults.buttonColors(containerColor = listoColor, contentColor = listoContent),
-                modifier = Modifier.weight(1f)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // ── Listo (toggle): marca/desmarca; el relleno cambia solo como efecto. ──
+            FilledIconToggleButton(
+                checked = listo,
+                onCheckedChange = { if (abierto) onCerrar() else onReabrir() },
+                enabled = if (abierto) hayLineas else !pedido.pagado
             ) {
                 Icon(
-                    if (listo) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                    contentDescription = null, modifier = Modifier.size(20.dp)
+                    if (listo) Icons.Filled.TaskAlt else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = "Listo", modifier = Modifier.size(24.dp)
                 )
-                Spacer(Modifier.width(6.dp))
-                Text("Listo")
             }
 
-            // ── Cobrar: solo cuando está cerrado (no se paga estando abierto) ──
+            // ── Cobrar (billetes): solo cuando está cerrado y no pagado. ──
             if (!pedido.pagado) {
-                Button(
-                    onClick = onCobrar,
-                    enabled = listo && hayLineas,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Filled.Payments, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Cobrar")
+                FilledIconButton(onClick = onCobrar, enabled = listo && hayLineas) {
+                    Icon(Icons.Filled.Payments, contentDescription = "Cobrar", modifier = Modifier.size(24.dp))
                 }
             }
 
             // ── Entregar ──
             if (!pedido.entregado) {
-                OutlinedButton(onClick = onEntregar, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.DeliveryDining, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Entregar")
+                FilledTonalIconButton(onClick = onEntregar) {
+                    Icon(Icons.Filled.DeliveryDining, contentDescription = "Entregar", modifier = Modifier.size(24.dp))
                 }
             }
-        }
-        if (listo) {
-            TextButton(onClick = onVerComanda) { Text("Ver comanda") }
-        }
-        // Eliminar/cancelar pedido: permitido mientras no esté pagado.
-        if (!pedido.pagado) {
-            OutlinedButton(
-                onClick = onEliminar,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Eliminar pedido")
+
+            if (listo) {
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onVerComanda) { Text("Ver comanda") }
             }
         }
     }
