@@ -51,6 +51,15 @@ class SobreRepository {
         emptyList()
     }
 
+    /** Todos los movimientos (para deslizar entre sobres sin recargar), más nuevos primero. */
+    suspend fun getTodosMovimientos(): List<MovimientoSobre> = try {
+        client.postgrest.from("movimientos_sobre").select().decodeList<MovimientoSobre>()
+            .sortedByDescending { it.createdAt ?: it.fecha ?: "" }
+    } catch (e: Exception) {
+        Log.e("SobreRepository", "Error movimientos: ${e.message}", e)
+        emptyList()
+    }
+
     // ── Observador Realtime ─────────────────────────────────────────────────────
 
     /**

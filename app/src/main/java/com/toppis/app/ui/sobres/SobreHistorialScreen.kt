@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -57,25 +59,130 @@ fun SobreHistorialScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val sobres by viewModel.sobres.collectAsState()
-    val movimientos by viewModel.movimientos.collectAsState()
+    val movimientosTodos by viewModel.movimientosTodos.collectAsState()
     val cargando by viewModel.cargandoMovimientos.collectAsState()
 
-    LaunchedEffect(sobreId) { viewModel.cargarMovimientos(sobreId) }
-    DisposableEffect(Unit) { onDispose { viewModel.limpiarMovimientos() } }
+    LaunchedEffect(Unit) { viewModel.cargarTodosMovimientos() }
 
-    val sobre = sobres.firstOrNull { it.id == sobreId }
     val sobresById = remember(sobres) { sobres.associateBy { it.id } }
-    val esCuenta = sobre?.tipo != TipoSobre.FONDO
-    val acento = if (esCuenta) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+
+    if (sobres.isEmpty()) {
+        Scaffold(topBar = { ToppisTopBar(titulo = "Historial", onBack = onNavigateBack) }) { p ->
+            Box(Modifier.fillMaxSize().padding(p), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        }
+        return
+    }
+
+    val initialIndex = remember(sobres) { sobres.indexOfFirst { it.id == sobreId }.coerceAtLeast(0) }
+    val pagerState = rememberPagerState(initialPage = initialIndex) { sobres.size }
+    val currentSobre = sobres.getOrNull(pagerState.currentPage) ?: sobres.first()
 
     var showEdit by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
+    var showTransfer by remember { mutableStateOf(false) }
 
-    // Enriquecer con saldo corriente (desde el saldo actual hacia atrás).
-    val statement = remember(movimientos, sobre?.saldo) {
-        var running = sobre?.saldo ?: 0.0
+    Scaffold(
+        topBar = {
+            ToppisTopBar(
+                titulo = currentSobre.nombre,
+                onBack = onNavigateBack,
+                actions = {
+                    IconButton(onClick = { showEdit = true }) { Icon(Icons.Filled.Edit, contentDescription = "Editar") }
+                    IconButton(onClick = { showDelete = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            // Indicador de páginas (puntos) para las cuentas.
+            if (sobres.size > 1) {
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    sobres.forEachIndexed { i, _ ->
+                        val sel = i == pagerState.currentPage
+                        Box(
+                            Modifier.padding(3.dp).size(if (sel) 9.dp else 7.dp).clip(CircleShape)
+                                .background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+                        )
+                    }
+                }
+            }
+
+            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                val s = sobres[page]
+                val movs = remember(movimientosTodos, s.id) {
+                    movimientosTodos.filter { it.origenId == s.id || it.destinoId == s.id }
+                }
+                PaginaHistorial(
+                    sobre = s,
+                    movimientos = movs,
+                    cargando = cargando && movimientosTodos.isEmpty(),
+                    sobresById = sobresById,
+                    onTransferir = { showTransfer = true }
+                )
+            }
+        }
+    }
+
+    if (showEdit) {
+        EditarSobreDialog(
+            sobre = currentSobre,
+            onDismiss = { showEdit = false },
+            onConfirm = { nombre, descripcion, tipo ->
+                viewModel.editarSobre(currentSobre.copy(nombre = nombre, descripcion = descripcion, tipo = tipo))
+                showEdit = false
+            }
+        )
+    }
+
+    if (showDelete) {
+        val conSaldo = currentSobre.saldo != 0.0
+        com.toppis.app.ui.components.ToppisDeleteDialog(
+            nombre = currentSobre.nombre,
+            titulo = "Eliminar sobre",
+            mensaje = if (conSaldo)
+                "No se puede eliminar un sobre con saldo (${money.format(currentSobre.saldo)})."
+            else
+                "¿Eliminar el sobre \"${currentSobre.nombre}\"? Esta acción no se puede deshacer.",
+            confirmarHabilitado = !conSaldo,
+            onConfirm = { viewModel.eliminarSobre(currentSobre); showDelete = false; onNavigateBack() },
+            onDismiss = { showDelete = false }
+        )
+    }
+
+    if (showTransfer) {
+        val destinos = sobres.filter { it.id != currentSobre.id }
+        TransferDialog(
+            origen = currentSobre,
+            destinos = destinos,
+            onDismiss = { showTransfer = false },
+            onConfirm = { destinoId, monto, desc ->
+                viewModel.transferir(currentSobre.id.toLong(), destinoId, monto, desc, null)
+                showTransfer = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun PaginaHistorial(
+    sobre: Sobre,
+    movimientos: List<MovimientoSobre>,
+    cargando: Boolean,
+    sobresById: Map<Int, Sobre>,
+    onTransferir: () -> Unit
+) {
+    val esCuenta = sobre.tipo != TipoSobre.FONDO
+    val acento = if (esCuenta) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+
+    val statement = remember(movimientos, sobre.saldo) {
+        var running = sobre.saldo
         movimientos.map { m ->
-            val entra = m.destinoId == sobreId
+            val entra = m.destinoId == sobre.id
             val saldoDespues = running
             running -= if (entra) m.monto else -m.monto
             MovStatement(m, entra, saldoDespues, parseCL(m.createdAt ?: m.fecha))
@@ -86,81 +193,30 @@ fun SobreHistorialScreen(
             .toList().sortedByDescending { it.first }
     }
 
-    Scaffold(
-        topBar = {
-            ToppisTopBar(
-                titulo = sobre?.nombre ?: "Historial",
-                onBack = onNavigateBack,
-                actions = {
-                    if (sobre != null) {
-                        IconButton(onClick = { showEdit = true }) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Editar")
-                        }
-                        IconButton(onClick = { showDelete = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
-                        }
-                    }
-                }
+    Column(Modifier.fillMaxSize()) {
+        HeaderCuenta(sobre, acento, esCuenta, onTransferir)
+        when {
+            cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            statement.isEmpty() -> com.toppis.app.ui.components.EmptyState(
+                icon = Icons.AutoMirrored.Filled.TrendingUp,
+                titulo = "Sin movimientos",
+                subtitulo = "Este sobre todavía no tiene entradas ni salidas."
             )
-        }
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            if (sobre != null) HeaderCuenta(sobre, acento, esCuenta)
-
-            when {
-                cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                statement.isEmpty() -> com.toppis.app.ui.components.EmptyState(
-                    icon = Icons.AutoMirrored.Filled.TrendingUp,
-                    titulo = "Sin movimientos",
-                    subtitulo = "Este sobre todavía no tiene entradas ni salidas."
-                )
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp)
-                ) {
-                    porDia.forEach { (dia, movs) ->
-                        stickyHeader { DiaHeader(dia, movs.firstOrNull()?.saldoDespues ?: 0.0) }
-                        items(movs) { s -> MovimientoRow(s, sobresById) }
-                    }
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+                porDia.forEach { (dia, movs) ->
+                    stickyHeader { DiaHeader(dia, movs.firstOrNull()?.saldoDespues ?: 0.0) }
+                    items(movs) { s -> MovimientoRow(s, sobresById) }
                 }
             }
         }
-    }
-
-    if (showEdit && sobre != null) {
-        EditarSobreDialog(
-            sobre = sobre,
-            onDismiss = { showEdit = false },
-            onConfirm = { nombre, descripcion, tipo ->
-                viewModel.editarSobre(sobre.copy(nombre = nombre, descripcion = descripcion, tipo = tipo))
-                showEdit = false
-            }
-        )
-    }
-
-    if (showDelete && sobre != null) {
-        val conSaldo = sobre.saldo != 0.0
-        com.toppis.app.ui.components.ToppisDeleteDialog(
-            nombre = sobre.nombre,
-            titulo = "Eliminar sobre",
-            mensaje = if (conSaldo)
-                "No se puede eliminar un sobre con saldo (${money.format(sobre.saldo)})."
-            else
-                "¿Eliminar el sobre \"${sobre.nombre}\"? Esta acción no se puede deshacer.",
-            confirmarHabilitado = !conSaldo,
-            onConfirm = {
-                viewModel.eliminarSobre(sobre)
-                showDelete = false
-                onNavigateBack()
-            },
-            onDismiss = { showDelete = false }
-        )
     }
 }
 
 @Composable
-private fun HeaderCuenta(sobre: Sobre, acento: Color, esCuenta: Boolean) {
-    // Animación de aparición del saldo (cuenta suave hasta el valor real).
+private fun HeaderCuenta(sobre: Sobre, acento: Color, esCuenta: Boolean, onTransferir: () -> Unit) {
     val animado by animateFloatAsState(
         targetValue = sobre.saldo.toFloat(),
         animationSpec = tween(700), label = "saldo"
@@ -175,17 +231,27 @@ private fun HeaderCuenta(sobre: Sobre, acento: Color, esCuenta: Boolean) {
                 Brush.verticalGradient(listOf(acento.copy(alpha = 0.85f), acento.copy(alpha = 0.55f)))
             ).fillMaxWidth().padding(20.dp)
         ) {
-            Column {
-                Text(if (esCuenta) "Cuenta · dinero real" else "Fondo · provisión",
-                    style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f))
-                Spacer(Modifier.height(6.dp))
-                Text("Saldo actual", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.85f))
-                Text(money.format(animado.toDouble()), style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold, color = Color.White)
-                if (sobre.descripcion.isNotBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (esCuenta) "Cuenta · dinero real" else "Fondo · provisión",
+                        style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f))
                     Spacer(Modifier.height(6.dp))
-                    Text(sobre.descripcion, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+                    Text("Saldo actual", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.85f))
+                    Text(money.format(animado.toDouble()), style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold, color = Color.White)
+                    if (sobre.descripcion.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(sobre.descripcion, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+                    }
                 }
+                // Botón transferir centrado a la derecha dentro de la card del saldo.
+                FilledIconButton(
+                    onClick = onTransferir,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.22f),
+                        contentColor = Color.White
+                    )
+                ) { Icon(Icons.Filled.SwapHoriz, contentDescription = "Transferir") }
             }
         }
     }

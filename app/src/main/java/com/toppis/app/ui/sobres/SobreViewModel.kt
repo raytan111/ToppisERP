@@ -43,6 +43,18 @@ class SobreViewModel(private val repository: SobreRepository) : ViewModel() {
         }
     }
 
+    // Todos los movimientos (para deslizar entre sobres en el historial).
+    private val _movimientosTodos = MutableStateFlow<List<com.toppis.app.data.models.MovimientoSobre>>(emptyList())
+    val movimientosTodos: StateFlow<List<com.toppis.app.data.models.MovimientoSobre>> = _movimientosTodos.asStateFlow()
+
+    fun cargarTodosMovimientos() {
+        viewModelScope.launch {
+            _cargandoMovimientos.value = true
+            try { _movimientosTodos.value = repository.getTodosMovimientos() }
+            finally { _cargandoMovimientos.value = false }
+        }
+    }
+
     fun limpiarMovimientos() { _movimientos.value = emptyList() }
 
     init {
