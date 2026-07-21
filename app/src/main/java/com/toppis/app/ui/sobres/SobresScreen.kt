@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.toppis.app.data.db.entities.TipoMovimiento
 import com.toppis.app.data.models.MovimientoSobre
@@ -166,13 +167,20 @@ fun SobreCard(
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), onClick = onCardClick) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(text = sobre.nombre, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
-                Spacer(Modifier.width(8.dp))
-                Surface(shape = RoundedCornerShape(8.dp), color = acento.copy(alpha = 0.15f)) {
+                Text(
+                    text = sobre.nombre, style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.weight(1f)
+                )
+                // Chip sin relleno, solo marco, texto blanco.
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface)
+                ) {
                     Text(
                         text = if (esCuenta) "Cuenta" else "Fondo",
-                        style = MaterialTheme.typography.labelSmall, color = acento,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                     )
                 }
             }
@@ -183,12 +191,14 @@ fun SobreCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             val formatter = DecimalFormat("$#,##0 CLP")
-            Text(text = "Saldo: ${formatter.format(sobre.saldo)}",
-                style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface)
-
-            Spacer(modifier = Modifier.height(10.dp))
-            Button(onClick = onTransferirClick, modifier = Modifier.fillMaxWidth()) { Text("Transferir") }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(text = "Saldo: ${formatter.format(sobre.saldo)}",
+                    style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                FilledIconButton(onClick = onTransferirClick) {
+                    Icon(Icons.Filled.SwapHoriz, contentDescription = "Transferir")
+                }
+            }
         }
     }
 }
