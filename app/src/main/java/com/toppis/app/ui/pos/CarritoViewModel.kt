@@ -150,6 +150,10 @@ class CarritoViewModel(
     fun modificadoresDe(item: ItemMenu): List<Modificador> =
         PosCalculos.modificadoresAplicables(item.id, item.categoria, modificadores)
 
+    /** Modificadores aplicables a un producto por su id de menú (para promos). */
+    fun modificadoresDeId(itemMenuId: Int): List<Modificador> =
+        _menu.value.firstOrNull { it.id == itemMenuId }?.let { modificadoresDe(it) } ?: emptyList()
+
     fun itemMenuPorId(id: Int): ItemMenu? = _menu.value.firstOrNull { it.id == id }
 
     /**

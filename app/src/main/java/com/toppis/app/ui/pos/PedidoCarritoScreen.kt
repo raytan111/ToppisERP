@@ -64,7 +64,6 @@ fun PedidoCarritoScreen(
     val sobresCuenta by viewModel.sobresCuenta.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
     val puedeRegalar by viewModel.puedeRegalar.collectAsState()
-    val cliente by viewModel.cliente.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -100,22 +99,25 @@ fun PedidoCarritoScreen(
             runCatching { com.toppis.app.data.db.entities.ZonaEnvio.valueOf(it.zonaEnvio) }.getOrNull()
         }?.takeIf { it != com.toppis.app.data.db.entities.ZonaEnvio.SIN_ENVIO }?.label
 
+        // Desglosa el detalle de una línea en sub-líneas (un modificador por línea).
+        fun desglose(detalle: String): List<String> =
+            detalle.split(" · ").filter { it.isNotBlank() }.flatMap { part ->
+                if (part.startsWith("+ ")) part.removePrefix("+ ").split(", ").map { "+ $it" }
+                else listOf(part)
+            }
+
         val texto = buildString {
             appendLine("🍔 *Toppis* · Pedido #$pedidoId")
-            cliente?.nombre?.takeIf { it.isNotBlank() }?.let { appendLine("Hola $it 👋") }
             appendLine()
             appendLine("*Tu pedido:*")
             lineas.forEach { l ->
                 appendLine("• ${l.item.cantidad}x ${l.titulo} — ${money.format(l.subtotal)}")
-                if (l.detalle.isNotBlank()) appendLine("   ↳ ${l.detalle}")
+                desglose(l.detalle).forEach { appendLine("   ↳ $it") }
             }
             appendLine()
             appendLine("Subtotal: ${money.format(subtotal)}")
             if (envio > 0) appendLine("Envío${zonaLabel?.let { " ($it)" } ?: ""}: ${money.format(envio)}")
             appendLine("*TOTAL A PAGAR: ${money.format(total)}*")
-            appendLine()
-            appendLine("💳 Puedes pagar en *efectivo* o por *transferencia*.")
-            appendLine("¡Gracias por tu compra! 🙌")
         }
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
@@ -303,6 +305,7 @@ fun PedidoCarritoScreen(
             promo = promo,
             espacios = espaciosPromo,
             elegiblesPorEspacio = elegiblesPromo,
+            modsDe = { viewModel.modificadoresDeId(it) },
             onCancelar = { promoPopup = null; espaciosPromo = emptyList(); elegiblesPromo = emptyMap() },
             onAgregar = { elecciones ->
                 viewModel.agregarPromo(promo, elecciones)
@@ -578,13 +581,15 @@ private fun PromoConfigDialog(
     promo: Promocion,
     espacios: List<com.toppis.app.data.models.PromocionEspacio>,
     elegiblesPorEspacio: Map<Int, List<ItemMenu>>,
+    modsDe: (Int) -> List<com.toppis.app.data.models.Modificador>,
     onCancelar: () -> Unit,
     onAgregar: (List<EleccionPromo>) -> Unit
 ) {
-    // Unidades elegidas: (espacioId, itemMenuId). Permite repetidos.
-    val elegidas = remember(espacios) { mutableStateListOf<Pair<Int, Int>>() }
-    fun countGrupo(espId: Int) = elegidas.count { it.first == espId }
-    fun idsGrupo(espId: Int) = elegidas.filter { it.first == espId }.map { it.second }
+    // Unidades elegidas: cada una con su espacio, producto y modificadores.
+    val elegidas = remember(espacios) { mutableStateListOf<UnidadPromoSel>() }
+    var editarModsIdx by remember { mutableStateOf<Int?>(null) }
+    fun countGrupo(espId: Int) = elegidas.count { it.espacioId == espId }
+    fun idsGrupo(espId: Int) = elegidas.filter { it.espacioId == espId }.map { it.itemMenuId }
     val nombresMenu = remember(elegiblesPorEspacio) {
         elegiblesPorEspacio.values.flatten().associate { it.id to it.nombre }
     }
@@ -626,25 +631,31 @@ private fun PromoConfigDialog(
                                                 item = item,
                                                 habilitado = puede,
                                                 modifier = Modifier.weight(1f),
-                                                onClick = { if (puede) elegidas.add(esp.id to item.id) }
+                                                onClick = { if (puede) elegidas.add(UnidadPromoSel(esp.id, item.id, emptyList())) }
                                             )
                                         }
                                         repeat(3 - fila.size) { Spacer(Modifier.weight(1f)) }
                                     }
                                 }
-                                if (yaElegidos.isNotEmpty()) {
-                                    yaElegidos.forEach { itemId ->
-                                        Row(
-                                            Modifier.fillMaxWidth().clickable {
-                                                val idx = elegidas.indexOfFirst { it.first == esp.id && it.second == itemId }
-                                                if (idx >= 0) elegidas.removeAt(idx)
-                                            },
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text("• ${nombresMenu[itemId] ?: "Producto"}", modifier = Modifier.weight(1f),
-                                                style = MaterialTheme.typography.bodySmall)
-                                            Icon(Icons.Filled.Close, contentDescription = "Quitar",
-                                                tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                // Unidades ya elegidas de este grupo, con sus modificadores.
+                                elegidas.withIndex().filter { it.value.espacioId == esp.id }.forEach { (idx, u) ->
+                                    val modsAplic = modsDe(u.itemMenuId)
+                                    val modsNombres = modsAplic.filter { it.id in u.modIds }.map { it.nombre }
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text("• ${nombresMenu[u.itemMenuId] ?: "Producto"}", style = MaterialTheme.typography.bodySmall)
+                                            if (modsNombres.isNotEmpty()) {
+                                                Text("   + ${modsNombres.joinToString(", ")}",
+                                                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                        if (modsAplic.isNotEmpty()) {
+                                            IconButton(onClick = { editarModsIdx = idx }, modifier = Modifier.size(32.dp)) {
+                                                Icon(Icons.Filled.Add, contentDescription = "Agregar extras", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                            }
+                                        }
+                                        IconButton(onClick = { if (idx in elegidas.indices) elegidas.removeAt(idx) }, modifier = Modifier.size(32.dp)) {
+                                            Icon(Icons.Filled.Close, contentDescription = "Quitar", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                         }
                                     }
                                 }
@@ -657,10 +668,65 @@ private fun PromoConfigDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onAgregar(elegidas.map { EleccionPromo(it.second, emptyList(), null) }) },
+                onClick = { onAgregar(elegidas.map { EleccionPromo(it.itemMenuId, it.modIds, null) }) },
                 enabled = completa
             ) { Text("Agregar ${money.format(promo.precio)}") }
         },
+        dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } }
+    )
+
+    // Selector de modificadores para una unidad de la promo (ej: + Extra carne).
+    editarModsIdx?.let { idx ->
+        val u = elegidas.getOrNull(idx)
+        if (u == null) { editarModsIdx = null; return@let }
+        PromoModsDialog(
+            nombre = nombresMenu[u.itemMenuId] ?: "Producto",
+            modificadores = modsDe(u.itemMenuId),
+            seleccionInicial = u.modIds,
+            onCancelar = { editarModsIdx = null },
+            onConfirmar = { nuevos ->
+                if (idx in elegidas.indices) elegidas[idx] = u.copy(modIds = nuevos)
+                editarModsIdx = null
+            }
+        )
+    }
+}
+
+/** Unidad seleccionada dentro de una promo, con sus modificadores. */
+private data class UnidadPromoSel(val espacioId: Int, val itemMenuId: Int, val modIds: List<Int>)
+
+@Composable
+private fun PromoModsDialog(
+    nombre: String,
+    modificadores: List<com.toppis.app.data.models.Modificador>,
+    seleccionInicial: List<Int>,
+    onCancelar: () -> Unit,
+    onConfirmar: (List<Int>) -> Unit
+) {
+    val seleccion = remember { mutableStateListOf<Int>().apply { addAll(seleccionInicial) } }
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text("Extras · $nombre") },
+        text = {
+            if (modificadores.isEmpty()) {
+                Text("Este producto no tiene modificadores.", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    modificadores.forEach { m ->
+                        val checked = m.id in seleccion
+                        Row(
+                            Modifier.fillMaxWidth().clickable { if (checked) seleccion.remove(m.id) else seleccion.add(m.id) },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(checked = checked, onCheckedChange = { if (it) seleccion.add(m.id) else seleccion.remove(m.id) })
+                            Text(m.nombre, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirmar(seleccion.toList()) }) { Text("Listo") } },
         dismissButton = { TextButton(onClick = onCancelar) { Text("Cancelar") } }
     )
 }
