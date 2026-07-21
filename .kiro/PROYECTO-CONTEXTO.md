@@ -1,7 +1,7 @@
 # ToppisERP - Contexto del Proyecto
 
-**Última Actualización**: 2026-07-14
-**Versión Actual**: 3.6 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos + POS rediseñado + Promos v2)
+**Última Actualización**: 2026-07-20
+**Versión Actual**: 3.7 (Supabase Cloud + ERP Franquicia + Sistema de Diseño + Control de Costos + POS rediseñado + Promos v2 + KPIs/Mano de obra semanales + Sobres con historial)
 **Ubicación**: Chile (CLP, español chileno, integración SII futura)
 
 ---
@@ -217,6 +217,35 @@ Definiciones del menú en `ui/home/HomeMenu.kt`. Categorías:
 ---
 
 ## 9. Historial de Cambios
+
+### v3.7 — Semana operativa, sobres con historial y afinamiento visual (2026-07-20)
+
+Sin cambios de esquema salvo el uso de columnas ya existentes (`ventas.origen`, `movimientos_sobre`).
+
+- **Promos v2 – bebidas por categoría**: se aclaró que las opciones por categoría salen de
+  `items_menu` (categoría "Bebida lata"/"Bebida mediana"), no del inventario. Script de
+  diagnóstico `diagnostico-bebidas-promos.sql` (solo consultas).
+- **Clientes / Cuponera**: teléfono (3 dígitos) editable; **borrar cliente solo admin**
+  (desvincula pedidos antes de borrar, no toca ventas/caja).
+- **POS – nuevo pedido**: al crear pedido se **autocompletan clientes existentes** por
+  teléfono o nombre para seleccionarlos (evita duplicar); botón "Crear nuevo" aparte.
+- **KPIs → "KPIs Semanales"**: reorientado a la **semana operativa** (lun–sáb) con selector
+  de semana; fix de **zona horaria** (todo en `America/Santiago`, arregla "ventas hoy" de
+  noche); consultas en **paralelo** (más rápido); **Delivery de la semana**; tarjeta
+  **Resultado de la semana** (variables + mano de obra + fijos → resultado, reusa
+  `ResultadoSemanalRepository`); **contador de hamburguesas** vendidas (incluye promos).
+- **Mano de Obra**: vista **Semana/Mes** (toggle); sueldo fijo mensual **prorrateado ÷4.33**
+  para el labor cost semanal; **costo semanal equivalente por empleado**; medidor de labor
+  cost vs meta; confirmación al registrar turno/propina y salto al período de la fecha.
+- **Costos**: renombrado "Costos puntuales" → **"Costos variables"** (menú, título, ayuda).
+- **Sobres**: **historial de movimientos** como vista tipo estado de cuenta
+  (`SobreHistorialScreen`, ruta `sobre_historial/{id}`): **pager horizontal** entre cuentas,
+  header con degradado y saldo animado, movimientos por día con **cierre diario** y **saldo
+  corriente**, transferir/editar/eliminar dentro de esta vista. Card del sobre más limpia
+  (chip outlined, solo icono transferir). `SobreRepository.getMovimientos/getTodosMovimientos`.
+- **Diseño (modo oscuro)**: texto **blanco** (onSurface/onBackground) y acento **primary**
+  cambiado de rosado a **blanco grisáceo** (#E6E6EA) con `onPrimary` oscuro, en
+  `com/toppis/erp/ui/theme/Theme.kt`.
 
 ### v3.6 — Promociones v2 (2026-07-14)
 Spec: `.kiro/specs/promociones-v2/`. SQL: `.kiro/database/supabase-promos-v2.sql`.
