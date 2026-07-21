@@ -292,7 +292,7 @@ fun NavGraph(
         composable("gastos") {
             if (!permisos.puedeAbrir("gastos")) { LaunchedEffect(Unit) { navController.popBackStack() }; return@composable }
             val vm: GastoViewModel = viewModel(viewModelStoreOwner = activityOwner, factory = gastoViewModelFactory)
-            BackScaffold("Gastos", onNavigateBack = { navController.popBackStack() }) { padding ->
+            BackScaffold("Costos variables", onNavigateBack = { navController.popBackStack() }) { padding ->
                 GastosScreen(viewModel = vm, usuarioId = usuarioActual?.id, isAdmin = isAdmin, modifier = Modifier.padding(padding))
             }
         }

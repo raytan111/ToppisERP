@@ -77,7 +77,7 @@ fun AyudaCostosScreen(onNavigateBack: () -> Unit = {}) {
                 titulo = "Durante la semana",
                 cuerpo = "• Ventas: por el POS, como siempre.\n" +
                     "• Compras: poné cuánto pagaste de verdad. Si un precio cambió (te subió el tocino), el costo del artículo se actualiza solo y recalcula las recetas. Si es el mismo precio, no cambia nada.\n" +
-                    "• Costos puntuales: bencina o algo suelto, en Costos → Costos puntuales."
+                    "• Costos variables: bencina o algo suelto, en Costos → Costos variables."
             )
             PasoCard(
                 icono = Icons.Filled.Checklist,
@@ -159,7 +159,7 @@ private fun ResumenCard() {
             Text("Tu semana en resumen", style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
             Text(
-                "Mar–Sáb: vender · comprar (precio real) · costos puntuales\n" +
+                "Mar–Sáb: vender · comprar (precio real) · costos variables\n" +
                     "Sáb/Dom: Rutina → conteo → mermas → provisión → resultado → confirmar",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer

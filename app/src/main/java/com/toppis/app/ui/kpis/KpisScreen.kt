@@ -32,6 +32,7 @@ fun KpisScreen(
     val cargando by viewModel.cargando.collectAsState()
     val semana by viewModel.semana.collectAsState()
     val delivery by viewModel.delivery.collectAsState()
+    val resultado by viewModel.resultado.collectAsState()
 
     Scaffold(
         topBar = { ToppisTopBar(titulo = "KPIs Semanales", onBack = onNavigateBack) }
@@ -72,6 +73,9 @@ fun KpisScreen(
                     Spacer(Modifier.weight(1f))
                 }
             }
+            KpiCard("🍔 Hamburguesas vendidas", k.hamburguesasVendidas.toString(),
+                MaterialTheme.colorScheme.primary, Modifier.fillMaxWidth(),
+                subtitle = "Unidades en la semana (incluye promos)")
 
             // ── Costos ──────────────────────────────────────────────────────────
             SeccionTitulo("Costos de la semana")
@@ -93,6 +97,10 @@ fun KpisScreen(
                 KpiCard("Labor cost", "${pct.format(k.laborCostPct)}%", MaterialTheme.colorScheme.tertiary, Modifier.weight(1f),
                     subtitle = "Sueldo fijo prorrateado")
             }
+
+            // ── Resultado total de la semana ──────────────────────────────────────
+            SeccionTitulo("Resultado de la semana")
+            ResultadoCard(resultado)
 
             // ── Alertas ──────────────────────────────────────────────────────────
             SeccionTitulo("Alertas")
@@ -170,6 +178,41 @@ private fun SelectorSemana(etiqueta: String, onPrev: () -> Unit, onNext: () -> U
 private fun SeccionTitulo(texto: String) {
     Text(texto, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(top = 4.dp))
+}
+
+@Composable
+private fun ResultadoCard(r: com.toppis.app.domain.costos.ResultadoSemanal?) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (r == null) {
+                Text("Calculando…", color = MaterialTheme.colorScheme.outline)
+                return@Column
+            }
+            FilaKpi("Ventas cobradas", money.format(r.ventasCobradas))
+            FilaKpi("(−) Costos variables (insumos/packaging/bencina)", money.format(r.costoVariable))
+            FilaKpi("(−) Mano de obra", money.format(r.manoObraPagada))
+            FilaKpi("(−) Costos fijos (prorrateados)", money.format(r.fijosProrrateados))
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            val resColor = when {
+                r.ventasCobradas == 0.0 -> MaterialTheme.colorScheme.outline
+                r.resultado >= 0 -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.error
+            }
+            FilaKpi(if (r.resultado >= 0) "RESULTADO (queda)" else "RESULTADO (pérdida)",
+                money.format(r.resultado), resColor, destacado = true)
+            Text("Los costos fijos y variables completos se administran en Costos.",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        }
+    }
+}
+
+@Composable
+private fun FilaKpi(label: String, valor: String, color: Color = MaterialTheme.colorScheme.onSurface, destacado: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, modifier = Modifier.weight(1f))
+        Text(valor, style = if (destacado) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+            fontWeight = if (destacado) FontWeight.Bold else FontWeight.Normal, color = color)
+    }
 }
 
 @Composable

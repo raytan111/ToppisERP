@@ -101,7 +101,7 @@ val CATEGORIAS_MENU: List<MenuCategoria> = listOf(
             MenuOpcion("costos_fijos", "Costos fijos", Icons.Filled.Receipt, soloAdmin = true),
             MenuOpcion("objetivos_costos", "Objetivos y semáforos", Icons.Filled.Flag, soloAdmin = true),
             MenuOpcion("ayuda_costos", "Cómo usar / Ayuda", Icons.Filled.HelpOutline, soloAdmin = true),
-            MenuOpcion("gastos", "Costos puntuales", Icons.Filled.AttachMoney, soloAdmin = true)
+            MenuOpcion("gastos", "Costos variables", Icons.Filled.AttachMoney, soloAdmin = true)
         )
     ),
     MenuCategoria(
