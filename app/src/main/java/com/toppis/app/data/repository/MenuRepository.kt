@@ -89,6 +89,7 @@ class MenuRepository {
                 if (imagenUrl != null) put("imagen_url", imagenUrl)
             }
         )
+        PosCache.invalidarCatalogo()
     }
 
     suspend fun actualizarItemMenu(item: ItemMenu) {
@@ -104,6 +105,7 @@ class MenuRepository {
         ) {
             filter { eq("id", item.id) }
         }
+        PosCache.invalidarCatalogo()
     }
 
     /**
@@ -125,6 +127,7 @@ class MenuRepository {
         client.postgrest.from("items_menu").delete {
             filter { eq("id", item.id) }
         }
+        PosCache.invalidarCatalogo()
     }
 
     // ── RecetaMenu ──────────────────────────────────────────────────────────────

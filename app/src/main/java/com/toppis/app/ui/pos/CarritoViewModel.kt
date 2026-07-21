@@ -87,13 +87,11 @@ class CarritoViewModel(
         viewModelScope.launch {
             _cargando.value = true
             try {
-                if (_menu.value.isEmpty()) _menu.value = menuRepo.getItemsMenuActivos().sortedBy { it.nombre }
-                if (_promos.value.isEmpty()) _promos.value = promocionRepo.getPromociones().filter { it.activo }
-                if (modificadores.isEmpty()) modificadores = modificadorRepo.getModificadores().filter { it.activo }
-                if (_sobresCuenta.value.isEmpty()) {
-                    _sobresCuenta.value = sobreRepo.getSobres()
-                        .filter { it.tipo == com.toppis.app.data.db.entities.TipoSobre.CUENTA }
-                }
+                // Catálogo desde caché en memoria (evita repetir peticiones al abrir pedidos).
+                if (_menu.value.isEmpty()) _menu.value = com.toppis.app.data.repository.PosCache.menu()
+                if (_promos.value.isEmpty()) _promos.value = com.toppis.app.data.repository.PosCache.promos()
+                if (modificadores.isEmpty()) modificadores = com.toppis.app.data.repository.PosCache.modificadores()
+                if (_sobresCuenta.value.isEmpty()) _sobresCuenta.value = com.toppis.app.data.repository.PosCache.sobresCuenta()
                 _pedido.value = pedidoRepo.getPedido(id)
                 cargarCliente()
                 recargarLineas()

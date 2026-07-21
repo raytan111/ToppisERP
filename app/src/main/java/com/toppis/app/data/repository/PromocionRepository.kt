@@ -56,7 +56,7 @@ class PromocionRepository {
                 if (fechaFin == null) put("fecha_fin", JsonNull) else put("fecha_fin", fechaFin)
                 put("activo", true)
             }
-        ) { select() }.decodeSingle<Promocion>().id
+        ) { select() }.decodeSingle<Promocion>().id.also { PosCache.invalidarCatalogo() }
     } catch (e: Exception) {
         Log.e("PromocionRepository", "Error crearPromocion: ${e.message}", e)
         null
@@ -76,10 +76,12 @@ class PromocionRepository {
         ) {
             filter { eq("id", promo.id) }
         }
+        PosCache.invalidarCatalogo()
     }
 
     suspend fun eliminarPromocion(id: Int) {
         client.postgrest.from("promociones").delete { filter { eq("id", id) } }
+        PosCache.invalidarCatalogo()
     }
 
     /** Actualiza solo la imagen de una promoción. */
@@ -87,6 +89,7 @@ class PromocionRepository {
         client.postgrest.from("promociones").update(
             buildJsonObject { put("imagen_url", url) }
         ) { filter { eq("id", id) } }
+        PosCache.invalidarCatalogo()
     }
 
     // ── Items de la promoción ────────────────────────────────────────────────

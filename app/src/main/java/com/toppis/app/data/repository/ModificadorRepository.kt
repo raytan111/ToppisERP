@@ -46,7 +46,7 @@ class ModificadorRepository {
                 put("delta_precio", deltaPrecio)
                 put("activo", true)
             }
-        ) { select() }.decodeSingle<Modificador>().id
+        ) { select() }.decodeSingle<Modificador>().id.also { PosCache.invalidarCatalogo() }
     } catch (e: Exception) {
         Log.e("ModificadorRepository", "Error crearModificador: ${e.message}", e)
         null
@@ -65,6 +65,7 @@ class ModificadorRepository {
         ) {
             filter { eq("id", mod.id) }
         }
+        PosCache.invalidarCatalogo()
     }
 
     /** Modificadores aplicables a un producto: su categoría del menú + los puntuales del item. */
@@ -73,6 +74,7 @@ class ModificadorRepository {
 
     suspend fun eliminarModificador(id: Int) {
         client.postgrest.from("modificadores").delete { filter { eq("id", id) } }
+        PosCache.invalidarCatalogo()
     }
 
     // ── Componentes ───────────────────────────────────────────────────────────

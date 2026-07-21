@@ -1,5 +1,8 @@
 package com.toppis.app.ui.pos
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -471,18 +474,20 @@ private fun ColumnScope.CarritoPanel(
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                Text("Total ${money.format(total)}", style = MaterialTheme.typography.titleMedium,
+                // Total con animación suave al cambiar.
+                val totalAnim by animateFloatAsState(targetValue = total.toFloat(), animationSpec = tween(400), label = "total")
+                Text("Total ${money.format(totalAnim.toDouble())}", style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary)
             }
 
             if (expandido && lineas.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 190.dp),
+                    modifier = Modifier.heightIn(max = 190.dp).animateContentSize(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(lineas, key = { it.item.id }) { linea ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().animateItem(), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(linea.titulo, style = MaterialTheme.typography.bodyMedium)
                                 if (linea.detalle.isNotBlank()) {

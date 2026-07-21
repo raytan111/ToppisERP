@@ -92,6 +92,7 @@ class SobreRepository {
                 put("tipo", tipo.name)
             }
         )
+        PosCache.invalidarSobres()
     }
 
     suspend fun actualizarSobre(sobre: Sobre) {
@@ -104,6 +105,7 @@ class SobreRepository {
         ) {
             filter { eq("id", sobre.id) }
         }
+        PosCache.invalidarSobres()
     }
 
     /**
@@ -114,6 +116,7 @@ class SobreRepository {
         client.postgrest.from("sobres").delete {
             filter { eq("id", sobre.id) }
         }
+        PosCache.invalidarSobres()
         return true
     }
 

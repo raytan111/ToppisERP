@@ -40,6 +40,15 @@ class PedidosViewModel(
 
     init {
         cargar()
+        // Precalienta el caché del catálogo del POS para que abrir un pedido sea instantáneo.
+        viewModelScope.launch {
+            runCatching {
+                com.toppis.app.data.repository.PosCache.menu()
+                com.toppis.app.data.repository.PosCache.promos()
+                com.toppis.app.data.repository.PosCache.modificadores()
+                com.toppis.app.data.repository.PosCache.sobresCuenta()
+            }
+        }
         viewModelScope.launch {
             pedidoRepo.observeCambios().collect { cargar() }
         }
