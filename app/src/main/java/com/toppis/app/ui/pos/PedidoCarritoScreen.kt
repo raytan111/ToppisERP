@@ -64,6 +64,7 @@ fun PedidoCarritoScreen(
     val sobresCuenta by viewModel.sobresCuenta.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
     val puedeRegalar by viewModel.puedeRegalar.collectAsState()
+    val cliente by viewModel.cliente.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -91,10 +92,30 @@ fun PedidoCarritoScreen(
         scope.launch { snackbarHostState.showSnackbar("El pedido está cerrado: no se pueden agregar más productos.") }
     }
     fun compartirWhatsApp() {
-        val texto = pedido?.comandaTexto?.takeIf { it.isNotBlank() } ?: buildString {
-            appendLine("PEDIDO #$pedidoId")
-            lineas.forEach { appendLine("${it.item.cantidad}x ${it.titulo}") }
-            appendLine("TOTAL: ${money.format(pedido?.total ?: 0.0)}")
+        val p = pedido
+        val subtotal = lineas.sumOf { it.subtotal }
+        val envio = p?.montoEnvio ?: 0.0
+        val total = p?.total ?: (subtotal + envio)
+        val zonaLabel = p?.let {
+            runCatching { com.toppis.app.data.db.entities.ZonaEnvio.valueOf(it.zonaEnvio) }.getOrNull()
+        }?.takeIf { it != com.toppis.app.data.db.entities.ZonaEnvio.SIN_ENVIO }?.label
+
+        val texto = buildString {
+            appendLine("🍔 *Toppis* · Pedido #$pedidoId")
+            cliente?.nombre?.takeIf { it.isNotBlank() }?.let { appendLine("Hola $it 👋") }
+            appendLine()
+            appendLine("*Tu pedido:*")
+            lineas.forEach { l ->
+                appendLine("• ${l.item.cantidad}x ${l.titulo} — ${money.format(l.subtotal)}")
+                if (l.detalle.isNotBlank()) appendLine("   ↳ ${l.detalle}")
+            }
+            appendLine()
+            appendLine("Subtotal: ${money.format(subtotal)}")
+            if (envio > 0) appendLine("Envío${zonaLabel?.let { " ($it)" } ?: ""}: ${money.format(envio)}")
+            appendLine("*TOTAL A PAGAR: ${money.format(total)}*")
+            appendLine()
+            appendLine("💳 Puedes pagar en *efectivo* o por *transferencia*.")
+            appendLine("¡Gracias por tu compra! 🙌")
         }
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
