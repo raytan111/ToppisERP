@@ -293,6 +293,23 @@ class CarritoViewModel(
         }
     }
 
+    /** Reabre el pedido cerrado (si no está pagado) para volver a editarlo. */
+    fun reabrir() {
+        viewModelScope.launch {
+            try {
+                if (_pedido.value?.pagado == true) {
+                    _uiState.value = CarritoUiState.Error("Un pedido pagado no se puede reabrir.")
+                    return@launch
+                }
+                pedidoRepo.reabrirPedido(pedidoId)
+                _pedido.value = pedidoRepo.getPedido(pedidoId)
+                _mensaje.value = "Pedido reabierto"
+            } catch (e: Exception) {
+                _uiState.value = CarritoUiState.Error(e.message ?: "Error al reabrir el pedido")
+            }
+        }
+    }
+
     /** Cobra el pedido: crea la venta, descuenta stock e ingresa al sobre. */
     fun pagar(metodo: com.toppis.app.data.db.entities.MetodoPago, sobreId: Int, usuarioId: String?) {
         viewModelScope.launch {

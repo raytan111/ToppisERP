@@ -188,6 +188,13 @@ class PedidoRepository {
         client.postgrest.from("pedidos").delete { filter { eq("id", pedidoId) } }
     }
 
+    /** Reabre un pedido CERRADO (vuelve a ABIERTO para poder editarlo). */
+    suspend fun reabrirPedido(pedidoId: Int) {
+        client.postgrest.from("pedidos").update(
+            buildJsonObject { put("estado", "ABIERTO") }
+        ) { filter { eq("id", pedidoId) } }
+    }
+
     /** Paga el pedido de forma atómica (venta + stock + sobre) vía RPC. Devuelve venta_id. */
     suspend fun pagarPedido(pedidoId: Int, metodo: String, sobreId: Int, usuarioId: String?): Int = try {
         client.postgrest.rpc(
