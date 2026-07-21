@@ -16,21 +16,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -81,6 +81,7 @@ fun PedidoCarritoScreen(
     var lineaAQuitar by remember { mutableStateOf<CarritoLinea?>(null) }
     var carritoExpandido by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     // Solo se puede agregar/editar con el pedido ABIERTO y sin pagar.
     val editable = pedido?.let {
@@ -88,6 +89,18 @@ fun PedidoCarritoScreen(
     } ?: false
     fun avisarCerrado() {
         scope.launch { snackbarHostState.showSnackbar("El pedido está cerrado: no se pueden agregar más productos.") }
+    }
+    fun compartirWhatsApp() {
+        val texto = pedido?.comandaTexto?.takeIf { it.isNotBlank() } ?: buildString {
+            appendLine("PEDIDO #$pedidoId")
+            lineas.forEach { appendLine("${it.item.cantidad}x ${it.titulo}") }
+            appendLine("TOTAL: ${money.format(pedido?.total ?: 0.0)}")
+        }
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_TEXT, texto)
+        }
+        runCatching { context.startActivity(android.content.Intent.createChooser(intent, "Compartir pedido")) }
     }
 
     // Se abre solo al ingresar el primer producto.
@@ -243,7 +256,8 @@ fun PedidoCarritoScreen(
                     onReabrir = { viewModel.reabrir() },
                     onCobrar = { showPagar = true },
                     onEntregar = { if (p.pagado) showEntregarConfirm = true else showEntregarSinPagar = true },
-                    onVerComanda = { showComanda = true }
+                    onVerComanda = { showComanda = true },
+                    onCompartir = { compartirWhatsApp() }
                 )
             }
         }
@@ -670,42 +684,53 @@ private fun ColumnScope.AccionesPedido(
     onReabrir: () -> Unit,
     onCobrar: () -> Unit,
     onEntregar: () -> Unit,
-    onVerComanda: () -> Unit
+    onVerComanda: () -> Unit,
+    onCompartir: () -> Unit
 ) {
     val abierto = pedido.estado == com.toppis.app.data.db.entities.EstadoPedido.ABIERTO
     val listo = !abierto  // CERRADO (o pagado) = marcado como listo
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            // ── Listo (toggle): marca/desmarca; el relleno cambia solo como efecto. ──
-            FilledIconToggleButton(
-                checked = listo,
-                onCheckedChange = { if (abierto) onCerrar() else onReabrir() },
-                enabled = if (abierto) hayLineas else !pedido.pagado
-            ) {
-                Icon(
-                    if (listo) Icons.Filled.TaskAlt else Icons.Filled.RadioButtonUnchecked,
-                    contentDescription = "Listo", modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // ── Cobrar (billetes): solo cuando está cerrado y no pagado. ──
-            if (!pedido.pagado) {
-                FilledIconButton(onClick = onCobrar, enabled = listo && hayLineas) {
-                    Icon(Icons.Filled.Payments, contentDescription = "Cobrar", modifier = Modifier.size(24.dp))
-                }
-            }
-
-            // ── Entregar ──
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            // ── Izquierda: Entregar ──
             if (!pedido.entregado) {
-                FilledTonalIconButton(onClick = onEntregar) {
+                FilledTonalIconButton(onClick = onEntregar, modifier = Modifier.align(Alignment.CenterStart)) {
                     Icon(Icons.Filled.DeliveryDining, contentDescription = "Entregar", modifier = Modifier.size(24.dp))
                 }
             }
 
-            if (listo) {
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = onVerComanda) { Text("Ver comanda") }
+            // ── Centro: Listo (check tipo swoosh); el relleno cambia solo como efecto ──
+            FilledIconToggleButton(
+                checked = listo,
+                onCheckedChange = { if (abierto) onCerrar() else onReabrir() },
+                enabled = if (abierto) hayLineas else !pedido.pagado,
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Icon(Icons.Filled.Check, contentDescription = "Listo", modifier = Modifier.size(24.dp))
             }
+
+            // ── Derecha: Compartir WhatsApp + Cobrar ──
+            Row(
+                Modifier.align(Alignment.CenterEnd),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onCompartir) {
+                    Icon(
+                        painter = androidx.compose.ui.res.painterResource(com.toppis.erp.R.drawable.ic_whatsapp),
+                        contentDescription = "Compartir por WhatsApp",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+                if (!pedido.pagado) {
+                    FilledIconButton(onClick = onCobrar, enabled = listo && hayLineas) {
+                        Icon(Icons.Filled.Payments, contentDescription = "Cobrar", modifier = Modifier.size(24.dp))
+                    }
+                }
+            }
+        }
+        if (listo) {
+            TextButton(onClick = onVerComanda) { Text("Ver comanda") }
         }
     }
 }
