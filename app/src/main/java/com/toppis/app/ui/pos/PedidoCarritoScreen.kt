@@ -146,7 +146,6 @@ fun PedidoCarritoScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             ToppisTopBar(
                 titulo = "Pedido #$pedidoId",
@@ -181,6 +180,9 @@ fun PedidoCarritoScreen(
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Menú") })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Promociones") })
             }
+
+            // Notificaciones arriba (para no tapar los botones de acción de abajo).
+            SnackbarHost(snackbarHostState)
 
             Box(Modifier.weight(1f)) {
               androidx.compose.animation.Crossfade(targetState = tab, label = "tabPos") { tabActual ->
